@@ -1,0 +1,48 @@
+name: CI/CD - Fullstack App
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  fullstack:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout source
+      uses: actions/checkout@v3
+
+    ### ✅ Backend
+    - name: 🟦 Setup Node.js for Backend
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20
+
+    - name: 📦 Install Backend Dependencies
+      run: npm install
+      working-directory: ./backend
+
+    - name: 🛠 Build Backend
+      run: npm run build
+      working-directory: ./backend
+
+    - name: 🐳 Docker Build Backend
+      run: docker build -t my-backend ./backend
+
+    ### ✅ Frontend
+    - name: 🟦 Setup Node.js for Frontend
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20
+
+    - name: 📦 Install Frontend Dependencies
+      run: npm install
+      working-directory: ./frontend
+
+    - name: 🛠 Build Frontend
+      run: npm run build
+      working-directory: ./frontend
+
+    # 필요시 프론트 배포 추가 가능 (Vercel, S3, EC2 등)
