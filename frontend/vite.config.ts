@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,            // 개발 서버 포트 설정
-    strictPort: true       // 포트가 이미 사용중이면 에러 낸 후 종료
+    host: true, // 0.0.0.0으로 바뀜 (Docker용)
+    port: 3000
   }
 })
