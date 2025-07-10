@@ -1,48 +1,58 @@
-name: CI/CD - Fullstack App
+name: CI/CD - FastAPI + React (Vite)
 
 on:
-  push:
-    branches: [ develop ]
   pull_request:
-    branches: [ develop ]
+    paths:
+      - '**.ts'
+      - '**.tsx'
+      - '**.js'
+      - 'frontend/**'
+      - 'backend/**'
+      - '**.py'
 
 jobs:
-  fullstack:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 📥 Checkout source
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    ### ✅ Backend
-    - name: 🟦 Setup Node.js for Backend
-      uses: actions/setup-node@v3
-      with:
-        node-version: 20
+      ### Frontend (React + Vite)
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
 
-    - name: 📦 Install Backend Dependencies
-      run: npm install
-      working-directory: ./backend
+      - name: Install Frontend Dependencies
+        run: |
+          if [ -f frontend/package.json ]; then
+            cd frontend
+            npm ci
+          fi
 
-    - name: 🛠 Build Backend
-      run: npm run build
-      working-directory: ./backend
+      - name: Build Frontend
+        run: |
+          if [ -f frontend/package.json ]; then
+            cd frontend
+            npm run build
+          fi
 
-    - name: 🐳 Docker Build Backend
-      run: docker build -t my-backend ./backend
+      ### Backend (FastAPI)
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-    ### ✅ Frontend
-    - name: 🟦 Setup Node.js for Frontend
-      uses: actions/setup-node@v3
-      with:
-        node-version: 20
+      - name: Install Backend Dependencies
+        run: |
+          if [ -f backend/requirements.txt ]; then
+            python -m pip install --upgrade pip
+            pip install -r backend/requirements.txt
+          fi
 
-    - name: 📦 Install Frontend Dependencies
-      run: npm install
-      working-directory: ./frontend
-
-    - name: 🛠 Build Frontend
-      run: npm run build
-      working-directory: ./frontend
-
-    # 필요시 프론트 배포 추가 가능 (Vercel, S3, EC2 등)
+      - name: Check Python syntax
+        run: |
+          if [ -d backend ]; then
+            python -m compileall backend
+          fi
