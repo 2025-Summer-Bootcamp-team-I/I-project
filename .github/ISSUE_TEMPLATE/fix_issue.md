@@ -1,7 +1,7 @@
 ---
 name: 🐛 Fix (버그 수정)
 about: 기존 기능에서 발생한 문제를 수정합니다
-title: "[FIX] "
+title: "fix: "
 labels: fix, bug
 assignees: ''
 ---
