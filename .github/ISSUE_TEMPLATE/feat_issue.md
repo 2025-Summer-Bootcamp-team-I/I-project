@@ -1,7 +1,7 @@
 ---
 name: ✨ Feature (기능 추가)
 about: 새로운 기능을 추가하는 이슈입니다
-title: "[FEAT] "
+title: "feat:"
 labels: feat, enhancement
 assignees: ''
 ---
