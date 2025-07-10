@@ -1,7 +1,7 @@
 ---
 name: 🧹 Chore (작업 환경/기타 정리)
 about: 코드나 설정, 배포 관련 작업 등을 위한 이슈입니다
-title: "[CHORE] "
+title: "chore:"
 labels: chore
 assignees: ''
 ---
