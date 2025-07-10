@@ -1,7 +1,7 @@
 ---
 name: 🎨 Design (디자인 관련 작업)
 about: UI/UX, 스타일, 레이아웃 등에 대한 작업입니다
-title: "[DESIGN] "
+title: "design:"
 labels: design, ui
 assignees: ''
 ---
