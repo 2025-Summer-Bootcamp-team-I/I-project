@@ -137,3 +137,12 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# === Python (FastAPI) 관련 무시 항목 ===
+venv/
+**/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
