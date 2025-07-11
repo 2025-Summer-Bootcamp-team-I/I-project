@@ -1,35 +1,36 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import InitPage from './pages/InitPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import MainPage from './pages/MainPage';
+import MyPage from './pages/MyPage';
+import AD8Page from './pages/AD8Page';
+import DrawingPage from './pages/DrawingPage';
+import LoadingPage from './pages/LoadingPage';
+import ReportPage from './pages/ReportPage';
+import ChattingSelectPage from './pages/ChattingSelectPage';
+import VoiceChattingPage from './pages/VoiceChattingPage';
+import TextChattingPage from './pages/TextChattingPage';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Router>
+      <Routes>
+        <Route path="/" element={<InitPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/main" element={<MainPage />} />
+        <Route path="/mypage" element={<MyPage />} />
+        <Route path="/ad8" element={<AD8Page />} />
+        <Route path="/drawing" element={<DrawingPage />} />
+        <Route path="/loading" element={<LoadingPage />} />
+        <Route path="/report" element={<ReportPage />} />
+        <Route path="/chatting-select" element={<ChattingSelectPage />} />
+        <Route path="/chatting/voice" element={<VoiceChattingPage />} />
+        <Route path="/chatting/text" element={<TextChattingPage />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
