@@ -13,11 +13,13 @@
     "@tsparticles/engine": "^3.8.1",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.8.1",
+    "@types/three": "^0.178.1",
     "axios": "^1.6.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.6.3",
     "styled-components": "^6.1.19",
+    "three": "^0.178.0",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
