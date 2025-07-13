@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NeuralBackground from '../components/Background';
 import Header from '../components/Header';
-import useTestStore from '../store/testStore';
+import useAD8TestStore from '../store/testStore';
 import styled from 'styled-components';
 
 const AD8Page = () => {
@@ -10,7 +10,7 @@ const AD8Page = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [showResult, setShowResult] = useState(false);
-  const { setAD8Result } = useTestStore();
+  const { setResponse, completeTest } = useAD8TestStore();
 
   const questions = [
     "판단력에 문제가 생겼습니까?",
@@ -27,10 +27,13 @@ const AD8Page = () => {
     const newAnswers = [...answers, answer];
     setAnswers(newAnswers);
 
+    // 현재 질문에 대한 응답을 저장
+    setResponse(currentQuestionIndex + 1, answer);
+
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      setAD8Result(newAnswers);
+      completeTest();
       setShowResult(true);
     }
   };
@@ -99,10 +102,13 @@ const Container = styled.div`
 const Content = styled.main`
   position: relative;
   padding: 7rem 2rem 2rem;
-  max-width: 720px;
+  max-width: 800px;  // 전체 컨테이너 너비 증가
   margin: 0 auto;
   width: 100%;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
 const BackButton = styled.button`
@@ -148,20 +154,22 @@ const Title = styled.h1`
   font-size: 2.5rem;
   color: #96E7D4;
   margin: 0 0 0.8rem;
-  text-align: center;
+  text-align: center;  // 중앙 정렬
   letter-spacing: -1.2px;
   font-weight: 800;
 `;
 
 const Subtitle = styled.p`
   color: #94a3b8;
-  text-align: center;
+  text-align: center;  // 중앙 정렬
   margin-bottom: 2.3rem;
   font-size: 1.16rem;
 `;
 
 const ProgressContainer = styled.div`
   margin-bottom: 2.6rem;
+  width: 100%;  // 전체 너비 사용
+  padding: 0;   // 패딩 제거
 `;
 
 const ProgressLabel = styled.div`
@@ -191,11 +199,11 @@ const QuestionCard = styled.div`
   position: relative;
   background: #131828;
   border-radius: 1.5rem;
-  padding: 2.5rem 3rem;
+  padding: 2.5rem 2rem;
   backdrop-filter: blur(22px);
   border: 1.7px solid #96E7D422;
   box-shadow: 0 2px 38px 0 #96e7d410;
-  margin: 0 auto;
+  margin: 0 auto;  // 중앙 정렬
   width: 100%;
 `;
 
