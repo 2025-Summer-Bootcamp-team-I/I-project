@@ -74,14 +74,14 @@ const NeuralBackground: React.FC = () => {
     for (let i = 0; i < neuronCount; i++) {
       neuronPositions[i * 3] = (Math.random() - 0.5) * 50;
       neuronPositions[i * 3 + 1] = (Math.random() - 0.5) * 50;
-      neuronPositions[i * 3 + 2] = -Math.random() * 50;
+      neuronPositions[i * 3 + 2] = -20 - Math.random() * 30; // 최소 거리 -20, 최대 거리 -50으로 조정
     }
 
     const neuronGeometry = new THREE.BufferGeometry();
     neuronGeometry.setAttribute('position', new THREE.BufferAttribute(neuronPositions, 3));
 
     const neuronMaterial = new THREE.PointsMaterial({
-      size: 0.8,
+      size: 0.45,
       color: 0x4f46e5,
       transparent: true,
       blending: THREE.AdditiveBlending,
@@ -93,10 +93,10 @@ const NeuralBackground: React.FC = () => {
     group.add(neurons);
 
     const lineMaterial = new THREE.LineBasicMaterial({ 
-      color: 0xffffff, 
+      color: '#161A29', 
       transparent: true, 
-      opacity: 0.15,
-      linewidth: 1
+      opacity: 1,
+      linewidth: 0.00001
     });
     const lineGeometry = new THREE.BufferGeometry();
     const linePositions: number[] = [];
@@ -116,7 +116,7 @@ const NeuralBackground: React.FC = () => {
     const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
     group.add(lines);
 
-    const sparkCount = 20;
+    const sparkCount = 10;
     const sparks: any[] = [];
     for (let i = 0; i < sparkCount; i++) {
       const baseSpeed = 0.005 + Math.random() * 0.01;
