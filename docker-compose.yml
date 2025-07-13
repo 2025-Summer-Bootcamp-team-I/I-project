@@ -39,7 +39,7 @@ services:
       MYSQL_PASSWORD: iteampass
       MYSQL_DATABASE: iteamdb
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
 
