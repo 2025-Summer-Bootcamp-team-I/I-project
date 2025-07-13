@@ -26,6 +26,22 @@ services:
       - ./backend:/app
     working_dir: /app
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: iteam
+      MYSQL_PASSWORD: iteampass
+      MYSQL_DATABASE: iteamdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
 
   # 🔒 모니터링 구성 일시 비활성화 (Prometheus, Grafana, cAdvisor)
   # prometheus:
@@ -56,4 +72,5 @@ services:
   #     - /var/lib/docker/:/var/lib/docker:ro
 
 volumes:
+  mysql-data:
   grafana-storage:
