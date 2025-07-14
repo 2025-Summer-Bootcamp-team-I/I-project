@@ -253,7 +253,7 @@ const DrawingPage: React.FC = () => {
 
   return (
     <>
-      <NeuralBackground />
+      <NeuralBackground isSurveyActive={true}/>
       <Header />
       <BackButton onClick={() => navigate(-1)} aria-label="뒤로가기">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
