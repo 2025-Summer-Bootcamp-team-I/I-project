@@ -4,7 +4,6 @@ from app.ad8.api import router as ad8_router   # <-- 수정!
 from app.ad8 import models as ad8_models
 
 # DB 테이블 생성
-auth_models.Base.metadata.create_all(bind=database.engine)
 ad8_models.Base.metadata.create_all(bind=database.engine)
 
 # FastAPI 인스턴스
