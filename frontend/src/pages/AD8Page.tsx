@@ -92,17 +92,22 @@ export default AD8Page;
 // --- styled-components ---
 
 const Container = styled.div`
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   min-height: 100vh;
   background: transparent;
   color: white;
-  overflow: hidden;
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto; /* Enable scroll on overflow */
 `;
 
 const Content = styled.main`
   position: relative;
-  padding: 5.5rem 1.2rem 1.2rem;
-  max-width: 550px;    
+  padding: 6rem 1.2rem 2rem; /* Adjust top padding for fixed header */
+  max-width: 550px;
   margin: 0 auto;
   width: 100%;
   z-index: 1;
@@ -112,71 +117,60 @@ const Content = styled.main`
 `;
 
 const BackButton = styled.button`
-  position: absolute;
-  top: 7rem;
-  left: 0rem;
-  background: #131828;
-  border: none;
-  padding: 1rem;
+  position: fixed; /* Fixed position relative to viewport */
+  top: 5.5rem;
+  left: 2.5rem;
+  background: rgba(17, 24, 39, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  padding: 0.6rem;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
   cursor: pointer;
-  outline: none;
-  z-index: 100;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-
-  @media (min-width: 1024px) {
-    left: -5rem;
-  }
-
-  @media (min-width: 1200px) {
-    left: -8rem;
-  }
-
-  @media (min-width: 1440px) {
-    left: -15rem;
-  }
+  z-index: 110;
 
   &:hover {
     background: #1a2235;
   }
 
   svg {
-    width: 24px;
-    height: 24px;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    top: 5rem;
+    left: 1rem;
   }
 `;
 
 const Title = styled.h1`
-  font-size: 2.5rem;
+  font-size: clamp(2rem, 6vh, 2.5rem);
   color: #96E7D4;
-  margin: 0 0 0.8rem;
-  text-align: center;  // 중앙 정렬
+  margin: 0 0 1vh;
+  text-align: center;
   letter-spacing: -1.2px;
   font-weight: 800;
 `;
 
 const Subtitle = styled.p`
   color: #94a3b8;
-  text-align: center;  // 중앙 정렬
-  margin-bottom: 2.3rem;
-  font-size: 1.16rem;
+  text-align: center;
+  margin-bottom: 3vh;
+  font-size: clamp(1rem, 2.5vh, 1.16rem);
 `;
 
 const ProgressContainer = styled.div`
-  margin-bottom: 2.6rem;
-  width: 100%;  // 전체 너비 사용
-  padding: 0;   // 패딩 제거
+  margin-bottom: 3vh;
+  width: 100%;
 `;
 
 const ProgressLabel = styled.div`
   color: #94a3b8;
-  margin-bottom: 0.6rem;
-  font-size: 0.9rem;
+  margin-bottom: 1vh;
+  font-size: clamp(0.8rem, 2vh, 0.9rem);
   margin-left: 0.2rem;
 `;
 
@@ -200,25 +194,24 @@ const QuestionCard = styled.div`
   position: relative;
   background: #131828;
   border-radius: 1.5rem;
-  padding: 2.5rem 2rem;
-  backdrop-filter: blur(22px);
+  padding: 4vh 2rem;
   border: 1.7px solid #96E7D422;
   box-shadow: 0 2px 38px 0 #96e7d410;
-  margin: 0 auto;  // 중앙 정렬
+  margin: 0 auto;
   width: 100%;
 `;
 
 const QuestionNumber = styled.div`
   color: #96E7D4;
-  margin-bottom: 1.2rem;
+  margin-bottom: 2vh;
   text-align: center;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 2.5vh, 1.1rem);
 `;
 
 const Question = styled.h2`
-  font-size: 1.8rem;
+  font-size: clamp(1.5rem, 4vh, 1.8rem);
   text-align: center;
-  margin-bottom: 2.2rem;
+  margin-bottom: 4vh;
   color: #fff;
   font-weight: 600;
   letter-spacing: -0.5px;
@@ -229,7 +222,7 @@ const ButtonContainer = styled.div`
   display: flex;
   gap: 1.5rem;
   justify-content: center;
-  margin-top: 2.5rem;
+  margin-top: 2vh;
 `;
 
 const AnswerButton = styled.button`
@@ -238,9 +231,9 @@ const AnswerButton = styled.button`
   border: none;
   color: #B9F3E4;
   font-weight: 600;
-  padding: 0.8rem 0;
+  padding: clamp(0.7rem, 2vh, 0.9rem) 0;
   border-radius: 999px;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 2.5vh, 1.1rem);
   cursor: pointer;
   transition: all 0.2s ease;
   max-width: 140px;
@@ -252,20 +245,20 @@ const AnswerButton = styled.button`
 
 const ResultCard = styled(QuestionCard)`
   text-align: center;
-  padding: 3rem 2rem;
+  padding: 5vh 2rem;
 `;
 
 const ResultTitle = styled.h2`
-  font-size: 2rem;
+  font-size: clamp(1.8rem, 4vh, 2rem);
   color: #fff;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2vh;
   font-weight: 700;
 `;
 
 const ResultScore = styled.p`
-  font-size: 1.3rem;
+  font-size: clamp(1.1rem, 3vh, 1.3rem);
   color: #94a3b8;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5vh;
 `;
 
 const Score = styled.span`
@@ -274,9 +267,9 @@ const Score = styled.span`
 `;
 
 const ResultMessage = styled.p<{ $good: boolean }>`
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 2.8vh, 1.2rem);
   color: ${props => props.$good ? '#96E7D4' : '#f87171'};
-  margin-bottom: 2rem;
+  margin-bottom: 3vh;
   line-height: 1.5;
 `;
 
@@ -285,12 +278,12 @@ const HomeButton = styled.button`
   border: none;
   color: #131828;
   font-weight: 600;
-  padding: 1rem 2rem;
+  padding: clamp(0.8rem, 2.2vh, 1rem) clamp(1.5rem, 4vw, 2rem);
   border-radius: 999px;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 2.5vh, 1.1rem);
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: 2rem;
+  margin-top: 2vh;
 
   &:hover {
     background: #7fcebb;
