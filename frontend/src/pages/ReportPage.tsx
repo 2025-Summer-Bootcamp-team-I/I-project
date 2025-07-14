@@ -268,7 +268,6 @@ const ChartCard = styled.div`
   padding: 1.2rem;
   min-width: 350px;  
   max-width: 350px; 
-  backdrop-filter: blur(10px);
   @media (max-width: 1024px) {
     width: 95vw;
     min-width: 0;
@@ -423,10 +422,9 @@ const BottomButtonBar = styled.div`
   display: flex;
   justify-content: center;
   gap: 1.3rem;
-  background: linear-gradient(180deg, rgba(20, 20, 35, 0) 0%, rgba(20, 20, 35, 0.95) 50%);
+  background: transparent;
   padding: 2rem 0 1.5rem 0;
   z-index: 99;
-  backdrop-filter: blur(20px);
 `;
 const ActionBtn = styled.button<{ $pdf?: boolean }>`
   background: ${({ $pdf }) => ($pdf ? "#7C3AED" : "rgba(124, 58, 237, 0.1)")};
