@@ -9,19 +9,20 @@ import { useNavigate } from "react-router-dom";
 const TitleContainer = styled.div`
   text-align: center;
   margin-bottom: 3rem;
-  margin-top: -9rem;
+  margin-top: -1rem;
 `;
 
 const MainTitle = styled.h1`
-  font-size: 3rem;
+  font-size: 2rem;
   font-weight: bold;
   margin: 0;
   color: #fff;
+  margin-top: -1rem;
 `;
 
 const SubTitle = styled.p`
   color: #9ca3af;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   margin-top: 0.5rem;
   margin-bottom: 0;
 `;
@@ -56,12 +57,12 @@ const CardSliderContainer = styled.div`
   justify-content: center;
   perspective: 1500px;
   position: relative;
-  margin-top: 1.5rem;
+  margin-top: 0.2rem;
 `;
 
 const CardContainer = styled.div`
-  min-width: 28rem;
-  max-width: 28rem;
+  min-width: 26rem;
+  max-width: 26rem;
   height: 22rem;
   position: relative;
   transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
@@ -130,7 +131,7 @@ const NavArrow = styled.button`
   background: rgba(17, 24, 39, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 50%;
-  padding: 0.9rem;
+  padding: 0.6rem;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
@@ -151,8 +152,8 @@ const NavArrow = styled.button`
     box-shadow: none;
   }
   svg {
-    width: 1.4rem;
-    height: 1.4rem;
+    width: 1.7rem;
+    height: 1.7rem;
     margin: auto;
   }
 `;
