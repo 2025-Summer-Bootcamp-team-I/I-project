@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from app.auth import models as auth_models
 from app import database
 from app.auth import api as auth_api
-from app.ad8 import router as ad8_router
+from app.ad8.api import router as ad8_router   # <-- 수정!
 from app.ad8 import models as ad8_models
 
 # DB 테이블 생성
