@@ -16,7 +16,7 @@ const Container = styled.div`
 
 const Inner = styled.div`
   width: 100%;
-  max-width: 38rem;
+  max-width: 30rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -112,7 +112,7 @@ const HeaderBox = styled.div`
   width: 100%;
   text-align: center;
   margin-bottom: 1.5rem;
-  margin-top: 2rem;
+  margin-top: -1rem;
 `;
 
 const Title = styled.h2`
