@@ -1,11 +1,11 @@
 from sqlalchemy import Column, Integer, Boolean, ForeignKey
-from app.db.base import Base
+from app.database import Base
 
 class AD8Test(Base):
     __tablename__ = "ad8_test"
 
     ad8test_id = Column(Integer, primary_key=True, index=True)
-    report_id = Column(Integer, ForeignKey("report.report_id"), nullable=False)
+    # report_id = Column(Integer, ForeignKey("report.report_id"), nullable=False)
     risk_score = Column(Integer, nullable=False)
 
 class AD8Response(Base):
@@ -15,3 +15,4 @@ class AD8Response(Base):
     ad8test_id = Column(Integer, ForeignKey("ad8_test.ad8test_id"), nullable=False)
     question_no = Column(Integer, nullable=False)
     is_correct = Column(Boolean, nullable=False)
+
