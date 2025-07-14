@@ -8,12 +8,12 @@ import { useNavigate } from "react-router-dom";
 
 const TitleContainer = styled.div`
   text-align: center;
-  margin-bottom: 2rem;
-  margin-top: -7rem;
+  margin-bottom: 3rem;
+  margin-top: -9rem;
 `;
 
 const MainTitle = styled.h1`
-  font-size: 1.3rem;
+  font-size: 3rem;
   font-weight: bold;
   margin: 0;
   color: #fff;
@@ -21,8 +21,8 @@ const MainTitle = styled.h1`
 
 const SubTitle = styled.p`
   color: #9ca3af;
-  font-size: 0.5rem;
-  margin-top: 0.2rem;
+  font-size: 1.1rem;
+  margin-top: 0.5rem;
   margin-bottom: 0;
 `;
 
@@ -49,23 +49,23 @@ const ContentOverlay = styled.div`
 
 const CardSliderContainer = styled.div`
   width: 100%;
-  max-width: 24rem;
+  max-width: 38rem;
+  margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   perspective: 1500px;
   position: relative;
-  margin-top: -1rem;
+  margin-top: 1.5rem;
 `;
 
 const CardContainer = styled.div`
-  width: 100%;
-  max-width: 17rem;
-  height: 14rem;
+  min-width: 28rem;
+  max-width: 28rem;
+  height: 22rem;
   position: relative;
   transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
   transform-style: preserve-3d;
-  flex: 1;
   display: flex;
   justify-content: center;
 `;
@@ -75,8 +75,8 @@ const GlassCard = styled.div<{ isActive: boolean; index: number; currentIndex: n
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1rem;
-  padding: 0.6rem;
+  border-radius: 1.5rem;
+  padding: 2.2rem 2rem 1.5rem 2rem;
   position: absolute;
   width: 100%;
   height: 100%;
@@ -85,13 +85,13 @@ const GlassCard = styled.div<{ isActive: boolean; index: number; currentIndex: n
   justify-content: center;
   align-items: center;
   text-align: center;
-  gap: 0.3rem;
+  gap: 1.2rem;
   transition: all 0.3s ease;
   transform-style: preserve-3d;
   transform: ${({ index, currentIndex, isHovered }) => {
     const dx = (index - currentIndex) * 100;
     const scale = 1 - Math.abs(index - currentIndex) * 0.32;
-    const ty = index !== currentIndex ? 'translateY(1.2rem)' : '';
+    const ty = index !== currentIndex ? 'translateY(2.2rem)' : '';
     const hover = isHovered ? 'rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg))' : '';
     return `translateX(${dx}%) scale(${scale}) ${ty} ${hover}`;
   }};
@@ -101,8 +101,8 @@ const GlassCard = styled.div<{ isActive: boolean; index: number; currentIndex: n
   &:hover {
     transform: ${({ index, currentIndex, isHovered }) => {
       const dx = (index - currentIndex) * 100;
-      const scale = 1 - Math.abs(index - currentIndex) * 0.32 + 0.05;
-      const ty = index !== currentIndex ? 'translateY(1.2rem)' : '';
+      const scale = 1 - Math.abs(index - currentIndex) * 0.32 + 0.02;
+      const ty = index !== currentIndex ? 'translateY(2.2rem)' : '';
       const hover = isHovered ? 'rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg))' : '';
       return `translateX(${dx}%) scale(${scale}) ${ty} ${hover}`;
     }};
@@ -130,7 +130,7 @@ const NavArrow = styled.button`
   background: rgba(17, 24, 39, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 50%;
-  padding: 0.4rem;
+  padding: 0.9rem;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
@@ -138,9 +138,9 @@ const NavArrow = styled.button`
   flex-shrink: 0;
   z-index: 10;
   color: #fff;
-  margin-top: 2rem;
-  margin-right: 0.5rem;
-  margin-left: 0.5rem;
+  margin-top: 3.5rem;
+  margin-right: 3rem;
+  margin-left: 3rem;
   &:hover {
     background: rgba(17, 24, 39, 1);
     border-color: rgba(255, 255, 255, 0.1);
@@ -151,8 +151,8 @@ const NavArrow = styled.button`
     box-shadow: none;
   }
   svg {
-    width: 0.9rem;
-    height: 0.9rem;
+    width: 1.4rem;
+    height: 1.4rem;
     margin: auto;
   }
 `;
@@ -161,15 +161,15 @@ const StartTestButton = styled.button`
   background: #8b5cf6;
   color: white;
   font-weight: bold;
-  padding: 0.25rem 0.8rem;
+  padding: 0.7rem 2.2rem;
   border-radius: 9999px;
   transition: all 0.3s ease;
   z-index: 10;
   position: relative;
-  margin-top: -2rem;
-  margin-bottom: 1rem;
-  font-size: 0.8rem;
-  min-width: 4.5rem;
+  margin-top: -1.2rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+  min-width: 10rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -177,46 +177,46 @@ const StartTestButton = styled.button`
     background: #7c3aed;
   }
   .button-text {
-    font-size: 0.6rem;
+    font-size: 1.1rem;
   }
 `;
 
 
 
 const IconContainer = styled.div`
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 3.2rem;
+  height: 3.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem;
+  border-radius: 1rem;
   background: rgba(0, 0, 0, 0.2);
   position: absolute;
-  left: 1.5rem;
-  top: 2rem;
+  left: 2.2rem;
+  top: 2.5rem;
 `;
 
 const StepLabel = styled.span`
   color: #c4b5fd;
-  font-size: 0.75rem;
+  font-size: 1.1rem;
   font-weight: 600;
   display: block;
-  margin-bottom: 1rem;
-  margin-top: 0.5rem;
+  margin-bottom: 1.2rem;
+  margin-top: 1.2rem;
 `;
 
 const CardTitle = styled.h2`
   color: white;
-  font-size: 1.2rem;
+  font-size: 2rem;
   font-weight: bold;
-  margin: 0.1rem 0 0.5rem 0;
+  margin: 0.2rem 0 1.2rem 0;
 `;
 
 const CardDescription = styled.p`
   color: #9ca3af;
-  line-height: 1.3;
-  font-size: 0.6rem;
-  margin: 0 0 4rem 0;
+  line-height: 1.5;
+  font-size: 1.1rem;
+  margin: 0 0 3.5rem 0;
 `;
 
 const CardContent = styled.div`
