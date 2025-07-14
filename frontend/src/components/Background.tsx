@@ -21,6 +21,11 @@ const ContentWrapper = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
+
+  & > * {
+    pointer-events: auto;
+  }
 `;
 
 const NeuralBackground: React.FC<{ children?: React.ReactNode, isSurveyActive?: boolean }> = ({ children, isSurveyActive }) => {
@@ -235,7 +240,7 @@ const NeuralBackground: React.FC<{ children?: React.ReactNode, isSurveyActive?: 
   return (
     <>
       <CanvasBackground ref={canvasRef} />
-      <ContentWrapper>{children}</ContentWrapper>
+      {children && <ContentWrapper>{children}</ContentWrapper>}
     </>
   );
 };
