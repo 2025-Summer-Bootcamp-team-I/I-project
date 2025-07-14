@@ -101,8 +101,8 @@ const Container = styled.div`
 
 const Content = styled.main`
   position: relative;
-  padding: 7rem 2rem 2rem;
-  max-width: 800px;  // 전체 컨테이너 너비 증가
+  padding: 5.5rem 1.2rem 1.2rem;
+  max-width: 550px;    
   margin: 0 auto;
   width: 100%;
   z-index: 1;
@@ -114,7 +114,7 @@ const Content = styled.main`
 const BackButton = styled.button`
   position: absolute;
   top: 7rem;
-  left: 2rem;
+  left: 0rem;
   background: #131828;
   border: none;
   padding: 1rem;
@@ -124,6 +124,7 @@ const BackButton = styled.button`
   color: #ffffff;
   cursor: pointer;
   outline: none;
+  z-index: 100;
   border-radius: 50%;
   width: 48px;
   height: 48px;
