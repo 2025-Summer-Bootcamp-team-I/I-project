@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = "mysql+pymysql://iteam:iteampass@mysql:3306/iteamdb"
+DATABASE_URL = "mysql+pymysql://iteam:iteampass@127.0.0.1:3307/iteamdb"
 
 engine = create_engine(
     DATABASE_URL,
@@ -12,3 +12,11 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
+# DB 세션 주입용 함수
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

@@ -11,6 +11,7 @@ import ReportPage from './pages/ReportPage';
 import ChattingSelectPage from './pages/ChattingSelectPage';
 import VoiceChattingPage from './pages/VoiceChattingPage';
 import TextChattingPage from './pages/TextChattingPage';
+import './App.css';
 
 function App() {
   return (
