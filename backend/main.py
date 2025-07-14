@@ -27,6 +27,3 @@ app.include_router(api.router, prefix="/user", tags=["User"])
 @app.get("/")
 def root():
     return {"msg": "API 서버는 현재 작동 중입니다!"}
-
-#테스트용
-print("✅ main.py 실행 중")
