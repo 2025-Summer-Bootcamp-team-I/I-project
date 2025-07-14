@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import styled from "styled-components";
 import Background from "../components/Background";
 import Header from "../components/Header";
@@ -6,13 +6,27 @@ import { useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import { useReportStore } from "../store/reportStore";
+import { useReportHistoryStore } from "../store/reportHistoryStore";
 
 const ReportPage: React.FC = () => {
   const navigate = useNavigate();
   const pdfRef = useRef<HTMLDivElement>(null);
 
-  // zustand에서 report 불러옴
+  // zustand에서 report와 addReport 불러옴
   const report = useReportStore((state) => state.report);
+  const addReport = useReportHistoryStore((state) => state.addReport);
+
+  // 컴포넌트가 마운트될 때 report를 history에 추가
+  useEffect(() => {
+    if (report) {
+      // report_id가 없으면 현재 timestamp를 id로 사용
+      const reportWithId = {
+        ...report,
+        report_id: report.report_id || Date.now()
+      };
+      addReport(reportWithId);
+    }
+  }, [report, addReport]);
 
   if (!report) return <Container>로딩 중...</Container>;
 
@@ -64,90 +78,103 @@ const ReportPage: React.FC = () => {
     <Container>
       <Background />
       <Header />
-      <ScrollArea>
-        <PdfTarget ref={pdfRef}>
-          {/* 상단 종합(레이더+카드) */}
-          <TopGrid>
-            <ChartCard>
-              <ResponsiveContainer width="100%" height={340}>
-                <RadarChart outerRadius={130} data={radarData}>
-                  <PolarGrid stroke="rgba(148, 163, 184, 0.2)" />
-                  <PolarAngleAxis 
-                    dataKey="subject" 
-                    stroke="#94A3B8" 
-                    fontSize={14}
-                    tickLine={false}
-                  />
-                  <PolarRadiusAxis 
-                    angle={30} 
-                    domain={[0, 100]} 
-                    tick={false} 
-                    axisLine={false}
-                    stroke="rgba(148, 163, 184, 0.2)"
-                  />
-                  <Radar 
-                    name="점수" 
-                    dataKey="score" 
-                    stroke="#A78BFA" 
-                    fill="#A78BFA" 
-                    fillOpacity={0.25}
-                    strokeWidth={2}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-            <ScoreCard>
-              <ScoreTitle>종합 평가</ScoreTitle>
-              <ScoreLabel>종합 인지 점수</ScoreLabel>
-              <ScoreValue>
-                {report.total_score} <span>/100</span>
-              </ScoreValue>
-              <ScoreDesc>{report.final_result}</ScoreDesc>
-            </ScoreCard>
-          </TopGrid>
+      <TitleArea>
+        <FixedTitle>최종 분석 리포트</FixedTitle>
+      </TitleArea>
+      <MainContent>
+        <ScrollContent>
+          <PdfTarget ref={pdfRef}>
+            {/* 상단 종합(레이더+카드) */}
+            <TopGrid>
+              <ChartCard>
+                <ResponsiveContainer width="100%" height={340}>
+                  <RadarChart outerRadius={130} data={radarData}>
+                    <PolarGrid stroke="rgba(148, 163, 184, 0.2)" />
+                    <PolarAngleAxis 
+                      dataKey="subject" 
+                      stroke="#94A3B8" 
+                      fontSize={14}
+                      tickLine={false}
+                    />
+                    <PolarRadiusAxis 
+                      angle={30} 
+                      domain={[0, 100]} 
+                      tick={false} 
+                      axisLine={false}
+                      stroke="rgba(148, 163, 184, 0.2)"
+                    />
+                    <Radar 
+                      name="점수" 
+                      dataKey="score" 
+                      stroke="#A78BFA" 
+                      fill="#A78BFA" 
+                      fillOpacity={0.25}
+                      strokeWidth={2}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+              <ScoreCard>
+                <ScoreTitle>종합 평가</ScoreTitle>
+                <ScoreLabel>종합 인지 점수</ScoreLabel>
+                <ScoreValue>
+                  {report.total_score} <span>/100</span>
+                </ScoreValue>
+                <ScoreDesc>{report.final_result}</ScoreDesc>
+              </ScoreCard>
+            </TopGrid>
 
-          {/* 검사별 요약 */}
-          <SectionTitle>검사별 요약</SectionTitle>
-          {examResults.map((exam, idx) => (
-            <ExamCard key={idx}>
-              <ExamName>{exam.name}</ExamName>
-              <ExamContent>
-                <ExamCol>
-                  <Label>결과 요약</Label>
-                  <Summary>
-                    {exam.summary.split("\n").map((line, i) => (
-                      <React.Fragment key={i}>
-                        {line.includes("점수:") ? (
-                          <ScoreHighlight>
-                            {line.replace("점수:", "점수:")}
-                          </ScoreHighlight>
-                        ) : (
-                          line
-                        )}
-                        <br />
-                      </React.Fragment>
-                    ))}
-                    {exam.image && (
-                      <ImageBox>
-                        <ResultImg src={exam.image} alt="그림 검사 결과" />
-                      </ImageBox>
-                    )}
-                  </Summary>
-                </ExamCol>
-                <ExamCol>
-                  <Label>분석 및 제안</Label>
-                  <Suggestion>{exam.suggestion}</Suggestion>
-                </ExamCol>
-              </ExamContent>
-            </ExamCard>
-          ))}
-        </PdfTarget>
-        <BottomSpacer />
-      </ScrollArea>
-      <BottomButtonBar>
-        <ActionBtn onClick={() => navigate("/main")}>다시하기</ActionBtn>
-        <ActionBtn $pdf onClick={handleDownloadPdf}>PDF로 저장</ActionBtn>
-      </BottomButtonBar>
+            {/* 검사별 요약 */}
+            <SectionTitle>검사별 요약</SectionTitle>
+            {examResults.map((exam, idx) => (
+              <ExamCard key={idx}>
+                    <ExamName
+                    style={
+                      ["설문 검사 (AD-8)", "대화 검사", "그림 검사"].includes(exam.name)
+                        ? { color: "#5EEAD4" }
+                        : undefined
+                    }
+                  >
+                    {exam.name}
+      </ExamName>
+                <ExamContent>
+                  <ExamCol>
+                    <Label>결과 요약</Label>
+                    <Summary>
+                      {exam.summary.split("\n").map((line, i) => (
+                        <React.Fragment key={i}>
+                          {line.includes("점수:") ? (
+                            <ScoreHighlight>
+                              {line.replace("점수:", "점수:")}
+                            </ScoreHighlight>
+                          ) : (
+                            line
+                          )}
+                          <br />
+                        </React.Fragment>
+                      ))}
+                      {exam.image && (
+                        <ImageBox>
+                          <ResultImg src={exam.image} alt="그림 검사 결과" />
+                        </ImageBox>
+                      )}
+                    </Summary>
+                  </ExamCol>
+                  <ExamCol>
+                    <Label>분석 및 제안</Label>
+                    <Suggestion>{exam.suggestion}</Suggestion>
+                  </ExamCol>
+                </ExamContent>
+              </ExamCard>
+            ))}
+          </PdfTarget>
+          <BottomSpacer />
+        </ScrollContent>
+        <BottomButtonBar>
+          <ActionBtn onClick={() => navigate("/main")}>다시하기</ActionBtn>
+          <ActionBtn $pdf onClick={handleDownloadPdf}>PDF로 저장</ActionBtn>
+        </BottomButtonBar>
+      </MainContent>
     </Container>
   );
 };
@@ -157,18 +184,50 @@ export default ReportPage;
 // --- 스타일은 위와 동일하게 붙여넣기 (생략 가능, 위 코드 참고)
 const Container = styled.div`
   width: 100vw;
-  min-height: 100vh;
+  height: 100vh;
   background: transparent;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 `;
-const ScrollArea = styled.div`
-  position: absolute;
-  top: 72px; left: 0; right: 0; bottom: 0;
-  width: 100vw;
+
+const TitleArea = styled.div`
+  position: fixed;
+  top: 72px;  // Header 높이
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 5rem;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+`;
+
+  const FixedTitle = styled.h1`
+    color: #FFFFFF;
+    font-size: 2.5rem;
+    text-align: center;
+    font-weight: 600;
+  `;
+
+  const MainContent = styled.div`
+  position: fixed;
+  top: 9rem;  // Header(72px) + TitleArea(5rem) 높이 합
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+`;
+
+
+const ScrollContent = styled.div`
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
   padding-bottom: 130px;
-  z-index: 2;
   &::-webkit-scrollbar { width: 12px; background: transparent; }
   &::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, #a78bfa 0%, #6366f1 100%);
@@ -181,48 +240,49 @@ const ScrollArea = styled.div`
   scrollbar-color: #a78bfa #191628;
   scrollbar-width: thin;
 `;
+
 const PdfTarget = styled.div`
-  max-width: 1200px;
-  margin: 2.5rem auto 0;
+  max-width: 780px;  // 850px에서 780px로 감소
+  margin: 0 auto;
   padding: 0 2rem;
 `;
 const TopGrid = styled.div`
   display: flex;
   justify-content: center;
   align-items: stretch;
-  gap: 2rem;
-  margin: 1rem auto 3rem;
-  max-width: 1000px;
+  gap: 1.2rem;
+  margin: 5rem auto 2rem;  // 1rem -> 5rem으로 상단 여백 증가
+  max-width: 680px;
   @media (max-width: 1024px) {
     flex-direction: column;
     align-items: center;
-    gap: 1.7rem;
-    margin: 0.5rem auto 2rem;
+    gap: 1.5rem;
+    margin: 4rem auto 1.5rem;  // 모바일에서도 상단 여백 조정
   }
 `;
 const ChartCard = styled.div`
-  background: rgba(30, 30, 45, 0.5);
-  border: 1px solid rgba(167, 139, 250, 0.1);
-  border-radius: 1.8rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  padding: 2rem;
-  min-width: 460px;
-  max-width: 520px;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 1.5rem;
+  box-shadow: none !important;
+  padding: 1.2rem;
+  min-width: 350px;  
+  max-width: 350px; 
   backdrop-filter: blur(10px);
   @media (max-width: 1024px) {
     width: 95vw;
     min-width: 0;
-    padding: 1.5rem 1rem;
+    padding: 1.2rem 1rem;
   }
 `;
 const ScoreCard = styled.div`
   background: rgba(30, 30, 45, 0.5);
   border: 1px solid rgba(167, 139, 250, 0.1);
-  border-radius: 1.8rem;
+  border-radius: 1.2rem;  // 1.5rem에서 1.2rem로 감소
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  padding: 3rem;
-  min-width: 460px;
-  max-width: 520px;
+  padding: 1.8rem;  // 2rem에서 1.8rem으로 감소
+  min-width: 250px;  // 280px에서 250px로 감소
+  max-width: 290px;  // 320px에서 290px로 감소
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -231,14 +291,14 @@ const ScoreCard = styled.div`
   @media (max-width: 1024px) {
     width: 95vw;
     min-width: 0;
-    padding: 2rem;
+    padding: 1.8rem;
   }
 `;
 const ScoreTitle = styled.div`
   color: #E2E8F0;
-  font-size: 1.5rem;
+  font-size: 1.2rem;  // 1.3rem에서 1.2rem으로 감소
   font-weight: 600;
-  margin-bottom: 1rem;
+  margin-bottom: 0.7rem;  // 0.8rem에서 0.7rem으로 감소
 `;
 const ScoreLabel = styled.div`
   color: #94A3B8;
@@ -247,13 +307,13 @@ const ScoreLabel = styled.div`
   font-weight: 500;
 `;
 const ScoreValue = styled.div`
-  font-size: 4rem;
+  font-size: 2.5rem;  // 2.8rem에서 2.5rem으로 감소
   font-weight: 700;
   color: #A78BFA;
   letter-spacing: -1px;
-  margin-bottom: 1rem;
+  margin-bottom: 0.7rem;  // 0.8rem에서 0.7rem으로 감소
   span {
-    font-size: 1.5rem;
+    font-size: 1.1rem;  // 1.2rem에서 1.1rem으로 감소
     color: #94A3B8;
     margin-left: 0.5rem;
     font-weight: 500;
@@ -270,21 +330,24 @@ const SectionTitle = styled.h2`
   font-weight: 600;
   color: #E2E8F0;
   margin-bottom: 2rem;
-  max-width: 1000px;
-  margin-left: auto;
-  margin-right: auto;
+  max-width: 680px;
+  margin-left: 1.5rem;   // auto → 1.5rem 정도로 변경
+  margin-right: auto;    // 오른쪽은 auto로 놔두면 자연스럽게 살짝 왼쪽으로 이동
   padding-bottom: 0.5rem;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
+  text-align: left;      // 살짝 왼쪽 느낌이 더 강해짐
+  padding-left: 0;       // 필요없으면 0, 약간 왼쪽 패딩 주고 싶으면 0.5rem
 `;
+
 const ExamCard = styled.div`
   background: rgba(30, 30, 45, 0.5);
   border: 1px solid rgba(167, 139, 250, 0.1);
-  border-radius: 1.4rem;
+  border-radius: 1rem;  // 1.2rem에서 1rem로 감소
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  padding: 2.5rem;
-  margin-bottom: 2rem;
+  padding: 1.8rem;  // 2rem에서 1.8rem으로 감소
+  margin-bottom: 1.2rem;  // 1.5rem에서 1.2rem으로 감소
   backdrop-filter: blur(10px);
-  max-width: 1000px;
+  max-width: 680px;  // 750px에서 680px로 감소
   margin-left: auto;
   margin-right: auto;
 `;
