@@ -42,7 +42,7 @@ const AD8Page = () => {
 
   return (
     <Container>
-      <NeuralBackground />
+      <NeuralBackground isSurveyActive={true} />
       <Header />
       <Content>
         <BackButton onClick={() => navigate('/main')} aria-label="뒤로가기">

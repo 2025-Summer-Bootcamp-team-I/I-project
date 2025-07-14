@@ -76,7 +76,7 @@ const ReportPage: React.FC = () => {
 
   return (
     <Container>
-      <Background />
+      <Background isSurveyActive={true}/>
       <Header />
       <TitleArea>
         <FixedTitle>최종 분석 리포트</FixedTitle>
