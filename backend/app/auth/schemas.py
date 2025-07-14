@@ -13,4 +13,4 @@ class TokenResponse(BaseModel):
     token_type: str
 
 class Message(BaseModel):
-    msg: str
+    msg: str 
