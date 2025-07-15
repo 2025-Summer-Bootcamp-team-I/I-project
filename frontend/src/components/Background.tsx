@@ -112,7 +112,7 @@ const NeuralBackground: React.FC<{ children?: React.ReactNode, isSurveyActive?: 
     const lineMaterial = new THREE.LineBasicMaterial({ 
       color: 0xffffff, // 흰색으로 변경
       transparent: true, 
-      opacity: 0.05, // 투명도 0.05로 변경
+      opacity: 0.08, // 투명도 0.08로 변경
       linewidth: 0.00001
     });
     const lineGeometry = new THREE.BufferGeometry();
@@ -153,7 +153,7 @@ const NeuralBackground: React.FC<{ children?: React.ReactNode, isSurveyActive?: 
     sparkGeometry.setAttribute('position', new THREE.BufferAttribute(sparkPositions, 3));
 
     const sparkMaterial = new THREE.PointsMaterial({
-      size: 0.15, // 스파크 크기 0.15로 변경
+      size: 0.2, // 스파크 크기 0.2로 변경
       color: 0xfacc15,
       transparent: true,
       blending: THREE.AdditiveBlending,
