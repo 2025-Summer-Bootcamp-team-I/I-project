@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import Background from "../components/Background";
+import LoginBackground from "../components/LoginBackground";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export default function LoginPage() {
 
   return (
     <Wrapper>
-      <Background />
+      <LoginBackground />
       <FormContainer onSubmit={handleLogin}>
         <Title>로그인</Title>
         <Input type="email" placeholder="이메일" required />
@@ -33,6 +33,7 @@ const Wrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  background-color: #0c0a1a; /* temp2.html의 body 배경색 */
 `;
 
 const FormContainer = styled.form`
@@ -48,6 +49,12 @@ const FormContainer = styled.form`
   flex-direction: column;
   gap: 1.5rem;
   z-index: 1;
+  animation: fadeIn 1s ease-out forwards;
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 `;
 
 const Title = styled.h2`
@@ -61,8 +68,6 @@ const Title = styled.h2`
 const Input = styled.input`
   width: 100%;
   box-sizing: border-box;
-  min-width: 0; /* 추가 */
-  max-width: none; /* 추가 */
   background: #1e293b;
   border: 1px solid #334155;
   border-radius: 0.5rem;
