@@ -5,6 +5,41 @@ import Header from "../components/Header";
 import { useReportHistoryStore } from "../store/reportHistoryStore";
 import { useEffect } from "react";
 
+// ChattingSelectPage에서 사용한 BackButton 스타일 복사
+const BackButton = styled.button`
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  position: fixed;
+  top: 5rem;
+  left: 2rem;
+  z-index: 30;
+  border-radius: 9999px;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    top: 4rem;
+    left: 1rem;
+    padding: 0.4rem;
+    svg {
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+  }
+`;
+
 const MyPage = () => {
   const navigate = useNavigate();
   const reports = useReportHistoryStore((state) => state.reports);
@@ -53,6 +88,12 @@ const MyPage = () => {
     <Container>
       <Background />
       <Header />
+      {/* 좌측 상단에 뒤로가기 버튼 추가 */}
+      <BackButton onClick={() => navigate(-1)} aria-label="뒤로가기">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      </BackButton>
       <Content>
         <Title>나의 검사 기록</Title>
         {reports.length === 0 ? (
