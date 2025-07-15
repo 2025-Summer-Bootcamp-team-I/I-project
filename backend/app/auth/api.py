@@ -17,12 +17,10 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 def login(user: UserLogin, db: Session = Depends(get_db)):
     return login_user(db, user)
 
-#로그아웃 기능
 @router.post("/logout", response_model=Message)
 def logout():
     return {"msg": "로그아웃 요청이 수신되었습니다. 클라이언트 측 토큰을 삭제해주세요."}
 
-#탈퇴 기능
 @router.delete("/delete", response_model=Message)
 def delete_user(
     db: Session = Depends(get_db),
@@ -32,7 +30,7 @@ def delete_user(
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
     
-    username = user.username  #삭제 전에 이름 저장해두기
+    email = user.email
     db.delete(user)
     db.commit()
-    return {"msg": f"'{username}' 님의 계정이 성공적으로 삭제되었습니다."}
+    return {"msg": f"'{email}' 님의 계정이 성공적으로 삭제되었습니다."}
