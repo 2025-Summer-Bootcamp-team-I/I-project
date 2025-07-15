@@ -1,4 +1,5 @@
 import styled, { keyframes } from 'styled-components';
+import LoginBackground from "../components/LoginBackground";
 
 /**
  * LoadingPage 컴포넌트 - 데이터 분석 중 로딩 화면
@@ -7,17 +8,20 @@ import styled, { keyframes } from 'styled-components';
  */
 export default function LoadingPage() {
   return (
-    <Wrapper>
-      <ContentContainer>
-        <GalaxyLoader>
-          <Core />
-          <Orbit $nthChild={1} />
-          <Orbit $nthChild={2} />
-          <Orbit $nthChild={3} />
-        </GalaxyLoader>
-        <LoadingText>결과를 분석하고 있습니다...</LoadingText>
-      </ContentContainer>
-    </Wrapper>
+    <>
+      <LoginBackground />
+      <Wrapper>
+        <ContentContainer>
+          <GalaxyLoader>
+            <Core />
+            <Orbit $nthChild={1} />
+            <Orbit $nthChild={2} />
+            <Orbit $nthChild={3} />
+          </GalaxyLoader>
+          <LoadingText>결과를 분석하고 있습니다...</LoadingText>
+        </ContentContainer>
+      </Wrapper>
+    </>
   );
 }
 
@@ -38,27 +42,27 @@ const pulse = keyframes`
 
 // Styled Components
 const Wrapper = styled.div`
-  position: absolute; /* Changed from relative to absolute to overlay content */
+  position: absolute;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.5); /* bg-slate-900/50 */
-  backdrop-filter: blur(10px); /* backdrop-blur-sm */
-  -webkit-backdrop-filter: blur(10px);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   overflow: hidden;
-  z-index: 20; /* test-container z-index */
+  z-index: 1; /* LoginBackground 위에 오도록 z-index 조정 */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  padding-top: 5rem; /* Header height consideration */
-  opacity: 1; /* Always visible for this component */
-  pointer-events: auto; /* Always interactive for this component */
-  transform: scale(1); /* Always scaled to 1 for this component */
+  padding-top: 5rem;
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
   transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-  color: white; /* Ensure text is visible */
+  color: white;
 `;
 
 const ContentContainer = styled.div`
