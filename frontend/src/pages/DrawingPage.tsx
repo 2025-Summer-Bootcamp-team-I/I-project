@@ -4,29 +4,53 @@ import { useNavigate } from "react-router-dom";
 import NeuralBackground from '../components/Background';
 import Header from "../components/Header";
 
-const Container = styled.div`
-  background: transparent;
-  border-radius: 1rem;
-  padding: 2rem;
-  min-height: 100vh;
+const PageContainer = styled.div`
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  align-items: flex-start;
+  min-height: 100vh;
+  padding: 6rem 2rem 2rem; /* Header height + extra space */
+  box-sizing: border-box;
 `;
 
 const Inner = styled.div`
   width: 100%;
-  max-width: 30rem;
+  max-width: 50rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 2vh;
+`;
+
+const HeaderBox = styled.div`
+  text-align: center;
+  margin-bottom: 2vh;
+`;
+
+const Title = styled.h2`
+  font-weight: bold;
+  color: #7fcebb;
+  font-size: clamp(1.8rem, 5vh, 2.5rem);
+  margin: 0;
+`;
+
+const SubTitle = styled.p`
+  color: #7fcebb;
+  font-size: clamp(1rem, 3vh, 1.3rem);
+  margin: 1vh 0 0 0;
+  span {
+    color: #fff;
+    font-weight: bold;
+    font-size: clamp(1.2rem, 3.5vh, 1.6rem);
+  }
 `;
 
 const CanvasWrapper = styled.div`
-  width: 100%;
-  max-width: 38rem;
+  width: clamp(280px, 60vh, 90vw);
+  height: clamp(280px, 60vh, 90vw);
   aspect-ratio: 1 / 1;
-  margin: 2rem 0;
 `;
 
 const StyledCanvas = styled.canvas`
@@ -44,17 +68,15 @@ const Controls = styled.div`
   justify-content: center;
   gap: 1.5rem;
   flex-wrap: wrap;
-  min-width: 50rem;
-  margin-top: -1rem;
+  margin-top: 2vh;
+  padding-bottom: 3vh; /* Add padding to create space at the bottom */
 `;
-
-
 
 const Button = styled.button`
   padding: 0.7rem 1.5rem;
   border-radius: 0.7rem;
   font-weight: bold;
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 2vh, 1.1rem);
   border: none;
   cursor: pointer;
   transition: background 0.2s;
@@ -83,55 +105,29 @@ const BackButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  z-index: 100;
   color: #fff;
   position: fixed;
-  top: 6rem;
-  left: 2.2rem;
-  margin: 0;
+  top: 5.5rem; /* Adjusted to be below the header */
+  left: 2.5rem;
+  z-index: 110; /* Ensure it's above other content */
+
   &:hover {
     background: rgba(17, 24, 39, 1);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: none;
   }
-  &:focus {
-    outline: none;
-    box-shadow: none;
-  }
+
   svg {
     width: 1.5rem;
     height: 1.5rem;
-    margin: auto;
-    color: #000;
   }
-`;
 
-const HeaderBox = styled.div`
-  position: relative;
-  width: 100%;
-  text-align: center;
-  margin-bottom: 1.5rem;
-  margin-top: -1rem;
-`;
-
-const Title = styled.h2`
-  font-size: 2.2rem;
-  font-weight: bold;
-  color: #7fcebb;
-  margin-top: 4rem;
-  margin-bottom: -2rem;
-`;
-
-const SubTitle = styled.p`
-  color: #7fcebb;
-  font-size: 1.2rem;
-  margin-top: 2rem;
-  margin-bottom: -2rem;
-  span {
-    color: #fff;
-    font-weight: bold;
-    font-size: 1.5rem;
+  @media (max-width: 768px) {
+    top: 5rem;
+    left: 1rem;
+    padding: 0.5rem;
+    svg {
+      width: 1.2rem;
+      height: 1.2rem;
+    }
   }
 `;
 
@@ -257,16 +253,16 @@ const DrawingPage: React.FC = () => {
 
   return (
     <>
-      <NeuralBackground />
-      <Container>
-        <Header />
+      <NeuralBackground isSurveyActive={true}/>
+      <Header />
+      <BackButton onClick={() => navigate(-1)} aria-label="뒤로가기">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      </BackButton>
+      <PageContainer>
         <Inner>
           <HeaderBox>
-            <BackButton onClick={() => navigate(-1)} aria-label="뒤로가기">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-            </BackButton>
             <Title>그림 검사</Title>
             <SubTitle>
               주어진 시계판 위에 <span>11시 10분</span>을 그려주세요.
@@ -290,7 +286,7 @@ const DrawingPage: React.FC = () => {
             <Button className="submit" onClick={handleSubmit}>제출하기</Button>
           </Controls>
         </Inner>
-      </Container>
+      </PageContainer>
     </>
   );
 };
