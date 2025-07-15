@@ -163,7 +163,7 @@ const ChattingSelectPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate(-1);
+    navigate('/main', { state: { cardIndex: 1 } }); // 두 번째 카드(인덱스 1)로 이동
   };
 
   return (
