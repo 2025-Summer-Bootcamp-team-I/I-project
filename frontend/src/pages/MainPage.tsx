@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import NeuralBackground from '../components/Background';
 import Header from "../components/Header";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 
 const TitleContainer = styled.div`
@@ -276,18 +276,20 @@ const dashboardData = [
 ];
 
 const MainPage = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const location = useLocation();
+  const initialIndex = location.state?.cardIndex ?? 0;
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const navigate = useNavigate();
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % dashboardData.length);
+    setCurrentIndex((prev: number) => (prev + 1) % dashboardData.length);
     setHoveredCard(null); // 카드 변경 시 호버 상태 리셋
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + dashboardData.length) % dashboardData.length);
+    setCurrentIndex((prev: number) => (prev - 1 + dashboardData.length) % dashboardData.length);
     setHoveredCard(null); // 카드 변경 시 호버 상태 리셋
   };
 
