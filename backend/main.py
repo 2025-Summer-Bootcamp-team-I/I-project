@@ -1,16 +1,16 @@
 from fastapi import FastAPI
+from app.auth import models
 from app import database
-from app.ad8.api import router as ad8_router   # <-- 수정!
-from app.ad8 import models as ad8_models
+from app.auth import api
 
 # DB 테이블 생성
-ad8_models.Base.metadata.create_all(bind=database.engine)
+models.Base.metadata.create_all(bind=database.engine)
 
 # FastAPI 인스턴스
 app = FastAPI()
 
 # 라우터 등록
-app.include_router(ad8_router, prefix="/ad8", tags=["AD8"])
+app.include_router(api.router, prefix="/user", tags=["User"])
 
 @app.get("/")
 def root():
