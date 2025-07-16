@@ -1,17 +1,11 @@
 from fastapi import FastAPI
-from app.auth import models
-from app import database
-from app.auth import api
+from app.trans import stt as stt_api  # ← STT 라우터만 연결
 
-# DB 테이블 생성
-models.Base.metadata.create_all(bind=database.engine)
-
-# FastAPI 인스턴스
 app = FastAPI()
 
-# 라우터 등록
-app.include_router(api.router, prefix="/user", tags=["User"])
+# 라우터 등록 (로그인 라우터는 뺌!)
+app.include_router(stt_api.router, prefix="/api", tags=["STT"])
 
 @app.get("/")
 def root():
-    return {"msg": "API 서버는 현재 작동 중입니다!"}
+    return {"msg": "STT 테스트 서버 작동 중!"}
