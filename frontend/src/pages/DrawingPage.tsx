@@ -94,6 +94,13 @@ const Button = styled.button`
       background: #5bb99e;
     }
   }
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #5bb99e;
+  }
+  &:active:focus {
+    box-shadow: 0 0 0 2px #334155;
+  }
 `;
 
 const BackButton = styled.button`
@@ -282,8 +289,8 @@ const DrawingPage: React.FC = () => {
             />
           </CanvasWrapper>
           <Controls>
-            <Button className="clear" onClick={handleClear}>모두 지우기</Button>
-            <Button className="submit" onClick={handleSubmit}>제출하기</Button>
+            <Button className="clear" onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleClear(); }}>모두 지우기</Button>
+            <Button className="submit" onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleSubmit(); }}>제출하기</Button>
           </Controls>
         </Inner>
       </PageContainer>
