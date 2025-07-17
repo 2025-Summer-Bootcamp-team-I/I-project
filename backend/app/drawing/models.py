@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, Integer, Text, ForeignKey
+from sqlalchemy import Column, BigInteger, String, Integer, ForeignKey
 from ..database import Base
 
 class DrawingTest(Base):
@@ -8,6 +8,4 @@ class DrawingTest(Base):
     report_id = Column(BigInteger, ForeignKey("reports.report_id"), index=True)  # reports 테이블 참조로 수정
     image_url = Column(String(255))
     risk_score = Column(Integer)
-    drawing_score = Column(Integer)
-    drawingtest_result = Column(Text)  # AI 소견만!
 
