@@ -65,8 +65,8 @@ const AD8Page = () => {
               <QuestionNumber>질문 {currentQuestionIndex + 1}/{questions.length}</QuestionNumber>
               <Question>{questions[currentQuestionIndex]}</Question>
               <ButtonContainer>
-                <AnswerButton onClick={() => handleAnswer(true)}>예</AnswerButton>
-                <AnswerButton onClick={() => handleAnswer(false)}>아니오</AnswerButton>
+                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(true); }}>예</AnswerButton>
+                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(false); }}>아니오</AnswerButton>
               </ButtonContainer>
             </QuestionCard>
           </>
@@ -164,7 +164,7 @@ const Subtitle = styled.p`
 
 const ProgressContainer = styled.div`
   margin-bottom: 3vh;
-  width: 100%;
+  width: 650px;
 `;
 
 const ProgressLabel = styled.div`
@@ -199,6 +199,9 @@ const QuestionCard = styled.div`
   box-shadow: 0 2px 38px 0 #96e7d410;
   margin: 0 auto;
   width: 100%;
+  min-width: 600px; /* 기존보다 더 넓게 수정 */
+  margin-right: 300px;
+  margin-left: 300px
 `;
 
 const QuestionNumber = styled.div`
@@ -240,6 +243,11 @@ const AnswerButton = styled.button`
 
   &:hover {
     background: #2f4450;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px #96E7D4;
   }
 `;
 
