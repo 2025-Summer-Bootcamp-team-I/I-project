@@ -16,8 +16,6 @@ class DrawingTestResult(BaseModel):
     report_id: int = Field(..., description="연결된 Report의 ID")
     image_url: str = Field(..., description="저장된 그림 파일 경로")
     risk_score: int = Field(..., description="치매 위험 점수 (예: 0~10)")
-    drawing_score: int = Field(..., description="그림 자체 평가 점수 (예: 0~100)")
-    drawingtest_result: str = Field(..., description="AI가 반환한 그림 검사 소견/피드백")
 
     class Config:
         orm_mode = True
