@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import InitBackground from "../components/InitBackground";
 
 /**
  * InitPage 컴포넌트 - 온보딩 페이지
@@ -210,6 +211,7 @@ export default function InitPage() {
 
   return (
     <Wrapper onClick={handleInteraction}>
+      <InitBackground /> {/* LoginBackground 추가 */}
       <CanvasContainer ref={canvasRef} />
       <ContentContainer>
         <Title className={`ui-element ${interactionCompleted ? '' : 'visible'}`}>
@@ -240,7 +242,7 @@ const Wrapper = styled.div`
   position: relative;
   width: 100vw;
   height: 100vh;
-  background: #0c0a1a;
+  background: transparent; /* 배경을 투명하게 변경 */
   overflow: hidden;
   cursor: pointer;
 `;
@@ -251,7 +253,7 @@ const CanvasContainer = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  z-index: 1; /* 기존 뇌 파티클의 z-index */
 `;
 
 const ContentContainer = styled.div`
