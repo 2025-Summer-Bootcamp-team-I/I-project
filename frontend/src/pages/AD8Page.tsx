@@ -241,6 +241,11 @@ const AnswerButton = styled.button`
   &:hover {
     background: #2f4450;
   }
+
+  &:focus {
+    outline: none;
+    box-shadow: none;
+  }
 `;
 
 const ResultCard = styled(QuestionCard)`
