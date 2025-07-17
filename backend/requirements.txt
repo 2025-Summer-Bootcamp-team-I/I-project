@@ -20,3 +20,6 @@ python-jose==3.3.0
 passlib[bcrypt]==1.7.4
 cryptography
 tenacity
+openai
+python-dotenv
+python-multipart
