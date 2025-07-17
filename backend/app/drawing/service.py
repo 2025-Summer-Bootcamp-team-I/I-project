@@ -89,24 +89,20 @@ async def handle_upload(
     # responses가 리스트라면 첫 번째만 꺼내서 활용 (1개만 쓸 경우)
     first_response = responses[0] if isinstance(responses, list) and len(responses) > 0 else None
 
-    # 필요한 경우 first_response의 값을 DB 저장/로깅 등에 활용 가능
-
+    # drawing_test 테이블에는 이미지 URL과 risk_score만 저장
     db_obj = crud.create_drawing_test(
         db=db,
         report_id=report_id,
         image_url=image_path,
         risk_score=risk_score,
-        drawing_score=drawing_score,
-        drawingtest_result=drawingtest_result
-        # 필요하다면 first_response 값도 함께 저장하도록 모델/DB 구조 확장 가능
     )
 
+    # API 응답은 기존과 동일하게 모든 정보를 포함
     return {
         "drawing_id": db_obj.drawing_id,
         "report_id": db_obj.report_id,
         "image_url": db_obj.image_url,
-        "risk_score": db_obj.risk_score,
-        "drawing_score": db_obj.drawing_score,
-        "drawingtest_result": db_obj.drawingtest_result
-        # 필요하다면 first_response 값도 응답에 포함 가능
+        "risk_score": risk_score,
+        "drawing_score": drawing_score,
+        "drawingtest_result": drawingtest_result
     }
