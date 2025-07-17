@@ -99,10 +99,9 @@ async def handle_upload(
     )
 
     # Report 테이블 업데이트
-    db.query(Report).filter(Report.report_id == report_id).update({
-        Report.drawing_score: drawing_score,
-        Report.drawingtest_result: drawingtest_result
-    })
+    from sqlalchemy import text
+    update_stmt = text("UPDATE reports SET drawing_score = :score, drawingtest_result = :result WHERE report_id = :id")
+    db.execute(update_stmt, {"score": drawing_score, "result": drawingtest_result, "id": report_id})
     db.commit()
 
     # API 응답은 기존과 동일하게 모든 정보를 포함
