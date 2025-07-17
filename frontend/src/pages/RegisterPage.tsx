@@ -109,9 +109,10 @@ const Button = styled.button`
 const StyledLink = styled(Link)`
   color: #c4b5fd;
   text-align: center;
+  display: inline-block;
   text-decoration: none;
   margin-top: 1rem;
-
+  margin: 1rem auto 0;
   &:hover {
     text-decoration: underline;
   }
