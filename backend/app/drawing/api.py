@@ -19,7 +19,7 @@ async def upload_drawing_test(
     db: Session = Depends(get_db)
 ):
     """
-    드로잉 테스트(시계 그림)를 업로드하고 AI 분석 결과를 반환합니다.
+    드로잉 테스트(시계 그림)를 업로드하고 AI 분석 결과를 반환
     """
     # responses를 JSON 문자열로 받아 파싱
     parsed_responses = json.loads(responses)
