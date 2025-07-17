@@ -1,12 +1,12 @@
 from sqlalchemy.orm import Session
-from .models import AD8Test, AD8Response
-from .schemas import AD8Request
+from . import models
+from . import schemas
 
-def create_ad8_test(db: Session, data: AD8Request, risk_score: int):
+def create_ad8_test(db: Session, data: schemas.AD8Request, risk_score: int):
     # AD8Test 테이블에 먼저 저장
-    ad8_test = AD8Test(
-        report_id = data.reportId,
-        risk_score = risk_score
+    ad8_test = models.AD8Test(
+        report_id=data.report_id,
+        risk_score=risk_score
     )
     db.add(ad8_test)
     db.commit()
@@ -14,10 +14,10 @@ def create_ad8_test(db: Session, data: AD8Request, risk_score: int):
 
     # 각 질문 응답을 AD8Response 테이블에 저장
     for r in data.responses:
-        response = AD8Response(
-            ad8test_id = ad8_test.ad8test_id,
-            question_no = r.questionNo,
-            is_correct = r.isCorrect
+        response = models.AD8Response(
+            AD8Test_id=ad8_test.AD8Test_id,
+            question_no=r.question_no,
+            is_correct=r.is_correct
         )
         db.add(response)
 
