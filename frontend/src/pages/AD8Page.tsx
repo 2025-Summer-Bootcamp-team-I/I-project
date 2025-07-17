@@ -65,8 +65,8 @@ const AD8Page = () => {
               <QuestionNumber>질문 {currentQuestionIndex + 1}/{questions.length}</QuestionNumber>
               <Question>{questions[currentQuestionIndex]}</Question>
               <ButtonContainer>
-                <AnswerButton onClick={() => handleAnswer(true)}>예</AnswerButton>
-                <AnswerButton onClick={() => handleAnswer(false)}>아니오</AnswerButton>
+                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(true); }}>예</AnswerButton>
+                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(false); }}>아니오</AnswerButton>
               </ButtonContainer>
             </QuestionCard>
           </>
@@ -247,7 +247,7 @@ const AnswerButton = styled.button`
 
   &:focus {
     outline: none;
-    box-shadow: none;
+    box-shadow: 0 0 0 3px #96E7D4;
   }
 `;
 
