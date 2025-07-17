@@ -3,6 +3,7 @@ from app.auth import models
 from app import database
 from app.auth import api
 from app.report import api as report_api
+from app.trans import stt as stt_api  # ← STT 라우터도 함께 연결
 
 # DB 테이블 생성
 models.Base.metadata.create_all(bind=database.engine)
@@ -17,6 +18,7 @@ app = FastAPI(
 # 라우터 등록
 app.include_router(api.router, prefix="/user", tags=["User"])
 app.include_router(report_api.router)
+app.include_router(stt_api.router, prefix="/api", tags=["STT"])
 
 @app.get("/")
 def root():

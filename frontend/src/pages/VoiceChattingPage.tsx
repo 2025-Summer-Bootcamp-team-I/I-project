@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import Background from '../components/Background';
 import Header from '../components/Header'; // Header 컴포넌트 임포트
 import { useChatStore } from '../store/chatStore';
@@ -91,11 +91,12 @@ const ContentWrapper = styled.div`
 
 const QuestionText = styled.p`
   color: #67e8f9; /* 시안 색상 */
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   font-weight: 600;
   /* margin-bottom: 2rem; 로봇 이미지와의 간격 */
   text-align: center;
   line-height: 1.5;
+  padding-bottom: -1rem;
 
   @media (max-width: 768px) {
     font-size: 1rem;
@@ -130,19 +131,26 @@ const MicButton = styled.button<{ $isListening: boolean }>`
   height: 8vh; /* h-24 */
   min-width: 4rem; /* 최소 너비 설정 */
   min-height: 4rem; /* 최소 높이 설정 */
-  background-color: #06b6d4; /* bg-cyan-500 */
+  background-color: ${({ $isListening }) => $isListening ? '#ef4444' : '#06b6d4'};
   border-radius: 9999px;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   transition: background-color 0.3s ease;
-  /* margin-top: 2rem; 로봇 이미지와의 간격 */
-  box-shadow: 0 0 20px 10px rgba(14, 116, 144, 0.5), 0 0 40px 20px rgba(14, 116, 144, 0.3); /* 후광 효과를 box-shadow로 변경 */
-  animation: ${pulse} 2s infinite ease-in-out; /* pulse 애니메이션 유지 */
+  box-shadow: ${({ $isListening }) =>
+    $isListening
+      ? '0 0 20px 10px rgba(239, 68, 68, 0.5), 0 0 40px 20px rgba(239, 68, 68, 0.3)'
+      : '0 0 20px 10px rgba(14, 116, 144, 0.5), 0 0 40px 20px rgba(14, 116, 144, 0.3)'};
+  animation: ${pulse} 2s infinite ease-in-out;
 
   &:hover {
-    background-color: #0891b2; /* Darker cyan for hover */
+    background-color: ${({ $isListening }) => $isListening ? '#dc2626' : '#0891b2'};
+  }
+
+  &:focus {
+    outline: none;
   }
 
   svg {
@@ -151,7 +159,7 @@ const MicButton = styled.button<{ $isListening: boolean }>`
     color: white;
   }
 
-  ${props => props.$isListening && `
+  ${props => props.$isListening && css`
     &::after {
       content: '';
       position: absolute;
@@ -189,8 +197,63 @@ const VoiceStatus = styled.p`
 const VoiceChattingPage: React.FC = () => {
   const { isListening, toggleListening } = useChatStore();
   const navigate = useNavigate();
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  const handleToggleListening = () => {
+    if (isListening) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+    toggleListening();
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        console.log("Recorded audio URL:", audioUrl);
+        // You can now send this audioBlob to a server or play it back
+        audioChunksRef.current = [];
+        
+        // Stop all media tracks to turn off the microphone indicator
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+    } catch (err) {
+      console.error("Error starting recording:", err);
+      // If there's an error (e.g., permission denied), toggle state back
+      if (isListening) {
+        toggleListening();
+      }
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+    }
+  };
 
   const handleBack = () => {
+    if (isListening) {
+      stopRecording();
+      toggleListening();
+    }
     navigate(-1);
   };
 
@@ -199,7 +262,7 @@ const VoiceChattingPage: React.FC = () => {
       <Header showLogoText={true} />
       <PageContainer>
         <BackButton onClick={handleBack}>
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg fill="none" stroke="white" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
           </svg>
         </BackButton>
@@ -210,7 +273,7 @@ const VoiceChattingPage: React.FC = () => {
           <VoiceAICharacter $isListening={isListening}>
             <img src={voiceChatRobot} alt="Voice Chat Robot" />
           </VoiceAICharacter>
-          <MicButton $isListening={isListening} onClick={toggleListening}>
+          <MicButton $isListening={isListening} onClick={handleToggleListening}>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
             </svg>

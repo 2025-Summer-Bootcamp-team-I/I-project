@@ -198,7 +198,7 @@ const DrawingPage: React.FC = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.strokeStyle = "#FFFFFF";
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 3;
     ctx.lineCap = "round";
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
@@ -241,7 +241,7 @@ const DrawingPage: React.FC = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.strokeStyle = "#FFFFFF";
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 3;
     ctx.lineCap = "round";
   };
 
