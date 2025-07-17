@@ -7,6 +7,7 @@ from . import utils, crud
 from sqlalchemy.orm import Session
 from fastapi import Depends
 import re
+from ..report.models import Report
 
 env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
 load_dotenv(env_path)
@@ -96,6 +97,13 @@ async def handle_upload(
         image_url=image_path,
         risk_score=risk_score,
     )
+
+    # Report 테이블 업데이트
+    db.query(Report).filter(Report.report_id == report_id).update({
+        Report.drawing_score: drawing_score,
+        Report.drawingtest_result: drawingtest_result
+    })
+    db.commit()
 
     # API 응답은 기존과 동일하게 모든 정보를 포함
     return {
