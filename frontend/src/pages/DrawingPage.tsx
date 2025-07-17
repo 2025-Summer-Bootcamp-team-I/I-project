@@ -255,7 +255,7 @@ const DrawingPage: React.FC = () => {
   // 제출
   const handleSubmit = () => {
     alert("그림이 제출되었습니다. (기능 구현 대기 중)");
-    navigate(-1); // 이전 페이지로 이동
+    navigate('/main', { state: { cardIndex: 2 } }); // 이전 페이지로 이동
   };
 
   return (
