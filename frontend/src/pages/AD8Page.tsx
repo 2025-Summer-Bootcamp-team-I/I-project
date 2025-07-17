@@ -164,7 +164,7 @@ const Subtitle = styled.p`
 
 const ProgressContainer = styled.div`
   margin-bottom: 3vh;
-  width: 100%;
+  width: 650px;
 `;
 
 const ProgressLabel = styled.div`
