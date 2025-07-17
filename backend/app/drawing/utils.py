@@ -6,7 +6,7 @@ from fastapi import UploadFile
 async def save_file_locally(file: UploadFile, subdir: str = "drawings") -> str:
     """
     업로드된 파일을 서버 로컬의 static/uploads/<subdir>/ 폴더에 저장하고,
-    웹에서 접근 가능한 경로(/static/uploads/<subdir>/파일명)를 반환.
+    웹에서 접근 가능한 경로(/static/uploads/<subdir>/파일명)를 반환합니다.
     """
     # 업로드 폴더 설정
     base_upload_dir = os.path.join("/app", "static", "uploads")
