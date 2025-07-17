@@ -7,15 +7,11 @@ def create_drawing_test(
     report_id: int,
     image_url: str,
     risk_score: int,
-    drawing_score: int,
-    drawingtest_result: str
 ):
     db_drawing = models.DrawingTest(
         report_id=report_id,
         image_url=image_url,
         risk_score=risk_score,
-        drawing_score=drawing_score,
-        drawingtest_result=drawingtest_result
     )
     db.add(db_drawing)
     db.commit()
