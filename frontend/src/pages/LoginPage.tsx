@@ -1,15 +1,26 @@
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import LoginBackground from "../components/LoginBackground";
+import { useState } from "react"; // useState 임포트
+import { loginUser } from "../api"; // loginUser 임포트
+import type { LoginData } from "../types/api"; // LoginData 임포트
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState(""); // 이메일 상태
+  const [password, setPassword] = useState(""); // 비밀번호 상태
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => { // async 추가
     e.preventDefault();
-    // TODO: 로그인 로직 구현
-    console.log("로그인 시도");
-    navigate("/main");
+    try {
+      const userData: LoginData = { email, password };
+      const response = await loginUser(userData);
+      console.log("로그인 성공:", response);
+      navigate("/main");
+    } catch (error) {
+      alert("로그인 실패: 이메일 또는 비밀번호를 확인해주세요.");
+      console.error("로그인 에러:", error);
+    }
   };
 
   return (
@@ -17,8 +28,20 @@ export default function LoginPage() {
       <LoginBackground />
       <FormContainer onSubmit={handleLogin}>
         <Title>로그인</Title>
-        <Input type="email" placeholder="이메일" required />
-        <Input type="password" placeholder="비밀번호" required />
+        <Input
+          type="email"
+          placeholder="이메일"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)} // 이메일 입력 핸들러
+        />
+        <Input
+          type="password"
+          placeholder="비밀번호"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)} // 비밀번호 입력 핸들러
+        />
         <Button type="submit">로그인</Button>
         <StyledLink to="/register">계정이 없으신가요? 회원가입</StyledLink>
       </FormContainer>
