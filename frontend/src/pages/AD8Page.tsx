@@ -61,8 +61,6 @@ const AD8Page = () => {
             report_id: report.report_id,
             responses: responses.map(r => ({ questionNo: r.question_no, isCorrect: r.is_correct }))
           };
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
           await submitAD8(ad8Data);
           console.log('AD8 설문 결과 전송 성공');
         }
