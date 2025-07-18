@@ -18,7 +18,7 @@ export interface ResponseItem {
 }
 
 export interface AD8Request {
-  reportId: number;
+  report_id: number;
   responses: ResponseItem[];
 }
 
