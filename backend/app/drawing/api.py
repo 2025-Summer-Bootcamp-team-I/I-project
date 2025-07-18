@@ -8,7 +8,7 @@ import json
 router = APIRouter()
 
 @router.post(
-    "/",
+    "",
     summary="드로잉 테스트(시계 그림) 업로드 및 AI 분석",
     description="reportId, responses(JSON 문자열), 그림 파일을 업로드하면 AI가 분석해서 결과를 반환"
 )

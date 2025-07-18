@@ -6,7 +6,7 @@ from . import schemas, service
 router = APIRouter()
 
 @router.post(
-    "/ad8",
+    "",
     response_model=schemas.AD8Result,
     status_code=201,
     responses={
