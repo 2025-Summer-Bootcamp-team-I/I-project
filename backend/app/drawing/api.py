@@ -21,10 +21,10 @@ async def upload_drawing_test(
     """
     드로잉 테스트(시계 그림)를 업로드하고 AI 분석 결과를 반환
     """
-    # responses를 JSON 문자열로 받아 파싱
-    parsed_responses = json.loads(responses)
+    # responses를 JSON 문자열로 받아 파싱 (빈 값일 경우 빈 리스트로 처리)
+    parsed_responses = json.loads(responses) if responses else []
     # responses가 1개만 있다고 가정할 때(리스트의 첫 번째 값 사용)
-    response = parsed_responses[0] if isinstance(parsed_responses, list) else parsed_responses
+    response = parsed_responses[0] if isinstance(parsed_responses, list) and parsed_responses else None
 
     result = await service.handle_upload(
         file=file,

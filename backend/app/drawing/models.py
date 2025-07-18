@@ -4,8 +4,8 @@ from ..database import Base
 class DrawingTest(Base):
     __tablename__ = "drawing_tests"
 
-    drawing_id = Column(BigInteger, primary_key=True, index=True)
-    report_id = Column(BigInteger, ForeignKey("reports.report_id"), index=True)  # reports 테이블 참조로 수정
+    drawing_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    report_id = Column(Integer, ForeignKey("reports.report_id"))
     image_url = Column(String(255))
     risk_score = Column(Integer)
 
