@@ -76,7 +76,7 @@ const ReportPage: React.FC = () => {
 
   return (
     <Container>
-      <Background isSurveyActive={true}/>
+      <Background isSurveyActive={true} />
       <Header />
       <TitleArea>
         <FixedTitle>최종 분석 리포트</FixedTitle>
@@ -90,24 +90,24 @@ const ReportPage: React.FC = () => {
                 <ResponsiveContainer width="100%" height={340}>
                   <RadarChart outerRadius={130} data={radarData}>
                     <PolarGrid stroke="rgba(148, 163, 184, 0.2)" />
-                    <PolarAngleAxis 
-                      dataKey="subject" 
-                      stroke="#94A3B8" 
+                    <PolarAngleAxis
+                      dataKey="subject"
+                      stroke="#94A3B8"
                       fontSize={14}
                       tickLine={false}
                     />
-                    <PolarRadiusAxis 
-                      angle={30} 
-                      domain={[0, 100]} 
-                      tick={false} 
+                    <PolarRadiusAxis
+                      angle={30}
+                      domain={[0, 100]}
+                      tick={false}
                       axisLine={false}
                       stroke="rgba(148, 163, 184, 0.2)"
                     />
-                    <Radar 
-                      name="점수" 
-                      dataKey="score" 
-                      stroke="#A78BFA" 
-                      fill="#A78BFA" 
+                    <Radar
+                      name="점수"
+                      dataKey="score"
+                      stroke="#A78BFA"
+                      fill="#A78BFA"
                       fillOpacity={0.25}
                       strokeWidth={2}
                     />
@@ -128,15 +128,15 @@ const ReportPage: React.FC = () => {
             <SectionTitle>검사별 요약</SectionTitle>
             {examResults.map((exam, idx) => (
               <ExamCard key={idx}>
-                    <ExamName
-                    style={
-                      ["설문 검사 (AD-8)", "대화 검사", "그림 검사"].includes(exam.name)
-                        ? { color: "#5EEAD4" }
-                        : undefined
-                    }
-                  >
-                    {exam.name}
-      </ExamName>
+                <ExamName
+                  style={
+                    ["설문 검사 (AD-8)", "대화 검사", "그림 검사"].includes(exam.name)
+                      ? { color: "#5EEAD4" }
+                      : undefined
+                  }
+                >
+                  {exam.name}
+                </ExamName>
                 <ExamContent>
                   <ExamCol>
                     <Label>결과 요약</Label>
@@ -206,14 +206,14 @@ const TitleArea = styled.div`
   z-index: 2;
 `;
 
-  const FixedTitle = styled.h1`
+const FixedTitle = styled.h1`
     color: #FFFFFF;
     font-size: 2.5rem;
     text-align: center;
     font-weight: 600;
   `;
 
-  const MainContent = styled.div`
+const MainContent = styled.div`
   position: fixed;
   top: 9rem;  // Header(72px) + TitleArea(5rem) 높이 합
   left: 0;
@@ -272,6 +272,12 @@ const ChartCard = styled.div`
     width: 95vw;
     min-width: 0;
     padding: 1.2rem 1rem;
+  }
+  svg:focus {
+    outline: none;
+  }
+  svg {
+    outline: none;
   }
 `;
 const ScoreCard = styled.div`

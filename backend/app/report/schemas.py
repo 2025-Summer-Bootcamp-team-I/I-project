@@ -26,8 +26,25 @@ class ReportResponse(BaseModel):
     chat_result: str
     ad8test_result: str
     soundtest_result: str
+    final_result: str
     recommendation: str
     total_score: int
+    sound_score: int
+    ad8_score: int
+    drawing_score: int
+    text_score: int
+    memory_score: int
+    time_space_score: int
+    judgment_score: int
+    visual_score: int
+    language_score: int
+
+    class Config:
+        orm_mode = True
+
+class SimpleReportResponse(BaseModel):
+    report_id: int
+    user_id: int
 
     class Config:
         orm_mode = True
