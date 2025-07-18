@@ -1,25 +1,11 @@
 from sqlalchemy.orm import Session
-from .models import AD8Test, AD8Response
-from .schemas import AD8Request
+from app.report.models import Report
 
-def create_ad8_test(db: Session, data: AD8Request, risk_score: int):
-    # AD8Test 테이블에 먼저 저장
-    ad8_test = AD8Test(
-        report_id = data.reportId,
-        risk_score = risk_score
-    )
-    db.add(ad8_test)
-    db.commit()
-    db.refresh(ad8_test)
-
-    # 각 질문 응답을 AD8Response 테이블에 저장
-    for r in data.responses:
-        response = AD8Response(
-            ad8test_id = ad8_test.ad8test_id,
-            question_no = r.questionNo,
-            is_correct = r.isCorrect
-        )
-        db.add(response)
-
-    db.commit()
-    return ad8_test
+def update_ad8_result(db: Session, report_id: int, ad8_score: int, ad8_result: str):
+    db_report = db.query(Report).filter(Report.report_id == report_id).first()
+    if db_report:
+        db_report.ad8_score = ad8_score
+        db_report.ad8test_result = ad8_result
+        db.commit()
+        db.refresh(db_report)
+    return db_report
