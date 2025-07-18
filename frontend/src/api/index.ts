@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { LoginData, RegisterData, Message, AD8Request, AD8Result, ReportCreate, ReportResponse } from '../types/api.ts';
+import type { LoginData, RegisterData, Message, AD8Request, AD8Result, ReportCreate, ReportResponse, ResponseItem, DrawingTestResult } from '../types/api.ts';
 
 //axios 인스턴스 생성
 const axiosInstance = axios.create({
@@ -68,6 +68,26 @@ export const createEmptyReport = async (reportData: ReportCreate) => {
     return response.data;
   } catch (error) {
     console.error('Error creating empty report:', error);
+    throw error;
+  }
+};
+
+// 드로잉 테스트 업로드 API
+export const uploadDrawingTest = async (reportId: number, responses: ResponseItem[], file: File) => {
+  try {
+    const formData = new FormData();
+    formData.append('reportId', reportId.toString());
+    formData.append('responses', JSON.stringify(responses));
+    formData.append('file', file);
+
+    const response = await axiosInstance.post<DrawingTestResult>('/drawing', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error uploading drawing test:', error);
     throw error;
   }
 };
