@@ -66,12 +66,14 @@ async def global_exception_handler(request: Request, exc: Exception):
 # 라우터 등록
 app.include_router(auth_api.router, prefix="/user", tags=["User"])
 app.include_router(report_api.router)
-app.include_router(stt_api.router, prefix="/api", tags=["STT"])
+app.include_router(stt_api.router,tags=["STT"])
 app.include_router(drawing_api.router, prefix="/drawing", tags=["Drawing"])
 app.include_router(ad8_api.router, prefix="/ad8", tags=["AD8"])
 app.include_router(report_view.router)
 
-@app.get("/")
+# 기본 루트 엔드포인트
+@app.get("/", tags=["Default"])
+>>>>>>> 153c7e89092eca058bf5a635ebaa5e13d0e9a692
 def root():
     return {"msg": "API 서버는 현재 작동 중입니다!"}
 
