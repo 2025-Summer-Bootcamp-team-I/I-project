@@ -64,6 +64,7 @@ const AD8Page = () => {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           await submitAD8(ad8Data);
+          console.log('AD8 설문 결과 전송 성공');
         }
         setShowResult(true);
       } catch (error) {
