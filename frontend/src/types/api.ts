@@ -57,3 +57,12 @@ export interface ReportResponse {
   recommendation: string;
   total_score: number;
 }
+
+export interface DrawingTestResult {
+  drawing_id: number;
+  report_id: number;
+  image_url: string;
+  risk_score: number;
+  drawing_score: number;
+  drawingtest_result: string;
+}

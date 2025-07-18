@@ -1,8 +1,10 @@
 import React, { useRef, useEffect, useState } from "react";
 import styled from "styled-components";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import NeuralBackground from '../components/Background';
 import Header from "../components/Header";
+import { uploadDrawingTest } from '../api';
+import type { ResponseItem } from '../types/api';
 
 const PageContainer = styled.div`
   display: flex;
@@ -253,9 +255,36 @@ const DrawingPage: React.FC = () => {
   };
 
   // 제출
-  const handleSubmit = () => {
-    alert("그림이 제출되었습니다. (기능 구현 대기 중)");
-    navigate('/main', { state: { cardIndex: 2 } }); // 이전 페이지로 이동
+  const location = useLocation();
+  const reportId = location.state?.reportId || 1; // reportId가 없으면 임시로 1 사용
+
+  // 제출
+  const handleSubmit = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      alert("캔버스를 찾을 수 없습니다.");
+      return;
+    }
+
+    // responses 데이터 (현재는 하드코딩, 필요에 따라 동적으로 변경)
+    const responses: ResponseItem[] = [{ questionNo: 1, isCorrect: true }];
+
+    canvas.toBlob(async (blob) => {
+      if (blob) {
+        const file = new File([blob], "drawing.png", { type: "image/png" });
+        try {
+          const result = await uploadDrawingTest(reportId, responses, file);
+          console.log("Upload successful:", result);
+          alert("그림이 성공적으로 제출되었습니다.");
+          navigate('/main', { state: { cardIndex: 2 } }); // 이전 페이지로 이동
+        } catch (error) {
+          console.error("Error uploading drawing:", error);
+          alert("그림 제출 중 오류가 발생했습니다.");
+        }
+      } else {
+        alert("캔버스 이미지를 Blob으로 변환할 수 없습니다.");
+      }
+    }, "image/png");
   };
 
   return (
