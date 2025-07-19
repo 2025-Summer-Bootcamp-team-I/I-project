@@ -18,7 +18,7 @@ export interface ResponseItem {
 }
 
 export interface AD8Request {
-  reportId: number;
+  report_id: number;
   responses: ResponseItem[];
 }
 
@@ -56,4 +56,13 @@ export interface ReportResponse {
   soundtest_result: string;
   recommendation: string;
   total_score: number;
+}
+
+export interface DrawingTestResult {
+  drawing_id: number;
+  report_id: number;
+  image_url: string;
+  risk_score: number;
+  drawing_score: number;
+  drawingtest_result: string;
 }

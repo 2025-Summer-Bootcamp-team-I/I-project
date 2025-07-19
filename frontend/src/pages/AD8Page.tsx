@@ -1,16 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NeuralBackground from '../components/Background';
 import Header from '../components/Header';
 import useAD8TestStore from '../store/testStore';
 import styled from 'styled-components';
+import { createEmptyReport, submitAD8 } from '../api';
+import { useReportStore } from '../store/reportStore';
+import type { ReportResult } from '../store/reportStore';
 
 const AD8Page = () => {
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [showResult, setShowResult] = useState(false);
-  const { setResponse, completeTest } = useAD8TestStore();
+  const { setResponse, completeTest, responses } = useAD8TestStore();
+  const { report, setReport } = useReportStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const createReport = async () => {
+      try {
+        // 임시로 user_id를 1로 설정합니다. 실제로는 로그인된 사용자 정보를 사용해야 합니다.
+        const newReport = await createEmptyReport({ user_id: 1 });
+        setReport({ ...(report || {}), report_id: newReport.report_id } as ReportResult);
+      } catch (error) {
+        console.error("Failed to create empty report", error);
+        // 에러 처리 로직 (예: 사용자에게 알림)
+      }
+    };
+
+    createReport();
+  }, []);
 
   const questions = [
     "판단력에 문제가 생겼습니까?",
@@ -23,7 +43,7 @@ const AD8Page = () => {
     "생각이나 기억력에 매일 어려움을 겪습니까?"
   ];
 
-  const handleAnswer = (answer: boolean) => {
+  const handleAnswer = async (answer: boolean) => {
     const newAnswers = [...answers, answer];
     setAnswers(newAnswers);
 
@@ -33,8 +53,24 @@ const AD8Page = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
+      setIsSubmitting(true);
       completeTest();
-      setShowResult(true);
+      try {
+        if (report?.report_id) {
+          const ad8Data = {
+            report_id: report.report_id,
+            responses: responses.map(r => ({ questionNo: r.question_no, isCorrect: r.is_correct }))
+          };
+          await submitAD8(ad8Data);
+          console.log('AD8 설문 결과 전송 성공');
+        }
+        setShowResult(true);
+      } catch (error) {
+        console.error("Failed to submit AD8 results", error);
+        // 에러 처리
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -65,8 +101,8 @@ const AD8Page = () => {
               <QuestionNumber>질문 {currentQuestionIndex + 1}/{questions.length}</QuestionNumber>
               <Question>{questions[currentQuestionIndex]}</Question>
               <ButtonContainer>
-                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(true); }}>예</AnswerButton>
-                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(false); }}>아니오</AnswerButton>
+                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(true); }} disabled={isSubmitting}>예</AnswerButton>
+                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(false); }} disabled={isSubmitting}>아니오</AnswerButton>
               </ButtonContainer>
             </QuestionCard>
           </>
@@ -292,6 +328,8 @@ const HomeButton = styled.button`
   cursor: pointer;
   transition: all 0.2s ease;
   margin-top: 2vh;
+  opacity: ${props => props.disabled ? 0.6 : 1};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
 
   &:hover {
     background: #7fcebb;
