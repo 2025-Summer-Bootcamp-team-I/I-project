@@ -12,6 +12,7 @@ const AD8Page = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [showResult, setShowResult] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // 제출 상태 추가
   const { setResponse, completeTest } = useAD8TestStore();
   const { reportId, setAD8Completed } = useReportIdStore();
 
@@ -28,6 +29,8 @@ const AD8Page = () => {
   ];
 
   const handleAnswer = async (answer: boolean) => {
+    if (isSubmitting) return; // 이미 제출 중이면 중복 호출 방지
+
     const newAnswers = [...answers, answer];
     setAnswers(newAnswers);
 
@@ -37,6 +40,7 @@ const AD8Page = () => {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
       completeTest();
+      setIsSubmitting(true); // 제출 시작
       try {
         if (!reportId) {
           alert("리포트 ID를 찾을 수 없습니다. 메인 페이지에서 다시 시도해주세요.");
@@ -59,6 +63,8 @@ const AD8Page = () => {
         if (error instanceof Error) {
         }
         alert("결과 제출에 실패했습니다. 다시 시도해주세요.");
+      } finally {
+        setIsSubmitting(false); // 제출 완료 (성공 또는 실패)
       }
     }
   };
@@ -90,8 +96,8 @@ const AD8Page = () => {
               <QuestionNumber>질문 {currentQuestionIndex + 1}/{questions.length}</QuestionNumber>
               <Question>{questions[currentQuestionIndex]}</Question>
               <ButtonContainer>
-                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(true); }}>예</AnswerButton>
-                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(false); }}>아니오</AnswerButton>
+                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(true); }} disabled={isSubmitting}>예</AnswerButton>
+                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(false); }} disabled={isSubmitting}>아니오</AnswerButton>
               </ButtonContainer>
             </QuestionCard>
           </>
