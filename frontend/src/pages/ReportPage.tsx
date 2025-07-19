@@ -3,6 +3,7 @@ import styled from "styled-components";
 import Background from "../components/Background";
 import Header from "../components/Header";
 import { useNavigate } from "react-router-dom";
+import { useReportIdStore } from "../store/reportIdStore";
 import html2pdf from "html2pdf.js";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import { useReportStore } from "../store/reportStore";
@@ -11,6 +12,7 @@ import { useReportHistoryStore } from "../store/reportHistoryStore";
 const ReportPage: React.FC = () => {
   const navigate = useNavigate();
   const pdfRef = useRef<HTMLDivElement>(null);
+  const resetReportId = useReportIdStore((state) => state.resetReportId);
 
   // zustand에서 report와 addReport 불러옴
   const report = useReportStore((state) => state.report);
@@ -171,7 +173,10 @@ const ReportPage: React.FC = () => {
           <BottomSpacer />
         </ScrollContent>
         <BottomButtonBar>
-          <ActionBtn onClick={() => navigate("/main")}>다시하기</ActionBtn>
+          <ActionBtn onClick={() => {
+            resetReportId();
+            navigate("/main");
+          }}>다시하기</ActionBtn>
           <ActionBtn $pdf onClick={handleDownloadPdf}>PDF로 저장</ActionBtn>
         </BottomButtonBar>
       </MainContent>
