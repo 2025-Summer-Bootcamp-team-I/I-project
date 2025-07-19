@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 
 class ReportCreate(BaseModel):
-    user_id: int
     drawingtest_result: str = ""
     chat_result: str = ""
     ad8test_result: str = ""
