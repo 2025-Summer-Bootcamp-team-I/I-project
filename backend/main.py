@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 import logging
 import traceback
+from contextlib import asynccontextmanager
 
 from app import database
 from app.auth import models
@@ -33,16 +34,18 @@ def create_tables():
     models.Base.metadata.create_all(bind=database.engine)
     print("DB 테이블 생성 완료.")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    connect_to_db()
+    create_tables()
+    yield
+
 app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
+    lifespan=lifespan
 )
-
-@app.on_event("startup")
-def on_startup():
-    connect_to_db()
-    create_tables()
 
 app.add_middleware(
     CORSMiddleware,
@@ -73,7 +76,7 @@ app.include_router(report_view.router)
 
 # 기본 루트 엔드포인트
 @app.get("/", tags=["Default"])
->>>>>>> 153c7e89092eca058bf5a635ebaa5e13d0e9a692
+
 def root():
     return {"msg": "API 서버는 현재 작동 중입니다!"}
 
