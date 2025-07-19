@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
 
-def create_empty_report(db: Session, report: schemas.ReportCreate):
+def create_empty_report(db: Session, report: schemas.ReportCreate, user_id: int):
     new_report = models.Report(
-        user_id=report.user_id,
+        user_id=user_id,
         drawingtest_result=report.drawingtest_result,
         chat_result=report.chat_result,
         ad8test_result=report.ad8test_result,
