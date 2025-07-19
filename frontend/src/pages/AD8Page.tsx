@@ -16,8 +16,6 @@ const AD8Page = () => {
   const { reportId, setAD8Completed } = useReportIdStore();
 
   
-  
-
   const questions = [
     "판단력에 문제가 생겼습니까?",
     "어떤 일에 대한 흥미가 줄었습니까?",
