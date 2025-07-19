@@ -14,8 +14,9 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       const userData: LoginData = { email, password };
-      const response = await loginUser(userData);
-      console.log("로그인 성공:", response);
+      const loginResponse = await loginUser(userData);
+      console.log("로그인 성공:", loginResponse);
+
       navigate("/main");
     } catch (error) {
       alert("로그인 실패: 이메일 또는 비밀번호를 확인해주세요.");
