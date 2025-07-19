@@ -6,7 +6,7 @@ from app.auth.models import User
 class Report(Base):
     __tablename__ = "reports"  # 테이블명 소문자 복수형으로 통일
 
-    report_id = Column(BigInteger, primary_key=True, index=True)
+    report_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     drawingtest_result = Column(Text, nullable=False, default="")
