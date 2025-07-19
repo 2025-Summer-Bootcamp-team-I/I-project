@@ -4,6 +4,8 @@ import styled from 'styled-components';
 import NeuralBackground from '../components/Background';
 import Header from "../components/Header";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useReportIdStore } from "../store/reportIdStore";
+import { createEmptyReport } from "../api";
 
 
 const TitleContainer = styled.div`
@@ -293,12 +295,37 @@ const MainPage = () => {
     setHoveredCard(null); // 카드 변경 시 호버 상태 리셋
   };
 
-  const handleStartTest = (testId: string) => {
+  const handleStartTest = async (testId: string) => {
+    const { reportId, isAD8Completed, isDrawingCompleted, setReportId } = useReportIdStore.getState();
+
     if (testId === 'survey') {
+      if (isAD8Completed) {
+        alert("이미 AD8 검사를 완료하셨습니다.");
+        return;
+      }
+      if (!reportId) {
+        try {
+          const reportResponse = await createEmptyReport();
+          setReportId(reportResponse.report_id);
+          console.log("빈 리포트 생성 성공:", reportResponse);
+        } catch (error) {
+          alert("리포트 생성에 실패했습니다. 다시 시도해주세요.");
+          console.error("리포트 생성 에러:", error);
+          return;
+        }
+      }
       navigate('/ad8');
     } else if (testId === 'conversation') {
       navigate('/chatting-select');
     } else if (testId === 'drawing') {
+      if (isDrawingCompleted) {
+        alert("이미 그림 검사를 완료하셨습니다.");
+        return;
+      }
+      if (!reportId) {
+        alert("리포트 ID를 찾을 수 없습니다. 설문 검사를 먼저 진행해주세요.");
+        return;
+      }
       navigate('/drawing');
     } else {
       navigate('/report');
