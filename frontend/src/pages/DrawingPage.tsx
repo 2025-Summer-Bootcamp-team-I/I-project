@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import NeuralBackground from '../components/Background';
 import Header from "../components/Header";
 import { uploadDrawingTest } from '../api';
-import type { ResponseItem } from '../types/api';
 
 const PageContainer = styled.div`
   display: flex;
@@ -278,14 +277,11 @@ const DrawingPage: React.FC = () => {
 
     setIsSubmitting(true); // 제출 시작
 
-    // responses 데이터 (현재는 하드코딩, 필요에 따라 동적으로 변경)
-    const responses: ResponseItem[] = [{ questionNo: 1, isCorrect: true }];
-
     canvas.toBlob(async (blob) => {
       if (blob) {
         const file = new File([blob], "drawing.png", { type: "image/png" });
         try {
-          await uploadDrawingTest(reportId, responses, file);
+          await uploadDrawingTest(reportId, file);
           setDrawingCompleted(true); // 그림 검사 완료 상태로 변경
 
           alert("그림이 성공적으로 제출되었습니다.");
