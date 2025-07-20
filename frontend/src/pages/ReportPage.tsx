@@ -59,6 +59,7 @@ const ReportPage: React.FC = () => {
     },
     plotOptions: {
       pie: {
+        innerSize: '60%',
         allowPointSelect: true,
         cursor: 'pointer',
         depth: 35,
