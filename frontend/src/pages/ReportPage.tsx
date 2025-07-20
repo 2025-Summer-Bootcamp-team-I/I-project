@@ -79,9 +79,9 @@ const ReportPage: React.FC = () => {
       type: 'pie',
       name: '점유율',
       data: [
-        { name: '기억력/판단력', y: (report.memory_score + report.Judgment_score) / 2, color: '#A78BFA' },
-        { name: '언어능력', y: (report.language_score + report.text_score) / 2, color: '#5EEAD4' },
-        { name: '시공간/시각능력', y: (report.Time_Space_score + report.visual_score) / 2, color: '#FBBF24' },
+        { name: '기억력/판단력', y: (report.memory_score + report.Judgment_score) / 2, color: '#A78BFA', sliced: true },
+        { name: '언어능력', y: (report.language_score + report.text_score) / 2, color: '#5EEAD4', sliced: true },
+        { name: '시공간/시각능력', y: (report.Time_Space_score + report.visual_score) / 2, color: '#FBBF24', sliced: true },
       ]
     }],
     legend: {
