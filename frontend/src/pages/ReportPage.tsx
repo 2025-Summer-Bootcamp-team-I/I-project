@@ -5,7 +5,9 @@ import Header from "../components/Header";
 import { useNavigate } from "react-router-dom";
 import { useReportIdStore } from "../store/reportIdStore";
 import html2pdf from "html2pdf.js";
-import { PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
+import Highcharts from 'highcharts';
+import HighchartsReact from 'highcharts-react-official';
+import highcharts3d from 'highcharts/highcharts-3d';
 import { useReportStore } from "../store/reportStore";
 import { useReportHistoryStore } from "../store/reportHistoryStore";
 
@@ -32,11 +34,71 @@ const ReportPage: React.FC = () => {
 
   if (!report) return <Container>로딩 중...</Container>;
 
-  const pieData = [
-    { name: '기억력/판단력', value: (report.memory_score + report.Judgment_score) / 2 },
-    { name: '언어능력', value: (report.language_score + report.text_score) / 2 },
-    { name: '시공간/시각능력', value: (report.Time_Space_score + report.visual_score) / 2 },
-  ];
+  const chartOptions: Highcharts.Options = {
+    chart: {
+      type: 'pie',
+      backgroundColor: 'transparent',
+      options3d: {
+        enabled: true,
+        alpha: 45,
+        beta: 0,
+        depth: 50,
+        viewDistance: 25
+      }
+    },
+    title: {
+      text: '',
+    },
+    tooltip: {
+      pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+    },
+    accessibility: {
+      point: {
+        valueSuffix: '%'
+      }
+    },
+    plotOptions: {
+      pie: {
+        allowPointSelect: true,
+        cursor: 'pointer',
+        depth: 35,
+        dataLabels: {
+          enabled: true,
+          format: '{point.name}',
+          style: {
+            color: '#E2E8F0',
+            fontSize: '16px',
+            textOutline: 'none'
+          }
+        },
+        showInLegend: true
+      }
+    },
+    series: [{
+      type: 'pie',
+      name: '점유율',
+      data: [
+        { name: '기억력/판단력', y: (report.memory_score + report.Judgment_score) / 2, color: '#A78BFA' },
+        { name: '언어능력', y: (report.language_score + report.text_score) / 2, color: '#5EEAD4' },
+        { name: '시공간/시각능력', y: (report.Time_Space_score + report.visual_score) / 2, color: '#FBBF24' },
+      ]
+    }],
+    legend: {
+      itemStyle: {
+        color: '#E2E8F0',
+        fontWeight: 'bold'
+      },
+      itemHoverStyle: {
+        color: '#FFFFFF'
+      },
+      itemHiddenStyle: {
+        color: '#666666'
+      }
+    },
+    credits: {
+      enabled: false
+    }
+  };
 
   const COLORS = ['#A78BFA', '#5EEAD4', '#FBBF24'];
 
@@ -87,29 +149,10 @@ const ReportPage: React.FC = () => {
             {/* 상단 종합 */}
             <TopSection>
               <PieChartWrapper>
-                <ResponsiveContainer width="100%" height={340}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={80}
-                      outerRadius={130}
-                      fill="#8884d8"
-                      paddingAngle={5}
-                      dataKey="value"
-                      nameKey="name"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Legend 
-                      iconType="circle"
-                      formatter={(value) => <span style={{ color: '#E2E8F0' }}>{value}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                <HighchartsReact
+                  highcharts={Highcharts}
+                  options={chartOptions}
+                />
               </PieChartWrapper>
             </TopSection>
 
@@ -247,8 +290,8 @@ const TopSection = styled.div`
 
 const PieChartWrapper = styled.div`
   position: relative;
-  width: 450px;
-  height: 340px;
+  width: 600px;
+  height: 400px;
   svg:focus {
     outline: none;
   }
