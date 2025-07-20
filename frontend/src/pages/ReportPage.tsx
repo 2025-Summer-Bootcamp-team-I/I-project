@@ -5,7 +5,7 @@ import Header from "../components/Header";
 import { useNavigate } from "react-router-dom";
 import { useReportIdStore } from "../store/reportIdStore";
 import html2pdf from "html2pdf.js";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
 import { useReportStore } from "../store/reportStore";
 import { useReportHistoryStore } from "../store/reportHistoryStore";
 
@@ -32,15 +32,13 @@ const ReportPage: React.FC = () => {
 
   if (!report) return <Container>로딩 중...</Container>;
 
-  // DB 컬럼 순서대로 점수 표시
-  const radarData = [
-    { subject: "기억력", score: report.memory_score },
-    { subject: "언어능력", score: report.language_score },
-    { subject: "판단력", score: report.Judgment_score },
-    { subject: "시공간", score: report.Time_Space_score },
-    { subject: "시각", score: report.visual_score },
-    { subject: "텍스트", score: report.text_score },
+  const pieData = [
+    { name: '기억력/판단력', value: (report.memory_score + report.Judgment_score) / 2 },
+    { name: '언어능력', value: (report.language_score + report.text_score) / 2 },
+    { name: '시공간/시각능력', value: (report.Time_Space_score + report.visual_score) / 2 },
   ];
+
+  const COLORS = ['#A78BFA', '#5EEAD4', '#FBBF24'];
 
   // 각 검사별 요약
   const examResults = [
@@ -86,45 +84,34 @@ const ReportPage: React.FC = () => {
       <MainContent>
         <ScrollContent>
           <PdfTarget ref={pdfRef}>
-            {/* 상단 종합(레이더+카드) */}
-            <TopGrid>
-              <ChartCard>
+            {/* 상단 종합 */}
+            <TopSection>
+              <PieChartWrapper>
                 <ResponsiveContainer width="100%" height={340}>
-                  <RadarChart outerRadius={130} data={radarData}>
-                    <PolarGrid stroke="rgba(148, 163, 184, 0.2)" />
-                    <PolarAngleAxis
-                      dataKey="subject"
-                      stroke="#94A3B8"
-                      fontSize={14}
-                      tickLine={false}
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={80}
+                      outerRadius={130}
+                      fill="#8884d8"
+                      paddingAngle={5}
+                      dataKey="value"
+                      nameKey="name"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Legend 
+                      iconType="circle"
+                      formatter={(value) => <span style={{ color: '#E2E8F0' }}>{value}</span>}
                     />
-                    <PolarRadiusAxis
-                      angle={30}
-                      domain={[0, 100]}
-                      tick={false}
-                      axisLine={false}
-                      stroke="rgba(148, 163, 184, 0.2)"
-                    />
-                    <Radar
-                      name="점수"
-                      dataKey="score"
-                      stroke="#A78BFA"
-                      fill="#A78BFA"
-                      fillOpacity={0.25}
-                      strokeWidth={2}
-                    />
-                  </RadarChart>
+                  </PieChart>
                 </ResponsiveContainer>
-              </ChartCard>
-              <ScoreCard>
-                <ScoreTitle>종합 평가</ScoreTitle>
-                <ScoreLabel>종합 인지 점수</ScoreLabel>
-                <ScoreValue>
-                  {report.total_score} <span>/100</span>
-                </ScoreValue>
-                <ScoreDesc>{report.final_result}</ScoreDesc>
-              </ScoreCard>
-            </TopGrid>
+              </PieChartWrapper>
+            </TopSection>
 
             {/* 검사별 요약 */}
             <SectionTitle>검사별 요약</SectionTitle>
@@ -251,33 +238,17 @@ const PdfTarget = styled.div`
   margin: 0 auto;
   padding: 0 2rem;
 `;
-const TopGrid = styled.div`
+
+const TopSection = styled.div`
+  margin: 3rem auto 4rem;
   display: flex;
   justify-content: center;
-  align-items: stretch;
-  gap: 1.2rem;
-  margin: 5rem auto 2rem;  // 1rem -> 5rem으로 상단 여백 증가
-  max-width: 680px;
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-    margin: 4rem auto 1.5rem;  // 모바일에서도 상단 여백 조정
-  }
 `;
-const ChartCard = styled.div`
-  background: transparent !important;
-  border: none !important;
-  border-radius: 1.5rem;
-  box-shadow: none !important;
-  padding: 1.2rem;
-  min-width: 350px;  
-  max-width: 350px; 
-  @media (max-width: 1024px) {
-    width: 95vw;
-    min-width: 0;
-    padding: 1.2rem 1rem;
-  }
+
+const PieChartWrapper = styled.div`
+  position: relative;
+  width: 450px;
+  height: 340px;
   svg:focus {
     outline: none;
   }
@@ -285,56 +256,7 @@ const ChartCard = styled.div`
     outline: none;
   }
 `;
-const ScoreCard = styled.div`
-  background: rgba(30, 30, 45, 0.5);
-  border: 1px solid rgba(167, 139, 250, 0.1);
-  border-radius: 1.2rem;  // 1.5rem에서 1.2rem로 감소
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  padding: 1.8rem;  // 2rem에서 1.8rem으로 감소
-  min-width: 250px;  // 280px에서 250px로 감소
-  max-width: 290px;  // 320px에서 290px로 감소
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
-  backdrop-filter: blur(10px);
-  @media (max-width: 1024px) {
-    width: 95vw;
-    min-width: 0;
-    padding: 1.8rem;
-  }
-`;
-const ScoreTitle = styled.div`
-  color: #E2E8F0;
-  font-size: 1.2rem;  // 1.3rem에서 1.2rem으로 감소
-  font-weight: 600;
-  margin-bottom: 0.7rem;  // 0.8rem에서 0.7rem으로 감소
-`;
-const ScoreLabel = styled.div`
-  color: #94A3B8;
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-`;
-const ScoreValue = styled.div`
-  font-size: 2.5rem;  // 2.8rem에서 2.5rem으로 감소
-  font-weight: 700;
-  color: #A78BFA;
-  letter-spacing: -1px;
-  margin-bottom: 0.7rem;  // 0.8rem에서 0.7rem으로 감소
-  span {
-    font-size: 1.1rem;  // 1.2rem에서 1.1rem으로 감소
-    color: #94A3B8;
-    margin-left: 0.5rem;
-    font-weight: 500;
-  }
-`;
-const ScoreDesc = styled.p`
-  font-size: 1.1rem;
-  color: #CBD5E1;
-  line-height: 1.6;
-  margin: 0;
-`;
+
 const SectionTitle = styled.h2`
   font-size: 1.3rem;
   font-weight: 600;
