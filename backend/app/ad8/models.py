@@ -5,7 +5,7 @@ class AD8Test(Base):
     __tablename__ = "ad8_test"
 
     ad8test_id = Column(Integer, primary_key=True, index=True)
-    # report_id = Column(Integer, ForeignKey("report.report_id"), nullable=False)
+    report_id = Column(Integer, ForeignKey("reports.report_id"), nullable=False)
     risk_score = Column(Integer, nullable=False)
 
 class AD8Response(Base):
