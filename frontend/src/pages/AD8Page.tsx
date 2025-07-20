@@ -1,37 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NeuralBackground from '../components/Background';
 import Header from '../components/Header';
 import useAD8TestStore from '../store/testStore';
 import styled from 'styled-components';
-import { createEmptyReport, submitAD8 } from '../api';
-import { useReportStore } from '../store/reportStore';
-import type { ReportResult } from '../store/reportStore';
+import { submitAD8 } from '../api';
+import { useReportIdStore } from '../store/reportIdStore';
 
 const AD8Page = () => {
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [showResult, setShowResult] = useState(false);
-  const { setResponse, completeTest, responses } = useAD8TestStore();
-  const { report, setReport } = useReportStore();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // 제출 상태 추가
+  const { setResponse, completeTest } = useAD8TestStore();
+  const { reportId, setAD8Completed } = useReportIdStore();
 
-  useEffect(() => {
-    const createReport = async () => {
-      try {
-        // 임시로 user_id를 1로 설정합니다. 실제로는 로그인된 사용자 정보를 사용해야 합니다.
-        const newReport = await createEmptyReport({ user_id: 1 });
-        setReport({ ...(report || {}), report_id: newReport.report_id } as ReportResult);
-      } catch (error) {
-        console.error("Failed to create empty report", error);
-        // 에러 처리 로직 (예: 사용자에게 알림)
-      }
-    };
-
-    createReport();
-  }, []);
-
+  
   const questions = [
     "판단력에 문제가 생겼습니까?",
     "어떤 일에 대한 흥미가 줄었습니까?",
@@ -44,32 +29,42 @@ const AD8Page = () => {
   ];
 
   const handleAnswer = async (answer: boolean) => {
+    if (isSubmitting) return; // 이미 제출 중이면 중복 호출 방지
+
     const newAnswers = [...answers, answer];
     setAnswers(newAnswers);
 
-    // 현재 질문에 대한 응답을 저장
     setResponse(currentQuestionIndex + 1, answer);
 
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      setIsSubmitting(true);
       completeTest();
+      setIsSubmitting(true); // 제출 시작
       try {
-        if (report?.report_id) {
-          const ad8Data = {
-            report_id: report.report_id,
-            responses: responses.map(r => ({ questionNo: r.question_no, isCorrect: r.is_correct }))
-          };
-          await submitAD8(ad8Data);
-          console.log('AD8 설문 결과 전송 성공');
+        if (!reportId) {
+          alert("리포트 ID를 찾을 수 없습니다. 메인 페이지에서 다시 시도해주세요.");
+          navigate('/main');
+          return;
         }
+
+        // 최신 responses 상태를 직접 가져옴
+        const latestResponses = useAD8TestStore.getState().responses;
+
+        const ad8Data = {
+          report_id: reportId,
+          responses: latestResponses.map(r => ({ questionNo: r.question_no, isCorrect: r.is_correct }))
+        };
+
+        await submitAD8(ad8Data);
+        setAD8Completed(true); // AD8 검사 완료 상태로 변경
         setShowResult(true);
       } catch (error) {
-        console.error("Failed to submit AD8 results", error);
-        // 에러 처리
+        if (error instanceof Error) {
+        }
+        alert("결과 제출에 실패했습니다. 다시 시도해주세요.");
       } finally {
-        setIsSubmitting(false);
+        setIsSubmitting(false); // 제출 완료 (성공 또는 실패)
       }
     }
   };

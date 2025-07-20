@@ -1,6 +1,7 @@
+import { useReportIdStore } from "../store/reportIdStore";
 import React, { useRef, useEffect, useState } from "react";
 import styled from "styled-components";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import NeuralBackground from '../components/Background';
 import Header from "../components/Header";
 import { uploadDrawingTest } from '../api';
@@ -145,6 +146,7 @@ const DrawingPage: React.FC = () => {
   // 색상, 굵기 상태 제거됨
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPos, setLastPos] = useState<{ x: number; y: number } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   // 캔버스 초기화 및 시계판 그리기
@@ -255,16 +257,26 @@ const DrawingPage: React.FC = () => {
   };
 
   // 제출
-  const location = useLocation();
-  const reportId = location.state?.reportId || 1; // reportId가 없으면 임시로 1 사용
+  const { reportId, setDrawingCompleted } = useReportIdStore();
+
+  
 
   // 제출
   const handleSubmit = async () => {
+    if (isSubmitting) return; // 이미 제출 중이면 중복 호출 방지
+
+    if (!reportId) {
+      alert("리포트 ID를 찾을 수 없습니다. AD8 검사를 먼저 진행해주세요.");
+      navigate('/main');
+      return;
+    }
     const canvas = canvasRef.current;
     if (!canvas) {
       alert("캔버스를 찾을 수 없습니다.");
       return;
     }
+
+    setIsSubmitting(true); // 제출 시작
 
     // responses 데이터 (현재는 하드코딩, 필요에 따라 동적으로 변경)
     const responses: ResponseItem[] = [{ questionNo: 1, isCorrect: true }];
@@ -273,16 +285,20 @@ const DrawingPage: React.FC = () => {
       if (blob) {
         const file = new File([blob], "drawing.png", { type: "image/png" });
         try {
-          const result = await uploadDrawingTest(reportId, responses, file);
-          console.log("Upload successful:", result);
+          await uploadDrawingTest(reportId, responses, file);
+          setDrawingCompleted(true); // 그림 검사 완료 상태로 변경
+
           alert("그림이 성공적으로 제출되었습니다.");
           navigate('/main', { state: { cardIndex: 2 } }); // 이전 페이지로 이동
         } catch (error) {
           console.error("Error uploading drawing:", error);
           alert("그림 제출 중 오류가 발생했습니다.");
+        } finally {
+          setIsSubmitting(false); // 제출 완료 (성공 또는 실패)
         }
       } else {
         alert("캔버스 이미지를 Blob으로 변환할 수 없습니다.");
+        setIsSubmitting(false); // 제출 완료 (실패)
       }
     }, "image/png");
   };
@@ -318,8 +334,8 @@ const DrawingPage: React.FC = () => {
             />
           </CanvasWrapper>
           <Controls>
-            <Button className="clear" onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleClear(); }}>모두 지우기</Button>
-            <Button className="submit" onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleSubmit(); }}>제출하기</Button>
+            <Button className="clear" onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleClear(); }} disabled={isSubmitting}>모두 지우기</Button>
+            <Button className="submit" onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleSubmit(); }} disabled={isSubmitting}>{isSubmitting ? "제출 중..." : "제출하기"}</Button>
           </Controls>
         </Inner>
       </PageContainer>

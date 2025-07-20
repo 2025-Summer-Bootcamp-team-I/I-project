@@ -1,10 +1,24 @@
 import axios from 'axios';
-import type { LoginData, RegisterData, Message, AD8Request, AD8Result, ReportCreate, ReportResponse, ResponseItem, DrawingTestResult } from '../types/api.ts';
+import type { LoginData, RegisterData, Message, AD8Request, AD8Result, ReportResponse, ResponseItem, DrawingTestResult } from '../types/api.ts';
 
-//axios 인스턴스 생성
+// axios 인스턴스 생성
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:8000',
 });
+
+// 요청 인터셉터: 모든 요청에 access_token을 헤더에 추가
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // 회원가입 API
 export const registerUser = async (userData: RegisterData) => {
@@ -17,10 +31,13 @@ export const registerUser = async (userData: RegisterData) => {
   }
 };
 
-// 로그인 API
+// 로그인 API: 로그인 성공 시 access_token을 localStorage에 저장
 export const loginUser = async (userData: LoginData) => {
   try {
     const response = await axiosInstance.post('/user/login', userData);
+    if (response.data.access_token) {
+      localStorage.setItem('access_token', response.data.access_token);
+    }
     return response.data;
   } catch (error) {
     console.error('Error logging in user:', error);
@@ -28,10 +45,11 @@ export const loginUser = async (userData: LoginData) => {
   }
 };
 
-// 로그아웃 API
+// 로그아웃 API: 로그아웃 시 localStorage에서 access_token 제거
 export const logoutUser = async () => {
   try {
     const response = await axiosInstance.post<Message>('/user/logout');
+    localStorage.removeItem('access_token');
     return response.data;
   } catch (error) {
     console.error('Error logging out user:', error);
@@ -62,9 +80,9 @@ export const submitAD8 = async (ad8Data: AD8Request) => {
 };
 
 // 빈 리포트 생성 API
-export const createEmptyReport = async (reportData: ReportCreate) => {
+export const createEmptyReport = async () => {
   try {
-    const response = await axiosInstance.post<ReportResponse>('/reports/empty', reportData);
+    const response = await axiosInstance.post<ReportResponse>('/reports/empty');
     return response.data;
   } catch (error) {
     console.error('Error creating empty report:', error);
