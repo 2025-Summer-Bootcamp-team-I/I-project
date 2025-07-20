@@ -65,12 +65,15 @@ const ReportPage: React.FC = () => {
         depth: 35,
         dataLabels: {
           enabled: true,
-          format: '{point.name}',
+          format: '<b>{point.name}</b><br>{point.description}',
+          useHTML: true,
           style: {
             color: '#E2E8F0',
-            fontSize: '16px',
+            fontSize: '13px',
+            textAlign: 'center',
             textOutline: 'none'
-          }
+          },
+          distance: 40,
         },
         showInLegend: true
       }
@@ -79,9 +82,9 @@ const ReportPage: React.FC = () => {
       type: 'pie',
       name: '점유율',
       data: [
-        { name: '기억력/판단력', y: (report.memory_score + report.Judgment_score) / 2, color: '#A78BFA', sliced: true },
-        { name: '언어능력', y: (report.language_score + report.text_score) / 2, color: '#5EEAD4', sliced: true },
-        { name: '시공간/시각능력', y: (report.Time_Space_score + report.visual_score) / 2, color: '#FBBF24', sliced: true },
+        { name: '기억력/판단력', y: (report.memory_score + report.Judgment_score) / 2, color: '#A78BFA', sliced: true, description: '기억 및 판단 능력' },
+        { name: '언어능력', y: (report.language_score + report.text_score) / 2, color: '#5EEAD4', sliced: true, description: '원활한 언어 소통 능력' },
+        { name: '시공간/시각능력', y: (report.Time_Space_score + report.visual_score) / 2, color: '#FBBF24', sliced: true, description: '공간 및 시각 인지 능력' },
       ]
     }],
     legend: {
