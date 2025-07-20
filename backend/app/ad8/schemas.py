@@ -29,3 +29,4 @@ class AD8Request(BaseModel):
 class AD8Result(BaseModel):
     risk_score: int
     message: str
+    risk_level: str
