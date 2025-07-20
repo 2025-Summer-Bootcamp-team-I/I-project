@@ -23,3 +23,4 @@ tenacity
 openai
 python-dotenv
 python-multipart
+requests
