@@ -66,3 +66,11 @@ export interface DrawingTestResult {
   drawing_score: number;
   drawingtest_result: string;
 }
+
+export interface STTResult {
+  text: string;
+}
+
+export interface TTSRequest {
+  text: string;
+}
