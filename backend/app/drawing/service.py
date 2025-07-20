@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from . import utils, crud
 from sqlalchemy.orm import Session
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 import re
-from ..report.models import Report
+from ..report.models import Report, RiskLevel
 
 env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
 load_dotenv(env_path)
@@ -93,20 +93,32 @@ def call_gpt_vision(image_path: str):
     drawingtest_result = result.get("drawingtest_result", "")
     return risk_score, drawing_score, drawingtest_result
 
+def get_drawing_risk_level(score: int) -> str:
+    if score >= 4:
+        return RiskLevel.GOOD.value
+    elif score == 3:
+        return RiskLevel.CAUTION.value
+    else:
+        return RiskLevel.DANGER.value
+
 async def handle_upload(
     file,                  # UploadFile
     report_id: int,        # Form 데이터(reportId)
-    responses,             # Form 데이터(responses, 파싱된 리스트)
     db: Session = Depends()
 ):
     """
     file: 업로드된 이미지 파일
     report_id: 연결할 리포트 ID
-    responses: [{"questionNo": int, "isCorrect": bool}, ...]
     db: DB 세션
     """
+    # 리포트 존재 여부 확인
+    db_report = db.query(Report).filter(Report.report_id == report_id).first()
+    if not db_report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
     image_path = await utils.save_file_locally(file)
     risk_score, drawing_score, drawingtest_result = call_gpt_vision(image_path)
+    risk_level = get_drawing_risk_level(drawing_score)
 
     # drawing_test 테이블에는 이미지 URL과 risk_score만 저장
     db_obj = crud.create_drawing_test(
@@ -118,8 +130,22 @@ async def handle_upload(
 
     # Report 테이블 업데이트
     from sqlalchemy import text
-    update_stmt = text("UPDATE reports SET drawing_score = :score, drawingtest_result = :result WHERE report_id = :id")
-    db.execute(update_stmt, {"score": drawing_score, "result": drawingtest_result, "id": report_id})
+    update_stmt = text("""
+        UPDATE reports 
+        SET drawing_score = :score, 
+            drawingtest_result = :result,
+            drawing_risk = :risk_level 
+        WHERE report_id = :id
+    """)
+    db.execute(
+        update_stmt, 
+        {
+            "score": drawing_score, 
+            "result": drawingtest_result, 
+            "risk_level": risk_level,
+            "id": report_id
+        }
+    )
     db.commit()
 
     # API 응답은 기존과 동일하게 모든 정보를 포함
@@ -129,5 +155,6 @@ async def handle_upload(
         "image_url": db_obj.image_url,
         "risk_score": risk_score,
         "drawing_score": drawing_score,
-        "drawingtest_result": drawingtest_result
+        "drawingtest_result": drawingtest_result,
+        "risk_level": risk_level
     }
