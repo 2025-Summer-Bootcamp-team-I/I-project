@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import styled from "styled-components";
 import Background from "../components/Background";
 import Header from "../components/Header";
@@ -10,6 +10,7 @@ import HighchartsReact from 'highcharts-react-official';
 import highcharts3d from 'highcharts/highcharts-3d';
 import { useReportStore } from "../store/reportStore";
 import { useReportHistoryStore } from "../store/reportHistoryStore";
+import lightbulbIcon from '../assets/imgs/lightbulb.png';
 
 const ReportPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +20,16 @@ const ReportPage: React.FC = () => {
   // zustand에서 report와 addReport 불러옴
   const report = useReportStore((state) => state.report);
   const addReport = useReportHistoryStore((state) => state.addReport);
+
+  const [imgDimensions, setImgDimensions] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      setImgDimensions({ width: img.width, height: img.height });
+    };
+    img.src = lightbulbIcon;
+  }, []);
 
   // 컴포넌트가 마운트될 때 report를 history에 추가
   useEffect(() => {
@@ -40,17 +51,57 @@ const ReportPage: React.FC = () => {
       backgroundColor: 'transparent',
       options3d: {
         enabled: true,
-        alpha: 45,
+        alpha: 55,
         beta: 0,
         depth: 50,
         viewDistance: 25
+      },
+      events: {
+        render: function (this: Highcharts.Chart) {
+          if (imgDimensions.width === 0 || imgDimensions.height === 0) {
+            return; // Don't render image until dimensions are loaded
+          }
+
+          const maxSize = 170;
+          const { width: originalWidth, height: originalHeight } = imgDimensions;
+          
+          let newWidth, newHeight;
+          if (originalWidth > originalHeight) {
+            newWidth = maxSize;
+            newHeight = (maxSize * originalHeight) / originalWidth;
+          } else {
+            newHeight = maxSize;
+            newWidth = (maxSize * originalWidth) / originalHeight;
+          }
+
+          const centerX = this.plotLeft + this.plotWidth * 0.5;
+          const centerY = this.plotTop + this.plotHeight * 0.5;
+          const yOffset = 50; // 이미지를 위로 올릴 값
+
+          if ((this as any).customImage) {
+            (this as any).customImage.attr({
+              x: centerX - newWidth / 2,
+              y: centerY - newHeight / 2 - yOffset,
+              width: newWidth,
+              height: newHeight,
+            }).toFront();
+          } else {
+            (this as any).customImage = this.renderer.image(
+              lightbulbIcon,
+              centerX - newWidth / 2,
+              centerY - newHeight / 2 - yOffset,
+              newWidth,
+              newHeight
+            ).add().toFront();
+          }
+        }
       }
     },
     title: {
       text: '',
     },
     tooltip: {
-      pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+      enabled: false
     },
     accessibility: {
       point: {
@@ -59,18 +110,24 @@ const ReportPage: React.FC = () => {
     },
     plotOptions: {
       pie: {
-        innerSize: '60%',
+        innerSize: '50%',
         allowPointSelect: true,
         cursor: 'pointer',
         depth: 35,
+        startAngle: 45,
         dataLabels: {
           enabled: true,
-          format: '<b>{point.name}</b><br>{point.description}',
+          formatter: function (this: Highcharts.Point) {
+            const pointOptions = this.options as { description?: string };
+            return `<div style="width: 120px; text-align: center; white-space: normal;">
+                        <b style="color:${this.color};">${this.name}</b>
+                        <br>
+                        <span style="color:#E2E8F0;">${pointOptions.description || ''}</span>
+                    </div>`;
+          },
           useHTML: true,
           style: {
-            color: '#E2E8F0',
             fontSize: '13px',
-            textAlign: 'center',
             textOutline: 'none'
           },
           distance: 40,
@@ -82,9 +139,9 @@ const ReportPage: React.FC = () => {
       type: 'pie',
       name: '점유율',
       data: [
-        { name: '기억력/판단력', y: (report.memory_score + report.Judgment_score) / 2, color: '#A78BFA', sliced: true, description: '기억 및 판단 능력' },
-        { name: '언어능력', y: (report.language_score + report.text_score) / 2, color: '#5EEAD4', sliced: true, description: '원활한 언어 소통 능력' },
-        { name: '시공간/시각능력', y: (report.Time_Space_score + report.visual_score) / 2, color: '#FBBF24', sliced: true, description: '공간 및 시각 인지 능력' },
+        { name: '기억력/판단력', y: (report.memory_score + report.Judgment_score) / 2, color: '#EE0000', sliced: true, description: '기억 및 판단 능력' },
+        { name: '언어능력', y: (report.language_score + report.text_score) / 2, color: '#18A092', sliced: true, description: '원활한 언어 소통 능력' },
+        { name: '시공간/시각능력', y: (report.Time_Space_score + report.visual_score) / 2, color: '#F7D46E', sliced: true, description: '공간 및 시각 인지 능력' },
       ]
     }],
     legend: {
