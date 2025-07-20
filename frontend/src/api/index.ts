@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { LoginData, RegisterData, Message, AD8Request, AD8Result, ReportResponse, ResponseItem, DrawingTestResult } from '../types/api.ts';
+import type { LoginData, RegisterData, Message, AD8Request, AD8Result, ReportResponse, DrawingTestResult } from '../types/api.ts';
 
 // axios 인스턴스 생성
 const axiosInstance = axios.create({
@@ -91,11 +91,10 @@ export const createEmptyReport = async () => {
 };
 
 // 드로잉 테스트 업로드 API
-export const uploadDrawingTest = async (reportId: number, responses: ResponseItem[], file: File) => {
+export const uploadDrawingTest = async (reportId: number, file: File) => {
   try {
     const formData = new FormData();
     formData.append('reportId', reportId.toString());
-    formData.append('responses', JSON.stringify(responses));
     formData.append('file', file);
 
     const response = await axiosInstance.post<DrawingTestResult>('/drawing', formData, {
@@ -109,3 +108,44 @@ export const uploadDrawingTest = async (reportId: number, responses: ResponseIte
     throw error;
   }
 };
+
+// STT API
+export const speechToText = async (file: File) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await axiosInstance.post<{ text: string }>('/stt', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error with STT API:', error);
+    throw error;
+  }
+};
+
+// TTS API
+export const textToSpeech = async (text: string) => {
+  try {
+    const response = await axiosInstance.post('/tts', { text });
+    return response.data;
+  } catch (error) {
+    console.error('Error with TTS API:', error);
+    throw error;
+  }
+};
+
+// 리포트 결과 조회 API
+export const getReportResult = async (reportId: number) => {
+  try {
+    const response = await axiosInstance.get<ReportResponse>(`/reports/${reportId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting report result:', error);
+    throw error;
+  }
+};
+
