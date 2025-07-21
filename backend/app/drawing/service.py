@@ -93,13 +93,22 @@ def call_gpt_vision(image_path: str):
     drawingtest_result = result.get("drawingtest_result", "")
     return risk_score, drawing_score, drawingtest_result
 
-def get_drawing_risk_level(score: int) -> str:
-    if score >= 4:
-        return RiskLevel.GOOD.value
-    elif score == 3:
-        return RiskLevel.CAUTION.value
-    else:
-        return RiskLevel.DANGER.value
+def get_drawing_risk_level(drawing_score: int) -> RiskLevel:
+    """
+    그림 분석 점수에 따른 위험도 평가
+    
+    Args:
+        drawing_score: 그림 분석 점수 (0-5)
+        
+    Returns:
+        RiskLevel: 위험도 enum 객체
+    """
+    if drawing_score >= 4:  # 5~4: 양호
+        return RiskLevel.GOOD
+    elif drawing_score == 3:  # 3: 경계
+        return RiskLevel.CAUTION
+    else:  # 0~2: 위험
+        return RiskLevel.DANGER
 
 async def handle_upload(
     file,                  # UploadFile
@@ -128,25 +137,13 @@ async def handle_upload(
         risk_score=risk_score,
     )
 
-    # Report 테이블 업데이트
-    from sqlalchemy import text
-    update_stmt = text("""
-        UPDATE reports 
-        SET drawing_score = :score, 
-            drawingtest_result = :result,
-            drawing_risk = :risk_level 
-        WHERE report_id = :id
-    """)
-    db.execute(
-        update_stmt, 
-        {
-            "score": drawing_score, 
-            "result": drawingtest_result, 
-            "risk_level": risk_level,
-            "id": report_id
-        }
-    )
-    db.commit()
+    # Report 테이블 업데이트 - ORM 사용으로 변경
+    report = db.query(Report).filter(Report.report_id == report_id).first()
+    if report:
+        report.drawing_score = drawing_score
+        report.drawingtest_result = drawingtest_result
+        report.drawing_risk = risk_level
+        db.commit()
 
     # API 응답은 기존과 동일하게 모든 정보를 포함
     return {
