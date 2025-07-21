@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from "react";
-import styled from "styled-components";
+import React, { useRef, useEffect, useState, useMemo } from "react";
+import styled, { createGlobalStyle } from "styled-components";
 import Background from "../components/Background";
 import Header from "../components/Header";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,67 @@ import { useReportStore } from "../store/reportStore";
 import { useReportHistoryStore } from "../store/reportHistoryStore";
 import lightbulbIcon from '../assets/imgs/lightbulb.png';
 
+const HighchartsGlobalStyle = createGlobalStyle`
+  /* Highcharts 백그라운드 */
+  .highcharts-background {
+    fill: transparent;
+  }
+
+  /* 데이터 레이블 커스텀 스타일 */
+  .custom-datalabel {
+    width: 290px;
+    white-space: normal;
+    
+    &.dialog-label {
+      position: relative;
+      left: -30px;
+      text-align: right;
+    }
+
+    &.drawing-label {
+      position: relative;
+      left: 30px;
+      text-align: left;
+    }
+    
+    b {
+      font-size: 17px;
+      
+      .status {
+        font-size: 13px;
+      }
+    }
+
+    &.drawing-label b { color: #EE0000; }
+    &.dialog-label b { color: #18A092; }
+    &.survey-label b { color: #F7D46E; }
+
+    .status-danger { color: #EF4444; }
+    .status-warning { color: #FBBF24; }
+    .status-safe { color: #22C55E; }
+
+    .description {
+      color: #E2E8F0;
+      font-size: 13px;
+    }
+  }
+
+  /* 데이터 레이블 기본 스타일 */
+  .highcharts-data-label text {
+    text-outline: none !important;
+  }
+  
+  /* 범례(Legend) 스타일 */
+  .highcharts-legend-item text {
+    color: #E2E8F0 !important;
+    font-weight: bold !important;
+  }
+
+  .highcharts-legend-item:hover text {
+    color: #FFFFFF !important;
+  }
+`;
+
 const ReportPage: React.FC = () => {
   const navigate = useNavigate();
   const pdfRef = useRef<HTMLDivElement>(null);
@@ -22,6 +83,7 @@ const ReportPage: React.FC = () => {
   const addReport = useReportHistoryStore((state) => state.addReport);
 
   const [imgDimensions, setImgDimensions] = useState({ width: 0, height: 0 });
+  const [offset, setOffset] = useState(0);
 
   useEffect(() => {
     const img = new Image();
@@ -30,6 +92,23 @@ const ReportPage: React.FC = () => {
     };
     img.src = lightbulbIcon;
   }, []);
+
+  const parseAD8Score = (summary: string | undefined): number => {
+    if (!summary) return 0;
+    const match = summary.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  };
+  
+  const ad8Score = useMemo(() => parseAD8Score(report?.ad8test_result), [report]);
+  const maxAD8Score = 8;
+  const radius = 62;
+  const circumference = 2 * Math.PI * radius;
+
+  useEffect(() => {
+    const progressOffset = circumference - (ad8Score / maxAD8Score) * circumference;
+    const timer = setTimeout(() => setOffset(progressOffset), 100);
+    return () => clearTimeout(timer);
+  }, [ad8Score, circumference]);
 
   // 컴포넌트가 마운트될 때 report를 history에 추가
   useEffect(() => {
@@ -45,10 +124,21 @@ const ReportPage: React.FC = () => {
 
   if (!report) return <Container>로딩 중...</Container>;
 
+  const overallScore = (report.memory_score + report.Judgment_score + report.language_score + report.text_score + report.Time_Space_score + report.visual_score) / 6;
+
+  let summaryText = "";
+  if (overallScore >= 80) {
+    summaryText = "전반적인 인지 기능이 양호한 수준으로 유지되고 있습니다. 기억력, 언어 능력, 시공간 능력 등 모든 영역에서 안정적인 모습을 보여주셨습니다. 현재의 좋은 상태를 유지하기 위해 꾸준한 두뇌 활동과 건강한 생활 습관을 이어 나가시는 것을 추천합니다.";
+  } else if (overallScore >= 50) {
+    summaryText = "전반적인 인지 기능이 '경계' 수준으로 나타났습니다. 일부 영역에서 약간의 저하가 관찰되나, 일상생활에 큰 영향을 미칠 정도는 아닙니다. 보고서의 영역별 제안을 참고하여 부족한 부분을 보완하고, 주기적인 인지 건강 점검을 통해 변화를 관찰하는 것이 중요합니다.";
+  } else {
+    summaryText = "전반적인 인지 기능 저하가 우려되는 '주의' 단계입니다. 특히 보고서에서 '위험'으로 표시된 영역에 대한 세심한 관리가 필요합니다. 일상생활에서의 불편함이 느껴지신다면 전문가와의 상담을 통해 정확한 상태를 파악하고 조기에 관리하는 것을 적극적으로 권장합니다.";
+  }
+
   const chartOptions: Highcharts.Options = {
     chart: {
       type: 'pie',
-      backgroundColor: 'transparent',
+      marginLeft: -40,
       options3d: {
         enabled: true,
         alpha: 55,
@@ -76,11 +166,12 @@ const ReportPage: React.FC = () => {
 
           const centerX = this.plotLeft + this.plotWidth * 0.5;
           const centerY = this.plotTop + this.plotHeight * 0.5;
-          const yOffset = 50; // 이미지를 위로 올릴 값
+          const yOffset = 57; // 이미지를 위로 올릴 값
+          const xOffset = 8; // 이미지를 왼쪽으로 옮길 값
 
           if ((this as any).customImage) {
             (this as any).customImage.attr({
-              x: centerX - newWidth / 2,
+              x: centerX - newWidth / 2 - xOffset,
               y: centerY - newHeight / 2 - yOffset,
               width: newWidth,
               height: newHeight,
@@ -88,7 +179,7 @@ const ReportPage: React.FC = () => {
           } else {
             (this as any).customImage = this.renderer.image(
               lightbulbIcon,
-              centerX - newWidth / 2,
+              centerX - newWidth / 2 - xOffset,
               centerY - newHeight / 2 - yOffset,
               newWidth,
               newHeight
@@ -111,18 +202,50 @@ const ReportPage: React.FC = () => {
     plotOptions: {
       pie: {
         innerSize: '50%',
-        allowPointSelect: true,
-        cursor: 'pointer',
-        depth: 35,
+        allowPointSelect: false,
+        depth: 20,
         startAngle: 45,
+        size: '75%',
         dataLabels: {
           enabled: true,
+          crop: false,
+          overflow: 'allow',
           formatter: function (this: Highcharts.Point) {
             const pointOptions = this.options as { description?: string };
-            return `<div style="width: 120px; text-align: center; white-space: normal;">
-                        <b style="color:${this.color};">${this.name}</b>
+            let statusText = '';
+            let statusClass = '';
+            
+            switch (this.color) {
+              case '#EE0000':
+                statusText = '위험';
+                statusClass = 'status-danger';
+                break;
+              case '#F7D46E':
+                statusText = '경계';
+                statusClass = 'status-warning';
+                break;
+              case '#18A092':
+                statusText = '양호';
+                statusClass = 'status-safe';
+                break;
+            }
+
+            const isDialog = this.color === '#18A092';
+            const isDrawing = this.color === '#EE0000';
+            
+            let labelClass = 'custom-datalabel';
+            if (isDialog) {
+              labelClass += ' dialog-label';
+            } else if (isDrawing) {
+              labelClass += ' drawing-label';
+            } else {
+              labelClass += ' survey-label';
+            }
+
+            return `<div class="${labelClass}">
+                        <b>${this.name} <span class="status ${statusClass}">(${statusText})</span></b>
                         <br>
-                        <span style="color:#E2E8F0;">${pointOptions.description || ''}</span>
+                        <span class="description">${pointOptions.description || ''}</span>
                     </div>`;
           },
           useHTML: true,
@@ -139,16 +262,12 @@ const ReportPage: React.FC = () => {
       type: 'pie',
       name: '점유율',
       data: [
-        { name: '기억력/판단력', y: (report.memory_score + report.Judgment_score) / 2, color: '#EE0000', sliced: true, description: '기억 및 판단 능력' },
-        { name: '언어능력', y: (report.language_score + report.text_score) / 2, color: '#18A092', sliced: true, description: '원활한 언어 소통 능력' },
-        { name: '시공간/시각능력', y: (report.Time_Space_score + report.visual_score) / 2, color: '#F7D46E', sliced: true, description: '공간 및 시각 인지 능력' },
+        { name: '그림 검사', y: (report.memory_score + report.Judgment_score) / 2, color: '#EE0000', sliced: true, description: '도형을 그리는 과정에서 어려움이 있었다면 주의력이나 시공간 능력 저하일 수 있습니다. 꾸준히 퍼즐이나 그리기 활동을 해보세요.' },
+        { name: '대화 검사', y: (report.language_score + report.text_score) / 2, color: '#18A092', sliced: true, description: '대화의 흐름을 이해하고 적절하게 반응하는 능력이 우수합니다. 꾸준히 대화하고 책을 읽는 습관을 가지면 더욱 좋습니다.' },
+        { name: '설문 검사 (AD-8)', y: (report.Time_Space_score + report.visual_score) / 2, color: '#F7D46E', sliced: true, description: '최근 기억력이나 판단력의 변화를 스스로 점검하는 것은 매우 중요합니다. 변화가 감지된 항목에 주의를 기울이며 일상 생활을 관찰해보세요.' },
       ]
     }],
     legend: {
-      itemStyle: {
-        color: '#E2E8F0',
-        fontWeight: 'bold'
-      },
       itemHoverStyle: {
         color: '#FFFFFF'
       },
@@ -183,6 +302,21 @@ const ReportPage: React.FC = () => {
     },
   ];
 
+  const getStatusForExam = (exam: typeof examResults[0]): '양호' | '경계' | '주의' => {
+    switch (exam.name) {
+      case "설문 검사 (AD-8)":
+        return exam.summary.includes("정상") ? '양호' : '주의';
+      case "대화 검사":
+        if (report.text_score >= 80) return '양호';
+        if (report.text_score >= 50) return '경계';
+        return '주의';
+      case "그림 검사":
+        return exam.summary.includes("정상") ? '양호' : '주의';
+      default:
+        return '주의';
+    }
+  };
+
   const handleDownloadPdf = () => {
     if (pdfRef.current) {
       html2pdf()
@@ -199,6 +333,7 @@ const ReportPage: React.FC = () => {
 
   return (
     <Container>
+      <HighchartsGlobalStyle />
       <Background isSurveyActive={true} />
       <Header />
       <TitleArea>
@@ -217,49 +352,71 @@ const ReportPage: React.FC = () => {
               </PieChartWrapper>
             </TopSection>
 
+            {/* 종합 인지 기능 평가 결과 */}
+            <OverallSummaryCard>
+              <SummaryCardTitle>종합 인지 기능 평가 결과</SummaryCardTitle>
+              <SummaryText>{summaryText}</SummaryText>
+            </OverallSummaryCard>
+
             {/* 검사별 요약 */}
             <SectionTitle>검사별 요약</SectionTitle>
-            {examResults.map((exam, idx) => (
-              <ExamCard key={idx}>
-                <ExamName
-                  style={
-                    ["설문 검사 (AD-8)", "대화 검사", "그림 검사"].includes(exam.name)
-                      ? { color: "#5EEAD4" }
-                      : undefined
-                  }
-                >
-                  {exam.name}
-                </ExamName>
-                <ExamContent>
-                  <ExamCol>
-                    <Label>결과 요약</Label>
-                    <Summary>
-                      {exam.summary.split("\n").map((line, i) => (
-                        <React.Fragment key={i}>
-                          {line.includes("점수:") ? (
-                            <ScoreHighlight>
-                              {line.replace("점수:", "점수:")}
-                            </ScoreHighlight>
-                          ) : (
-                            line
+            {examResults.map((exam, idx) => {
+              const status = getStatusForExam(exam);
+              return (
+                <ExamCard key={idx}>
+                  <StatusBadge status={status}>{status}</StatusBadge>
+                  <ExamName
+                    $isHighlighted={
+                      ["설문 검사 (AD-8)", "대화 검사", "그림 검사"].includes(exam.name)
+                    }
+                  >
+                    {exam.name}
+                  </ExamName>
+                  <ExamContent>
+                    <ExamCol>
+                      <Label>결과 요약</Label>
+                      {exam.name === "설문 검사 (AD-8)" ? (
+                        <AD8ResultContainer>
+                          <AD8ProgressContainer>
+                            <StyledSVG viewBox="0 0 140 140">
+                              <ProgressBackground />
+                              <ProgressCircle $offset={offset} />
+                            </StyledSVG>
+                            <AD8ScoreText>
+                              {ad8Score}<span> / {maxAD8Score}</span>
+                            </AD8ScoreText>
+                          </AD8ProgressContainer>
+                        </AD8ResultContainer>
+                      ) : (
+                        <Summary>
+                          {exam.summary.split("\n").map((line, i) => (
+                            <React.Fragment key={i}>
+                              {line.includes("점수:") ? (
+                                <ScoreHighlight>
+                                  {line.replace("점수:", "점수:")}
+                                </ScoreHighlight>
+                              ) : (
+                                line
+                              )}
+                              <br />
+                            </React.Fragment>
+                          ))}
+                          {exam.image && (
+                            <ImageBox>
+                              <ResultImg src={exam.image} alt="그림 검사 결과" />
+                            </ImageBox>
                           )}
-                          <br />
-                        </React.Fragment>
-                      ))}
-                      {exam.image && (
-                        <ImageBox>
-                          <ResultImg src={exam.image} alt="그림 검사 결과" />
-                        </ImageBox>
+                        </Summary>
                       )}
-                    </Summary>
-                  </ExamCol>
-                  <ExamCol>
-                    <Label>분석 및 제안</Label>
-                    <Suggestion>{exam.suggestion}</Suggestion>
-                  </ExamCol>
-                </ExamContent>
-              </ExamCard>
-            ))}
+                    </ExamCol>
+                    <ExamCol>
+                      <Label>분석 및 제안</Label>
+                      <Suggestion>{exam.suggestion}</Suggestion>
+                    </ExamCol>
+                  </ExamContent>
+                </ExamCard>
+              );
+            })}
           </PdfTarget>
           <BottomSpacer />
         </ScrollContent>
@@ -338,7 +495,7 @@ const ScrollContent = styled.div`
 `;
 
 const PdfTarget = styled.div`
-  max-width: 780px;  // 850px에서 780px로 감소
+  max-width: 1000px;
   margin: 0 auto;
   padding: 0 2rem;
 `;
@@ -351,7 +508,7 @@ const TopSection = styled.div`
 
 const PieChartWrapper = styled.div`
   position: relative;
-  width: 600px;
+  width: 1000px;
   height: 400px;
   svg:focus {
     outline: none;
@@ -375,22 +532,139 @@ const SectionTitle = styled.h2`
   padding-left: 0;       // 필요없으면 0, 약간 왼쪽 패딩 주고 싶으면 0.5rem
 `;
 
-const ExamCard = styled.div`
+const OverallSummaryCard = styled.div`
   background: rgba(30, 30, 45, 0.5);
   border: 1px solid rgba(167, 139, 250, 0.1);
-  border-radius: 1rem;  // 1.2rem에서 1rem로 감소
+  border-radius: 1rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  padding: 1.8rem;  // 2rem에서 1.8rem으로 감소
-  margin-bottom: 1.2rem;  // 1.5rem에서 1.2rem으로 감소
+  padding: 2rem;
+  margin-bottom: 3rem;
   backdrop-filter: blur(10px);
-  max-width: 680px;  // 750px에서 680px로 감소
+  max-width: 800px;
   margin-left: auto;
   margin-right: auto;
 `;
-const ExamName = styled.div`
+
+const SummaryCardTitle = styled.h2`
   font-size: 1.4rem;
   font-weight: 600;
   color: #E2E8F0;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
+  text-align: center;
+`;
+
+const SummaryText = styled.p`
+  color: #CBD5E1;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  text-align: center;
+`;
+
+const ExamCard = styled.div`
+  background: rgba(30, 30, 45, 0.5);
+  border: 1px solid rgba(167, 139, 250, 0.1);
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  padding: 1.8rem;
+  margin-bottom: 1.2rem;
+  backdrop-filter: blur(10px);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+`;
+
+const AD8ResultContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+`;
+
+const AD8ProgressContainer = styled.div`
+  position: relative;
+  width: 140px;
+  height: 140px;
+`;
+
+const StyledSVG = styled.svg`
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+`;
+
+const ProgressCircleBase = styled.circle`
+  cx: 70px;
+  cy: 70px;
+  r: 62px;
+  fill: transparent;
+  stroke-width: 12px;
+`;
+
+const ProgressBackground = styled(ProgressCircleBase)`
+  stroke: rgba(255, 255, 255, 0.1);
+`;
+
+const ProgressCircle = styled(ProgressCircleBase)<{ $offset: number }>`
+  stroke: #A78BFA;
+  stroke-dasharray: ${2 * Math.PI * 62};
+  stroke-dashoffset: ${({ $offset }) => $offset};
+  transition: stroke-dashoffset 0.8s ease-out;
+  stroke-linecap: round;
+`;
+
+const AD8ScoreText = styled.div`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #FFFFFF;
+    font-size: 1.8rem;
+    font-weight: 600;
+
+    span {
+        font-size: 1rem;
+        color: #94A3B8;
+    }
+`;
+
+const AD8SummaryText = styled.p`
+  color: #E2E8F0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.7;
+`;
+
+const StatusBadge = styled.div<{ status: '양호' | '경계' | '주의' }>`
+  position: absolute;
+  top: 1.5rem;
+  right: 1.8rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  background: ${({ status }) => {
+    if (status === '양호') return 'rgba(34, 197, 94, 0.7)';
+    if (status === '경계') return 'rgba(251, 191, 36, 0.7)';
+    return 'rgba(239, 68, 68, 0.7)';
+  }};
+  border: 1px solid ${({ status }) => {
+    if (status === '양호') return 'rgba(34, 197, 94, 0.9)';
+    if (status === '경계') return 'rgba(251, 191, 36, 0.9)';
+    return 'rgba(239, 68, 68, 0.9)';
+  }};
+  backdrop-filter: blur(5px);
+`;
+
+const ExamName = styled.div<{ $isHighlighted?: boolean }>`
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: ${({ $isHighlighted }) => $isHighlighted ? '#5EEAD4' : '#E2E8F0'};
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
