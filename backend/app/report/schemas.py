@@ -1,5 +1,30 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from .models import RiskLevel
+
+class EmptyReportCreate(BaseModel):
+    """빈 리포트 생성용 스키마 - risk 필드들에 기본값 설정"""
+    drawingtest_result: str = ""
+    chat_result: str = ""
+    ad8test_result: str = ""
+    final_result: str = ""
+    recommendation: str = ""
+    total_score: int = 0
+    ad8_score: int = 0
+    drawing_score: int = 0
+    memory_score: int = 0
+    time_space_score: int = 0
+    judgment_score: int = 0
+    visual_score: int = 0
+    language_score: int = 0
+    # risk 필드들도 포함하되 None으로 기본값 설정
+    ad8_risk: Optional[RiskLevel] = None
+    drawing_risk: Optional[RiskLevel] = None
+    chat_risk: Optional[RiskLevel] = None
+    final_risk: Optional[RiskLevel] = None
+
+    class Config:
+        use_enum_values = True
 
 class ReportCreate(BaseModel):
     drawingtest_result: str = ""
@@ -15,10 +40,13 @@ class ReportCreate(BaseModel):
     judgment_score: int = 0
     visual_score: int = 0
     language_score: int = 0
-    ad8_risk: str = ""
-    drawing_risk: str = ""
-    chat_risk: str = ""
-    final_risk: str = ""
+    ad8_risk: Optional[RiskLevel] = None
+    drawing_risk: Optional[RiskLevel] = None
+    chat_risk: Optional[RiskLevel] = None
+    final_risk: Optional[RiskLevel] = None
+
+    class Config:
+        use_enum_values = True  # enum 값을 직렬화할 때 실제 값 사용
 
 class AD8ResponseDetail(BaseModel):
     question_no: int
@@ -62,10 +90,10 @@ class DetailedReportResponse(BaseModel):
     language_score: int
     
     # 위험도
-    ad8_risk: str
-    drawing_risk: str
-    chat_risk: str
-    final_risk: str
+    ad8_risk: Optional[RiskLevel] = None
+    drawing_risk: Optional[RiskLevel] = None
+    chat_risk: Optional[RiskLevel] = None
+    final_risk: Optional[RiskLevel] = None
     
     # 추가 상세 정보 (요약 버전 사용)
     drawing_image_url: Optional[str] = None
@@ -73,6 +101,7 @@ class DetailedReportResponse(BaseModel):
 
     class Config:
         orm_mode = True
+        use_enum_values = True  # enum 값을 직렬화할 때 실제 값 사용
 
 class SimpleReportResponse(BaseModel):
     report_id: int
