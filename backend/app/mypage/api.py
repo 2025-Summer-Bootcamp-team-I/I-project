@@ -13,7 +13,7 @@ router = APIRouter(
 )
 
 @router.get("/reports", response_model=List[MyReportSummary])
-def get_my_reports(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+def get_my_reports(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     로그인한 사용자의 모든 리포트 목록을 반환합니다.
     """
