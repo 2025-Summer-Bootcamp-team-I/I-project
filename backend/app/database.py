@@ -14,7 +14,7 @@ DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@mysql:3306/{MYSQL
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
-    echo=True 
+    echo=os.getenv("SQLALCHEMY_ECHO", "False").lower() in ("true", "1"),
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
