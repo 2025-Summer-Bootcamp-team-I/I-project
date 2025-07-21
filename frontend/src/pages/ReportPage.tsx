@@ -12,6 +12,28 @@ import { useReportStore } from "../store/reportStore";
 import { useReportHistoryStore } from "../store/reportHistoryStore";
 import lightbulbIcon from '../assets/imgs/lightbulb.png';
 
+// Custom Hook to get window size
+const useWindowSize = () => {
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return windowSize;
+};
+
 const HighchartsGlobalStyle = createGlobalStyle`
   /* Highcharts 백그라운드 */
   .highcharts-background {
@@ -23,6 +45,14 @@ const HighchartsGlobalStyle = createGlobalStyle`
     width: 290px;
     white-space: normal;
     
+    @media (max-width: 900px) {
+      width: 200px;
+    }
+
+    @media (max-width: 500px) {
+      width: 150px;
+    }
+
     &.dialog-label {
       position: relative;
       left: -30px;
@@ -33,6 +63,10 @@ const HighchartsGlobalStyle = createGlobalStyle`
       position: relative;
       left: 30px;
       text-align: left;
+
+      @media (max-width: 500px) {
+        left: 10px;
+      }
     }
     
     b {
@@ -73,10 +107,86 @@ const HighchartsGlobalStyle = createGlobalStyle`
   }
 `;
 
+// 카드 컴포넌트 분리
+interface ExamCardProps {
+  exam: { name: string; summary: string; suggestion: string; image?: string; };
+  status: '양호' | '경계' | '주의';
+}
+
+const AD8Card: React.FC<ExamCardProps & { ad8Score: number; maxAD8Score: number; offset: number; }> = ({ exam, status, ad8Score, maxAD8Score, offset }) => (
+  <ExamCard $cardType="ad8">
+    <StatusBadge status={status}>{status}</StatusBadge>
+    <ExamName $isHighlighted>{exam.name}</ExamName>
+    <ExamContent>
+      <ExamCol>
+        <Label>결과 요약</Label>
+        <AD8ResultContainer>
+          <AD8ProgressContainer>
+            <StyledSVG viewBox="0 0 140 140">
+              <ProgressBackground />
+              <ProgressCircle $offset={offset} />
+            </StyledSVG>
+            <AD8ScoreText>{ad8Score}<span> / {maxAD8Score}</span></AD8ScoreText>
+          </AD8ProgressContainer>
+        </AD8ResultContainer>
+      </ExamCol>
+      <ExamCol>
+        <Label>분석 및 제안</Label>
+        <Suggestion>{exam.suggestion}</Suggestion>
+      </ExamCol>
+    </ExamContent>
+  </ExamCard>
+);
+
+const ChatCard: React.FC<ExamCardProps> = ({ exam, status }) => (
+  <ExamCard>
+    <StatusBadge status={status}>{status}</StatusBadge>
+    <ExamName $isHighlighted>{exam.name}</ExamName>
+    <ExamContent>
+      <ExamCol>
+        <Label>결과 요약</Label>
+        <Summary>
+          {exam.summary.split("\n").map((line, i) => (
+            <React.Fragment key={i}>
+              {line.includes("점수:") ? <ScoreHighlight>{line}</ScoreHighlight> : line}
+              <br />
+            </React.Fragment>
+          ))}
+        </Summary>
+      </ExamCol>
+      <ExamCol>
+        <Label>분석 및 제안</Label>
+        <Suggestion>{exam.suggestion}</Suggestion>
+      </ExamCol>
+    </ExamContent>
+  </ExamCard>
+);
+
+const DrawingCard: React.FC<ExamCardProps> = ({ exam, status }) => (
+  <ExamCard>
+    <StatusBadge status={status}>{status}</StatusBadge>
+    <ExamName $isHighlighted>{exam.name}</ExamName>
+    <ExamContent>
+      <ExamCol>
+        <Label>결과 요약</Label>
+        <ImageBox>
+          <ResultImg src={exam.image} alt="그림 검사 결과" />
+        </ImageBox>
+      </ExamCol>
+      <ExamCol>
+        <Label>분석 및 제안</Label>
+        <Suggestion>{exam.suggestion}</Suggestion>
+      </ExamCol>
+    </ExamContent>
+  </ExamCard>
+);
+
+
 const ReportPage: React.FC = () => {
   const navigate = useNavigate();
   const pdfRef = useRef<HTMLDivElement>(null);
   const resetReportId = useReportIdStore((state) => state.resetReportId);
+  const { width: windowWidth } = useWindowSize();
 
   // zustand에서 report와 addReport 불러옴
   const report = useReportStore((state) => state.report);
@@ -138,7 +248,7 @@ const ReportPage: React.FC = () => {
   const chartOptions: Highcharts.Options = {
     chart: {
       type: 'pie',
-      marginLeft: -40,
+      marginLeft: windowWidth > 900 ? -40 : 0,
       options3d: {
         enabled: true,
         alpha: 55,
@@ -205,7 +315,7 @@ const ReportPage: React.FC = () => {
         allowPointSelect: false,
         depth: 20,
         startAngle: 45,
-        size: '75%',
+        size: windowWidth > 900 ? '75%' : '100%',
         dataLabels: {
           enabled: true,
           crop: false,
@@ -253,7 +363,7 @@ const ReportPage: React.FC = () => {
             fontSize: '13px',
             textOutline: 'none'
           },
-          distance: 40,
+          distance: windowWidth > 900 ? 40 : 15,
         },
         showInLegend: true
       }
@@ -268,12 +378,16 @@ const ReportPage: React.FC = () => {
       ]
     }],
     legend: {
+      enabled: false,
       itemHoverStyle: {
         color: '#FFFFFF'
       },
       itemHiddenStyle: {
         color: '#666666'
-      }
+      },
+      layout: windowWidth > 640 ? 'horizontal' : 'vertical',
+      align: windowWidth > 640 ? 'center' : 'left',
+      verticalAlign: windowWidth > 640 ? 'bottom' : 'middle',
     },
     credits: {
       enabled: false
@@ -359,63 +473,19 @@ const ReportPage: React.FC = () => {
             </OverallSummaryCard>
 
             {/* 검사별 요약 */}
-            <SectionTitle>검사별 요약</SectionTitle>
+            <SectionTitle>검사별 결과 및 해석</SectionTitle>
             {examResults.map((exam, idx) => {
               const status = getStatusForExam(exam);
-              return (
-                <ExamCard key={idx}>
-                  <StatusBadge status={status}>{status}</StatusBadge>
-                  <ExamName
-                    $isHighlighted={
-                      ["설문 검사 (AD-8)", "대화 검사", "그림 검사"].includes(exam.name)
-                    }
-                  >
-                    {exam.name}
-                  </ExamName>
-                  <ExamContent>
-                    <ExamCol>
-                      <Label>결과 요약</Label>
-                      {exam.name === "설문 검사 (AD-8)" ? (
-                        <AD8ResultContainer>
-                          <AD8ProgressContainer>
-                            <StyledSVG viewBox="0 0 140 140">
-                              <ProgressBackground />
-                              <ProgressCircle $offset={offset} />
-                            </StyledSVG>
-                            <AD8ScoreText>
-                              {ad8Score}<span> / {maxAD8Score}</span>
-                            </AD8ScoreText>
-                          </AD8ProgressContainer>
-                        </AD8ResultContainer>
-                      ) : (
-                        <Summary>
-                          {exam.summary.split("\n").map((line, i) => (
-                            <React.Fragment key={i}>
-                              {line.includes("점수:") ? (
-                                <ScoreHighlight>
-                                  {line.replace("점수:", "점수:")}
-                                </ScoreHighlight>
-                              ) : (
-                                line
-                              )}
-                              <br />
-                            </React.Fragment>
-                          ))}
-                          {exam.image && (
-                            <ImageBox>
-                              <ResultImg src={exam.image} alt="그림 검사 결과" />
-                            </ImageBox>
-                          )}
-                        </Summary>
-                      )}
-                    </ExamCol>
-                    <ExamCol>
-                      <Label>분석 및 제안</Label>
-                      <Suggestion>{exam.suggestion}</Suggestion>
-                    </ExamCol>
-                  </ExamContent>
-                </ExamCard>
-              );
+              if (exam.name === "설문 검사 (AD-8)") {
+                return <AD8Card key={idx} exam={exam} status={status} ad8Score={ad8Score} maxAD8Score={maxAD8Score} offset={offset} />;
+              }
+              if (exam.name === "대화 검사") {
+                return <ChatCard key={idx} exam={exam} status={status} />;
+              }
+              if (exam.name === "그림 검사") {
+                return <DrawingCard key={idx} exam={exam} status={status} />;
+              }
+              return null;
             })}
           </PdfTarget>
           <BottomSpacer />
@@ -460,10 +530,14 @@ const TitleArea = styled.div`
 `;
 
 const FixedTitle = styled.h1`
-    color: #FFFFFF;
+    color: #C4B5FD;
     font-size: 2.5rem;
     text-align: center;
     font-weight: 600;
+
+    @media (max-width: 768px) {
+      font-size: 2rem;
+    }
   `;
 
 const MainContent = styled.div`
@@ -498,6 +572,10 @@ const PdfTarget = styled.div`
   max-width: 1000px;
   margin: 0 auto;
   padding: 0 2rem;
+
+  @media (max-width: 768px) {
+    padding: 0 1rem;
+  }
 `;
 
 const TopSection = styled.div`
@@ -509,6 +587,7 @@ const TopSection = styled.div`
 const PieChartWrapper = styled.div`
   position: relative;
   width: 1000px;
+  max-width: 100%;
   height: 400px;
   svg:focus {
     outline: none;
@@ -521,10 +600,10 @@ const PieChartWrapper = styled.div`
 const SectionTitle = styled.h2`
   font-size: 1.3rem;
   font-weight: 600;
-  color: #E2E8F0;
+  color: #C4B5FD;
   margin-bottom: 2rem;
   max-width: 680px;
-  margin-left: 1.5rem;   // auto → 1.5rem 정도로 변경
+  margin-left: 4.5rem;   // auto → 1.5rem 정도로 변경
   margin-right: auto;    // 오른쪽은 auto로 놔두면 자연스럽게 살짝 왼쪽으로 이동
   padding-bottom: 0.5rem;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
@@ -539,10 +618,17 @@ const OverallSummaryCard = styled.div`
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   padding: 2rem;
   margin-bottom: 3rem;
+  margin-top: -4rem;
   backdrop-filter: blur(10px);
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
+
+  @media (max-width: 900px) {
+    max-width: 100%;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
 `;
 
 const SummaryCardTitle = styled.h2`
@@ -553,6 +639,10 @@ const SummaryCardTitle = styled.h2`
   padding-bottom: 1rem;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
   text-align: center;
+
+  @media (max-width: 768px) {
+    font-size: 1.2rem;
+  }
 `;
 
 const SummaryText = styled.p`
@@ -560,9 +650,13 @@ const SummaryText = styled.p`
   font-size: 1.1rem;
   line-height: 1.8;
   text-align: center;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
 `;
 
-const ExamCard = styled.div`
+const ExamCard = styled.div<{ $cardType?: string }>`
   background: rgba(30, 30, 45, 0.5);
   border: 1px solid rgba(167, 139, 250, 0.1);
   border-radius: 1rem;
@@ -574,6 +668,15 @@ const ExamCard = styled.div`
   margin-left: auto;
   margin-right: auto;
   position: relative;
+  
+  ${({ $cardType }) => $cardType === 'ad8' && `
+    margin-top: -1rem;
+  `}
+
+  @media (max-width: 900px) {
+    max-width: 100%;
+    padding: 1.5rem;
+  }
 `;
 
 const AD8ResultContainer = styled.div`
@@ -641,37 +744,33 @@ const AD8SummaryText = styled.p`
 
 const StatusBadge = styled.div<{ status: '양호' | '경계' | '주의' }>`
   position: absolute;
-  top: 1.5rem;
+  top: 1.3rem;
   right: 1.8rem;
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #FFFFFF;
-  background: ${({ status }) => {
-    if (status === '양호') return 'rgba(34, 197, 94, 0.7)';
-    if (status === '경계') return 'rgba(251, 191, 36, 0.7)';
-    return 'rgba(239, 68, 68, 0.7)';
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-top: -0.5rem;
+  color: ${({ status }) => {
+    if (status === '양호') return '#22C55E';
+    if (status === '경계') return '#FBBF24';
+    return '#EF4444';
   }};
-  border: 1px solid ${({ status }) => {
-    if (status === '양호') return 'rgba(34, 197, 94, 0.9)';
-    if (status === '경계') return 'rgba(251, 191, 36, 0.9)';
-    return 'rgba(239, 68, 68, 0.9)';
-  }};
-  backdrop-filter: blur(5px);
 `;
 
 const ExamName = styled.div<{ $isHighlighted?: boolean }>`
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: ${({ $isHighlighted }) => $isHighlighted ? '#5EEAD4' : '#E2E8F0'};
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
+  margin-top: -1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
+
+  @media (max-width: 768px) {
+    font-size: 1.2rem;
+  }
 `;
 const ExamContent = styled.div`
   display: flex;
-  gap: 3rem;
   @media (max-width: 900px) {
     flex-direction: column;
     gap: 2rem;
@@ -681,23 +780,37 @@ const ExamCol = styled.div`
   flex: 1;
   min-width: 230px;
   background: rgba(20, 20, 35, 0.3);
-  padding: 1.5rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(167, 139, 250, 0.05);
+  padding: 1rem 1.5rem;
+
+  &:not(:first-child) {
+    border-left: 1px solid rgba(167, 139, 250, 0.1);
+  }
+
+  @media (max-width: 900px) {
+    &:not(:first-child) {
+      border-left: none;
+      border-top: 1px solid rgba(167, 139, 250, 0.1);
+    }
+  }
 `;
 const Label = styled.div`
   color: #94A3B8;
   font-size: 1.1rem;
+  margin-top: -1rem;
   font-weight: 500;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
+
 `;
 const Summary = styled.div`
   color: #CBD5E1;
   font-size: 1.1rem;
   line-height: 1.7;
   white-space: pre-line;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
 `;
 const ScoreHighlight = styled.span`
   color: #A78BFA;
@@ -723,8 +836,12 @@ const ResultImg = styled.img`
 `;
 const Suggestion = styled.div`
   color: #CBD5E1;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   line-height: 1.6;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
 `;
 const BottomButtonBar = styled.div`
   position: fixed;
@@ -736,6 +853,13 @@ const BottomButtonBar = styled.div`
   background: transparent;
   padding: 2rem 0 1.5rem 0;
   z-index: 99;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 0;
+    gap: 1rem;
+  }
 `;
 const ActionBtn = styled.button<{ $pdf?: boolean }>`
   background: ${({ $pdf }) => ($pdf ? "#7C3AED" : "rgba(124, 58, 237, 0.1)")};
@@ -748,9 +872,16 @@ const ActionBtn = styled.button<{ $pdf?: boolean }>`
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: all 0.2s ease;
+  width: 200px;
+
   &:hover {
     background: ${({ $pdf }) => ($pdf ? "#6D28D9" : "rgba(124, 58, 237, 0.15)")};
     border-color: ${({ $pdf }) => ($pdf ? "#6D28D9" : "rgba(167, 139, 250, 0.3)")};
+  }
+
+  @media (max-width: 640px) {
+    width: 80%;
+    max-width: 300px;
   }
 `;
 const BottomSpacer = styled.div`
