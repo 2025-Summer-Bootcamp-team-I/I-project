@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from app.report.models import RiskLevel
 
 # 1. 드로잉 테스트 단일 응답(정답 여부 등)
 class DrawingResponse(BaseModel):
@@ -16,11 +17,13 @@ class DrawingTestResult(BaseModel):
     report_id: int = Field(..., description="연결된 Report의 ID")
     image_url: str = Field(..., description="저장된 그림 파일 경로")
     risk_score: int = Field(..., description="치매 위험 점수 (예: 0~10)")
-    drawing_score: int = Field(..., description="그림 평가 점수 (예: 0~100)")
+    drawing_score: int = Field(..., description="그림 평가 점수 (0~5)")
     drawingtest_result: str = Field(..., description="그림 평가 결과 텍스트")
+    risk_level: RiskLevel = Field(..., description="위험도 평가 (양호/경계/위험)")
 
     class Config:
         orm_mode = True
+        use_enum_values = True  # enum 값을 직렬화할 때 실제 값 사용
 
 # 4. (선택) 여러 개 리스트 응답 필요 시
 class DrawingTestResultList(BaseModel):
