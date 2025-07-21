@@ -10,18 +10,35 @@ router = APIRouter()
 
 @router.post("/reports/empty", response_model=schemas.SimpleReportResponse)
 def create_empty_report(
-    report: schemas.ReportCreate, 
+    report: schemas.EmptyReportCreate, 
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """현재 로그인한 유저를 위한 빈 리포트를 생성합니다."""
     report_data = report.dict()
     
-    # Report 객체 생성
+    # Report 객체 생성 - risk 필드들을 기본값으로 설정
     from . import models
     new_report = models.Report(
         user_id=current_user.id,
-        **report_data
+        drawingtest_result=report_data.get("drawingtest_result", ""),
+        chat_result=report_data.get("chat_result", ""),
+        ad8test_result=report_data.get("ad8test_result", ""),
+        final_result=report_data.get("final_result", ""),
+        recommendation=report_data.get("recommendation", ""),
+        total_score=report_data.get("total_score", 0),
+        ad8_score=report_data.get("ad8_score", 0),
+        drawing_score=report_data.get("drawing_score", 0),
+        memory_score=report_data.get("memory_score", 0),
+        time_space_score=report_data.get("time_space_score", 0),
+        judgment_score=report_data.get("judgment_score", 0),
+        visual_score=report_data.get("visual_score", 0),
+        language_score=report_data.get("language_score", 0),
+        # 빈 리포트이므로 NULL로 설정 (아직 테스트하지 않음)
+        ad8_risk=None,
+        drawing_risk=None,
+        chat_risk=None,
+        final_risk=None
     )
     db.add(new_report)
     db.commit()
