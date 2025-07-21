@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List
+from app.report.models import RiskLevel
 
 class ResponseItem(BaseModel):
     questionNo: int
@@ -29,3 +30,7 @@ class AD8Request(BaseModel):
 class AD8Result(BaseModel):
     risk_score: int
     message: str
+    risk_level: RiskLevel
+
+    class Config:
+        use_enum_values = True  # enum 값을 직렬화할 때 실제 값 사용
