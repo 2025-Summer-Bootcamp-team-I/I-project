@@ -4,6 +4,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 from datetime import datetime
 from enum import Enum
+from app.report.models import RiskLevel
 class ChatRequest(BaseModel):
     report_id: int
     chat_id: int
@@ -39,8 +40,17 @@ class ChatLogResponse(BaseModel):
         from_attributes = True
 
 class CreateChatRequest(BaseModel):
-    report_id: int | None = None
+    report_id: int
 
 class CreateChatResponse(BaseModel):
     chat_id: int
     message: str
+
+
+class EvaluateChatResponse(BaseModel):
+    chat_result: str
+    chat_risk: RiskLevel
+    message: str
+
+    class Config:
+        use_enum_values = True
