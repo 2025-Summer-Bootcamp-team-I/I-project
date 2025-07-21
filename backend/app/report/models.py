@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, ForeignKey, BigInteger
+from sqlalchemy import Column, Integer, Text, ForeignKey, BigInteger, Enum
 import enum
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -15,11 +15,11 @@ class Report(Base):
     report_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    drawingtest_result = Column(Text, nullable=False, default="")
-    chat_result = Column(Text, nullable=False, default="")
-    ad8test_result = Column(Text, nullable=False, default="")
-    final_result = Column(Text, nullable=False, default="")  # 최종 소견 추가
-    recommendation = Column(Text, nullable=False, default="")
+    drawingtest_result = Column(Text, nullable=False)
+    chat_result = Column(Text, nullable=False)
+    ad8test_result = Column(Text, nullable=False)
+    final_result = Column(Text, nullable=False)  # 최종 소견 추가
+    recommendation = Column(Text, nullable=False)
 
     total_score = Column(Integer, nullable=False, default=0)
     ad8_score = Column(Integer, nullable=False, default=0)
@@ -30,10 +30,10 @@ class Report(Base):
     visual_score = Column(Integer, nullable=False, default=0)
     language_score = Column(Integer, nullable=False, default=0)
 
-    # 위험도 필드 추가
-    ad8_risk = Column(Text, nullable=False, default="")
-    drawing_risk = Column(Text, nullable=False, default="")
-    chat_risk = Column(Text, nullable=False, default="")
-    final_risk = Column(Text, nullable=False, default="")
+    # 위험도 필드 - RiskLevel enum 사용, NULL 허용 (아직 테스트 안함)
+    ad8_risk = Column(Enum(RiskLevel), nullable=True)
+    drawing_risk = Column(Enum(RiskLevel), nullable=True)
+    chat_risk = Column(Enum(RiskLevel), nullable=True)
+    final_risk = Column(Enum(RiskLevel), nullable=True)
 
     user = relationship("User", back_populates="reports")
