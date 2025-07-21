@@ -2,6 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import logoImage from '../assets/imgs/logo.png';
 
 interface HeaderProps {
   showLogoText?: boolean;
@@ -14,11 +15,8 @@ const Header: React.FC<HeaderProps> = ({ showLogoText = true, rightElement }) =>
   return (
     <HeaderBar>
       <LogoArea>
-        <LogoSVG viewBox="0 0 40 40">
-          <circle cx="20" cy="20" r="16" fill="#96e7d4" opacity="0.15"/>
-          <path d="M20 10c2 0 3 1 3 3v5h-6v-5c0-2 1-3 3-3zm-2 8h4c0 3-1.5 6-4 6s-4-3-4-6h4z" fill="#96e7d4"/>
-        </LogoSVG>
-        {showLogoText && <LogoText>기억 건강 진단</LogoText>}
+        <LogoImage src={logoImage} alt="Neurocare Logo" />
+        {showLogoText && <LogoText>Neurocare 치매진단 서비스</LogoText>}
       </LogoArea>
       {rightElement ?? (
         <MyPageButton onClick={() => navigate('/mypage')}>마이페이지</MyPageButton>
@@ -49,10 +47,11 @@ const LogoArea = styled.div`
   gap: 0.78rem;
 `;
 
-const LogoSVG = styled.svg`
+const LogoImage = styled.img`
   width: 2.1rem;
   height: 2.1rem;
   display: block;
+  object-fit: contain;
 `;
 
 const LogoText = styled.span`

@@ -1,3 +1,5 @@
+import sys
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
@@ -20,3 +22,15 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def create_tables():
+
+    import app.chat.models
+    import app.report.models
+    import app.auth.models
+    import app.drawing.models
+    import app.ad8.models
+
+    Base.metadata.create_all(bind=engine)
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))

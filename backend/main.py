@@ -6,17 +6,13 @@ import logging
 import traceback
 from contextlib import asynccontextmanager
 
-from prometheus_fastapi_instrumentator import Instrumentator
-
-# --- 서비스별 라우터 임포트
-from app.rag.api import router as rag_router
-from app.chat.api import router as chat_router
 from app import database
 from app.auth import models
 from app.auth import api as auth_api
 from app.report import api as report_api
 from app.trans import stt as stt_api
 from app.ad8 import api as ad8_api
+from app.chat import api as chat_api
 from app.drawing import api as drawing_api
 from app.trans import tts as tts_api
 from sqlalchemy.exc import OperationalError
@@ -36,8 +32,7 @@ def connect_to_db():
         raise
 
 def create_tables():
-    from app.database import Base, engine
-    Base.metadata.create_all(bind=engine)
+    database.create_tables()
     print("DB 테이블 생성 완료.")
 
 @asynccontextmanager
@@ -72,21 +67,18 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": str(exc), "traceback": traceback.format_exc()}
     )
 
-# --- 서비스 라우터 등록
+# 라우터 등록
 app.include_router(auth_api.router, prefix="/user", tags=["User"])
 app.include_router(report_api.router)
-app.include_router(stt_api.router, tags=["STT"])
+app.include_router(stt_api.router,tags=["STT"])
 app.include_router(tts_api.router, tags=["TTS"])
 app.include_router(drawing_api.router, prefix="/drawing", tags=["Drawing"])
 app.include_router(ad8_api.router, prefix="/ad8", tags=["AD8"])
-app.include_router(rag_router)
-app.include_router(chat_router)
+app.include_router(chat_api.router, prefix="/chat", tags=["Chat"])
 
-# --- Prometheus 모니터링 연동
-Instrumentator().instrument(app).expose(app)
-
-# --- 기본 루트 엔드포인트
+# 기본 루트 엔드포인트
 @app.get("/", tags=["Default"])
+
 def root():
     return {"msg": "API 서버는 현재 작동 중입니다!"}
 

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   #   frontend:
   #     build:
@@ -21,7 +19,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     env_file:
-      - ./bac43kend/.env
+      - ./backend/.env
     ports:
       - "8000:8000"
     volumes:
@@ -46,6 +44,7 @@ services:
       - CHROMA_SERVER_DB_DIR=/data
 
 #처음에 크로마 db에 데이터 없을때만 실행
+
 #  pipeline:
 #    build:
 #      context: ./backend
