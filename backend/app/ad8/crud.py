@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
-from app.report.models import Report
+from app.report.models import Report, RiskLevel
 from . import models
 from fastapi import HTTPException
 
-def update_ad8_result(db: Session, report_id: int, ad8_score: int, ad8_result: str, risk_level: str):
+def update_ad8_result(db: Session, report_id: int, ad8_score: int, ad8_result: str, risk_level: RiskLevel):
     db_report = db.query(Report).filter(Report.report_id == report_id).first()
     if not db_report:
         raise HTTPException(status_code=404, detail="Report not found")
