@@ -13,11 +13,13 @@ from .schemas import ChatLogResponse
 from app.database import get_db  # SessionLocal
 from sqlalchemy.orm import Session
 # Report 모델 실제 경로에 맞게 수정 필요
-from app.report.models import Report
+from app.report.models import Report, RiskLevel
 import re
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.prompts import PromptTemplate
 import chromadb
+from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+
 
 def extract_score_and_result(ai_response):
     m = re.search(r"치매 위험도 점수[:：]?\s*(\d+)", ai_response)
@@ -47,30 +49,25 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
     memory = get_memory(report_id)
 
     # 논문 근거 기반 치매 평가 전문 챗봇 프롬프트
-    system_prompt = (
-        "당신은 사용자의 일상과 기억, 생활 습관 등에 대해 자연스럽게 대화하는 친근한 대화 파트너입니다.\n"
-        "- 검사, 테스트, 진단, 평가, 점수, 소견, 논문, 연구, 참고문헌 등 전문 용어는 사용하지 마세요.\n"
-        "- 사용자의 답변을 잘 기억하고, 그에 맞는 자연스러운 후속 질문을 하세요.\n"
-        "- 이미 했던 질문이나, 사용자가 답한 내용을 다시 묻지 마세요.\n"
-        "- 같은 질문이나 유사한 질문을 반복하지 마세요.\n"
-        "- 대화 맥락을 잘 기억하고, 관련된 후속 질문만 하세요.\n"
-        "- 사용자가 어떤 주제(예: 드라마, 영화 등)에 관심 없다고 하거나, '안 본다', '모른다', '관심 없다', '없다' 등으로 답하면, 그 주제에 대해 더 이상 질문하지 마세요.\n"
-        "- 사용자의 감정, 의사, 거절, 관심 없음 등의 표현을 존중하고, 그에 맞게 대화 주제를 바꾸거나, 새로운 주제로 자연스럽게 넘어가세요.\n"
-        "- 사용자의 답변을 오해하지 말고, 앞서 한 답변과 모순되는 말을 하지 마세요.\n"
-        "- 대화는 일상적인 이야기처럼 부드럽게 이어가세요.\n"
-        "- 사용자가 불편함을 느끼지 않도록, 친근하고 따뜻하게 대화하세요.\n"
-        "- 뜬금없는 이야기는 하지 말고, 사용자의 직전 답변과 관련된 질문만 하세요.\n"
-        "- 치매, 검사, 평가, 진단, 점수, 소견, 논문 등은 언급하지 마세요.\n"
-        "- 대화가 끝날 때는 간단한 응원의 말을 남기세요.\n"
-        "- 사용자가 '끝', '그만', '종료', '마치자', '끝낼래', '대화 그만', '대화 종료' 등 대화 종료 의사를 표현하면, 반드시 대화를 종료하고 마지막 인사만 남기세요. 이후에는 추가 질문이나 대화를 이어가지 마세요.\n"
-        "- 사용자가 대화를 끝내고 싶다고 하면, '네, 오늘 대화는 여기까지 할게요. 좋은 하루 보내세요!'와 같이 짧게 인사만 남기세요.\n"
-        "- 한 대화에서 질문(주고받는 QnA)이 5~7개 정도 오갔다면, 사용자가 종료 의사를 밝히지 않아도 반드시 대화를 마무리하고, 마지막 멘트로 '오늘 대화는 여기까지 할게요. 좋은 하루 보내세요.'라고 말한 뒤 더 이상 대화를 이어가지 마세요.\n"
-        "- 대화 중에는 논문(연구 결과, 과학적 근거 등)을 참고하여 치매 위험 평가에 도움이 될 수 있는 질문(예: 기억력, 일상 습관, 최근 경험, 시간/장소 인지 등)을 자연스럽고 친근하게 던지세요. 단, 검사나 진단, 평가, 점수, 소견, 논문 등 전문 용어는 사용하지 말고, 일상 대화처럼 부드럽게 질문하세요."
-    )
+    system_prompt = """
+당신은 친근한 대화 파트너입니다.
+- 제공된 참고 논문(Context)을 활용해 실제 연구에서 사용된 치매 선별 질문을 자연스럽고 일상 대화로 묻습니다.
+- 검사, 진단, 평가, 점수, 소견 등 전문 용어는 사용하지 않습니다.
+- 자기 언급이나 능력 언급을 하지 않습니다.
+- 대화 이력(chat_history)을 확인해 이미 물어본 질문을 반복하지 않습니다.
+- 논문의 핵심 내용을 참고해 질문을 구성합니다.
+- 사용자의 이전 답변을 바탕으로 열린 질문을 합니다. 예: “최근에 어떤 장소나 일이 가장 기억에 남으세요?”
+- 어조는 따뜻하고 존중합니다.
+- 주고받음이 7회에 도달하면 간단한 작별 인사로 대화를 종료합니다.
+- 사용자가 ‘끝’, ‘그만’, ‘종료’ 등을 표현하면 즉시 대화를 마무리하고 짧게 작별 인사를 남깁니다.
+"""
 
     prompt = ChatPromptTemplate.from_messages([
-        SystemMessagePromptTemplate.from_template(system_prompt + "\n\n참고 논문: {context}"),
-        HumanMessagePromptTemplate.from_template("{question}")
+        SystemMessagePromptTemplate.from_template(system_prompt + "\n\n참고 논문(Context): {context}"),
+        HumanMessagePromptTemplate.from_template(
+            "이전 대화 요약(chat_history):\n{chat_history}\n\n"
+            "사용자 발화: {question}"
+        )
     ])
 
     chain = ConversationalRetrievalChain.from_llm(
@@ -89,11 +86,6 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
     # 3. AI 응답 저장
     save_chat_log(db, chat_id=chat_id, role=RoleEnum.ai, text=response)
 
-    # 4. 마지막 평가(점수/소견) 추출 및 저장
-    score, result = extract_score_and_result(response)
-    if score is not None and result is not None:
-        save_report_text_score_and_result(db, report_id, score, result)
-
     return response
 
 def get_chat_logs(db: Session, chat_id: int) -> list[ChatLogResponse]:
@@ -105,9 +97,9 @@ def get_chat_logs(db: Session, chat_id: int) -> list[ChatLogResponse]:
     )
     return [ChatLogResponse.from_orm(log) for log in logs]
 
-def evaluate_conversation_and_save(db: Session, report_id: int, chat_id: int):
+def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
     """
-    전체 대화 로그를 바탕으로 LLM에게 치매 위험도 점수와 소견을 생성하게 하고, Report에 저장합니다.
+    전체 대화 로그를 바탕으로 LLM에게 치매 위험 관련 소견(chat_result)과 위험도(chat_risk)를 생성, Report에 저장
     """
     # 1. 전체 대화 로그 불러오기
     logs = (
@@ -123,23 +115,58 @@ def evaluate_conversation_and_save(db: Session, report_id: int, chat_id: int):
         else:
             conversation += f"AI: {log.text}\n"
 
-    # 2. 평가용 프롬프트
+    # 2. 평가용 프롬프트 (점수X, 소견+위험도만)
     eval_prompt = PromptTemplate(
         input_variables=["conversation"],
-        template=(
+        template = (
             "아래는 사용자와 AI의 전체 대화 내용입니다.\n"
-            "{conversation}\n"
-            "이 대화를 바탕으로, 사용자의 치매 위험도를 0~100점으로 평가하고, 간단한 소견(1~2문장)도 작성해 주세요.\n"
-            "- 점수와 소견만 아래 형식으로 출력하세요.\n"
-            "치매 위험도 점수: <숫자>\n소견: <내용>"
+            "{conversation}\n\n"
+            "참고 논문(치매 관련 연구 데이터)도 함께 참고하세요.\n"
+            "\n"
+            "1. 대화 중 사용자가 보인 '치매가 있는 사람이 자주 보이는 특징적인 응답'이 몇 번 나왔는지 논문을 참고해 정확히 판단하세요.\n"
+            "2. 그 횟수가 2개 이상이면 '경계', 4개 이상이면 '위험', 그 미만이면 '양호'로 위험도를 정하세요.\n"
+            "3. 아래 예시 형식을 그대로 따라 답하세요. [대괄호] 부분만 실제 대화 내용과 분석에 맞게 채워 넣으세요.\n\n"
+            "<양호>\n"
+            "소견: 대화 검사 결과, 특별한 이상 징후가 관찰되지 않았습니다. 사용자는 일상적인 질문에 일관되게 답변하였으며, 기억력이나 인지에 뚜렷한 혼동은 보이지 않았습니다. 현재 상태를 유지하며 일상 생활을 계속하시는 것을 권장합니다.\n\n"
+            "<경계>\n"
+            "소견: 대화 검사 결과, 사용자는 [문제되는 패턴/특징]을(를) 반복적으로 보였습니다. 특히, [구체적 예시 1], [구체적 예시 2]와 같은 대답이 관찰되었고, 이는 [인지 저하/기억력 저하/혼동 경향 등]의 신호일 수 있습니다. 이러한 특성으로 볼 때, 추가 관찰이 필요합니다.\n\n"
+            "<위험>\n"
+            "소견: 대화 검사 결과, 사용자는 [문제되는 패턴/특징]을(를) 여러 차례 반복했습니다. 예를 들어, [구체적 예시 1] 및 [구체적 예시 2]와 같은 대답이 관찰되었고, 이는 심각한 인지 저하 또는 혼동 경향을 시사합니다. 추가 평가나 전문 기관 방문을 권장합니다.\n\n"
+            "위험도: <양호/경계/위험>\n"
+
         )
+
     )
 
     llm = ChatOpenAI(model="gpt-4", temperature=0, openai_api_key=openai_api_key)
     eval_chain = eval_prompt | llm
     eval_response = eval_chain.invoke({"conversation": conversation})
-    
-    # 3. 점수/소견 추출 및 저장
-    score, result = extract_score_and_result(str(eval_response))
-    if score is not None and result is not None:
-        save_report_text_score_and_result(db, report_id, score, result)
+    response_text = eval_response.content
+
+    # 3. 결과 추출 (점수X)
+    m1 = re.search(r"소견[:：]?\s*([^\n]+)", response_text)
+    chat_result = m1.group(1).strip() if m1 else ""
+
+    m2 = re.search(r"위험도[:：]?\s*(양호|경계|위험)", response_text)
+    # 매치 실패 시 기본값을 '양호'로
+    chat_risk_str = m2.group(1).strip() if m2 else "양호"
+
+    # Enum 변환
+    if chat_risk_str == "양호":
+        risk_enum = RiskLevel.GOOD
+    elif chat_risk_str == "경계":
+        risk_enum = RiskLevel.CAUTION
+    elif chat_risk_str == "위험":
+        risk_enum = RiskLevel.DANGER
+    else:#예외 처리: 혹시 다른 값이 들어오면 기본을 양호로
+        risk_enum = RiskLevel.GOOD
+
+    # 4. Report 저장
+    report = db.query(Report).filter(Report.report_id == report_id).first()
+    if not report:
+        raise ValueError("리포트가 존재하지 않습니다.")
+    report.chat_result = chat_result
+    report.chat_risk = risk_enum
+    db.commit()
+
+    return chat_result, risk_enum
