@@ -32,9 +32,9 @@ class Report(Base):
     language_score = Column(Integer, nullable=False, default=0)
 
     # 위험도 필드 - RiskLevel enum 사용, NULL 허용 (아직 테스트 안함)
-    ad8_risk = Column(Enum(RiskLevel), nullable=True)
-    drawing_risk = Column(Enum(RiskLevel), nullable=True)
-    chat_risk = Column(Enum(RiskLevel), nullable=True)
-    final_risk = Column(Enum(RiskLevel), nullable=True)
+    ad8_risk = Column(Enum(RiskLevel, native_enum=True), nullable=True)
+    drawing_risk = Column(Enum(RiskLevel, native_enum=True), nullable=True)
+    chat_risk = Column(Enum(RiskLevel, native_enum=True), nullable=True)
+    final_risk = Column(Enum(RiskLevel, native_enum=True), nullable=True)
 
     user = relationship("User", back_populates="reports")
