@@ -1,20 +1,20 @@
-# app/chat/api.py
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi import UploadFile, File, Form
+from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
 import asyncio
 
-from app.chat.schemas import ChatRequest, ChatResponse
-from app.chat.service import chat_with_ai, evaluate_conversation_and_save
-from app.chat.crud import save_chat_log
-from app.chat.models import RoleEnum
-from app.chat.stream_handler import get_streaming_chain
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 from app.database import get_db
-from .service import get_chat_logs
-from .schemas import ChatLogResponse
+from app.auth.utils import get_current_user
+from app.auth.models import User
+from app.chat.schemas import ChatRequest, ChatResponse, ChatLogResponse, CreateChatRequest, CreateChatResponse, EvaluateChatResponse
+from app.chat.models import RoleEnum, Chat
+from app.chat.service import chat_with_ai, evaluate_and_save_chat_result
+from app.chat.crud import save_chat_log
+from app.chat.stream_handler import get_streaming_chain
+from app.chat.service import get_chat_logs
 from app.report.models import Report
-from app.chat.models import Chat
-from .schemas import CreateChatRequest, CreateChatResponse
+
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
@@ -23,61 +23,73 @@ def is_end_message(message: str) -> bool:
     return any(kw in message for kw in end_keywords)
 
 def is_gpt_end_response(response: str) -> bool:
-    end_phrases = [
-        "오늘 대화는 여기까지 할게요. 좋은 하루 보내세요."
-    ]
+    end_phrases = ["오늘 대화는 여기까지 할게요. 좋은 하루 보내세요."]
     return any(phrase in response for phrase in end_phrases)
 
-@router.post("", response_model=ChatResponse)
-def chat(request: ChatRequest, db: Session = Depends(get_db)):
+
+@router.post(
+    "",
+    response_model=ChatResponse,
+    summary="채팅 메시지 전송",
+    description="채팅 메시지를 전송하고 AI 응답을 반환합니다."
+)
+def chat(
+        request: ChatRequest,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
     response = chat_with_ai(
         report_id=request.report_id,
         chat_id=request.chat_id,
         message=request.message,
         db=db
     )
-
-    # 대화 종료 신호 감지: 사용자 메시지 or AI 응답
-    if is_end_message(request.message) or is_gpt_end_response(response):
-        evaluate_conversation_and_save(db, request.report_id, request.chat_id)
-
     return {"response": response}
 
 
-@router.post("/stream")
-async def stream_chat(request: ChatRequest, db: Session = Depends(get_db)):
+@router.post(
+    "/stream",
+    summary="채팅 스트리밍",
+    description="AI와의 채팅을 실시간 스트리밍으로 제공합니다."
+)
+async def stream_chat(
+        request: ChatRequest,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
     async def event_generator():
         response_text = ""
         chain, memory, handler = get_streaming_chain(request.report_id)
-
-        # 비동기 체인 실행
         task = asyncio.create_task(chain.acall(request.message))
 
-        # 토큰 단위로 스트리밍
         async for token in handler.aiter():
             response_text += token
             yield f"data: {token}\n\n"
 
-        # 전체 응답 저장
         save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
         save_chat_log(db, request.chat_id, RoleEnum.ai, response_text)
 
     return EventSourceResponse(event_generator())
 
-@router.post("/create", response_model=CreateChatResponse)
-def create_chat(request: CreateChatRequest, db: Session = Depends(get_db)):
-    # 1. Report 생성 또는 기존 report_id 사용
-    if request.report_id is not None:
-        report = db.query(Report).filter(Report.report_id == request.report_id).first()
-        if not report:
-            raise ValueError("해당 report_id가 존재하지 않습니다.")
-    else:
-        report = Report()
-        db.add(report)
-        db.commit()
-        db.refresh(report)
 
-    # 2. Chat 생성
+@router.post(
+    "/create",
+    response_model=CreateChatResponse,
+    summary="채팅방 생성",
+    description="지정한 report_id에 대해 새 채팅방을 생성합니다."
+)
+def create_chat(
+        request: CreateChatRequest,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    if not request.report_id:
+        raise HTTPException(status_code=400, detail="report_id는 필수입니다.")
+
+    report = db.query(Report).filter(Report.report_id == request.report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="해당 report_id가 존재하지 않습니다.")
+
     chat = Chat(report_id=report.report_id)
     db.add(chat)
     db.commit()
@@ -88,6 +100,39 @@ def create_chat(request: CreateChatRequest, db: Session = Depends(get_db)):
         message="채팅방이 생성되었습니다."
     )
 
-@router.get("/logs/{chat_id}", response_model=list[ChatLogResponse])
-def read_chat_logs(chat_id: int, db: Session = Depends(get_db)):
+
+@router.get(
+    "/logs/{chat_id}",
+    response_model=list[ChatLogResponse],
+    summary="채팅 로그 조회",
+    description="특정 chat_id에 대한 모든 채팅 로그를 반환합니다."
+)
+def read_chat_logs(
+        chat_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
     return get_chat_logs(db, chat_id)
+
+
+@router.post(
+    "/chats/{chat_id}/evaluate",
+    response_model=EvaluateChatResponse,
+    summary="채팅 평가 및 결과 저장",
+    description="chat_id와 report_id를 기반으로 AI 분석 결과(소견, 위험도)를 평가하고 저장합니다."
+)
+def evaluate_chat_and_save(
+        chat_id: int,
+        report_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    try:
+        chat_result, chat_risk = evaluate_and_save_chat_result(db, chat_id, report_id)
+        return EvaluateChatResponse(
+            chat_result=chat_result,
+            chat_risk=chat_risk,
+            message="소견 및 위험도가 저장되었습니다."
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
