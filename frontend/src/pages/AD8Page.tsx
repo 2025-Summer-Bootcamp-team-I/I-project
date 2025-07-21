@@ -2,16 +2,21 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NeuralBackground from '../components/Background';
 import Header from '../components/Header';
-import useTestStore from '../store/testStore';
+import useAD8TestStore from '../store/testStore';
 import styled from 'styled-components';
+import { submitAD8 } from '../api';
+import { useReportIdStore } from '../store/reportIdStore';
 
 const AD8Page = () => {
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [showResult, setShowResult] = useState(false);
-  const { setAD8Result } = useTestStore();
+  const [isSubmitting, setIsSubmitting] = useState(false); // 제출 상태 추가
+  const { setResponse, completeTest } = useAD8TestStore();
+  const { reportId, setAD8Completed } = useReportIdStore();
 
+  
   const questions = [
     "판단력에 문제가 생겼습니까?",
     "어떤 일에 대한 흥미가 줄었습니까?",
@@ -23,15 +28,44 @@ const AD8Page = () => {
     "생각이나 기억력에 매일 어려움을 겪습니까?"
   ];
 
-  const handleAnswer = (answer: boolean) => {
+  const handleAnswer = async (answer: boolean) => {
+    if (isSubmitting) return; // 이미 제출 중이면 중복 호출 방지
+
     const newAnswers = [...answers, answer];
     setAnswers(newAnswers);
+
+    setResponse(currentQuestionIndex + 1, answer);
 
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      setAD8Result(newAnswers);
-      setShowResult(true);
+      completeTest();
+      setIsSubmitting(true); // 제출 시작
+      try {
+        if (!reportId) {
+          alert("리포트 ID를 찾을 수 없습니다. 메인 페이지에서 다시 시도해주세요.");
+          navigate('/main');
+          return;
+        }
+
+        // 최신 responses 상태를 직접 가져옴
+        const latestResponses = useAD8TestStore.getState().responses;
+
+        const ad8Data = {
+          report_id: reportId,
+          responses: latestResponses.map(r => ({ questionNo: r.question_no, isCorrect: r.is_correct }))
+        };
+
+        await submitAD8(ad8Data);
+        setAD8Completed(true); // AD8 검사 완료 상태로 변경
+        setShowResult(true);
+      } catch (error) {
+        if (error instanceof Error) {
+        }
+        alert("결과 제출에 실패했습니다. 다시 시도해주세요.");
+      } finally {
+        setIsSubmitting(false); // 제출 완료 (성공 또는 실패)
+      }
     }
   };
 
@@ -39,7 +73,7 @@ const AD8Page = () => {
 
   return (
     <Container>
-      <NeuralBackground />
+      <NeuralBackground isSurveyActive={true} />
       <Header />
       <Content>
         <BackButton onClick={() => navigate('/main')} aria-label="뒤로가기">
@@ -62,8 +96,8 @@ const AD8Page = () => {
               <QuestionNumber>질문 {currentQuestionIndex + 1}/{questions.length}</QuestionNumber>
               <Question>{questions[currentQuestionIndex]}</Question>
               <ButtonContainer>
-                <AnswerButton onClick={() => handleAnswer(true)}>예</AnswerButton>
-                <AnswerButton onClick={() => handleAnswer(false)}>아니오</AnswerButton>
+                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(true); }} disabled={isSubmitting}>예</AnswerButton>
+                <AnswerButton onClick={e => { (e.currentTarget as HTMLButtonElement).blur(); handleAnswer(false); }} disabled={isSubmitting}>아니오</AnswerButton>
               </ButtonContainer>
             </QuestionCard>
           </>
@@ -89,65 +123,64 @@ export default AD8Page;
 // --- styled-components ---
 
 const Container = styled.div`
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   min-height: 100vh;
   background: transparent;
   color: white;
-  overflow: hidden;
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto; /* Enable scroll on overflow */
 `;
 
 const Content = styled.main`
   position: relative;
-  padding: 7rem 2rem 2rem;
-  max-width: 720px;
+  padding: 6rem 1.2rem 2rem; /* Adjust top padding for fixed header */
+  max-width: 550px;
   margin: 0 auto;
   width: 100%;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
 const BackButton = styled.button`
-  position: absolute;
-  top: 7rem;
-  left: 2rem;
-  background: #131828;
-  border: none;
-  padding: 1rem;
+  position: fixed; /* Fixed position relative to viewport */
+  top: 5.5rem;
+  left: 2.5rem;
+  background: rgba(17, 24, 39, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  padding: 0.6rem;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
   cursor: pointer;
-  outline: none;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-
-  @media (min-width: 1024px) {
-    left: -5rem;
-  }
-
-  @media (min-width: 1200px) {
-    left: -8rem;
-  }
-
-  @media (min-width: 1440px) {
-    left: -15rem;
-  }
+  z-index: 110;
 
   &:hover {
     background: #1a2235;
   }
 
   svg {
-    width: 24px;
-    height: 24px;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    top: 5rem;
+    left: 1rem;
   }
 `;
 
 const Title = styled.h1`
-  font-size: 2.5rem;
+  font-size: clamp(2rem, 6vh, 2.5rem);
   color: #96E7D4;
-  margin: 0 0 0.8rem;
+  margin: 0 0 1vh;
   text-align: center;
   letter-spacing: -1.2px;
   font-weight: 800;
@@ -156,18 +189,19 @@ const Title = styled.h1`
 const Subtitle = styled.p`
   color: #94a3b8;
   text-align: center;
-  margin-bottom: 2.3rem;
-  font-size: 1.16rem;
+  margin-bottom: 3vh;
+  font-size: clamp(1rem, 2.5vh, 1.16rem);
 `;
 
 const ProgressContainer = styled.div`
-  margin-bottom: 2.6rem;
+  margin-bottom: 3vh;
+  width: 650px;
 `;
 
 const ProgressLabel = styled.div`
   color: #94a3b8;
-  margin-bottom: 0.6rem;
-  font-size: 0.9rem;
+  margin-bottom: 1vh;
+  font-size: clamp(0.8rem, 2vh, 0.9rem);
   margin-left: 0.2rem;
 `;
 
@@ -191,25 +225,27 @@ const QuestionCard = styled.div`
   position: relative;
   background: #131828;
   border-radius: 1.5rem;
-  padding: 2.5rem 3rem;
-  backdrop-filter: blur(22px);
+  padding: 4vh 2rem;
   border: 1.7px solid #96E7D422;
   box-shadow: 0 2px 38px 0 #96e7d410;
   margin: 0 auto;
   width: 100%;
+  min-width: 600px; /* 기존보다 더 넓게 수정 */
+  margin-right: 300px;
+  margin-left: 300px
 `;
 
 const QuestionNumber = styled.div`
   color: #96E7D4;
-  margin-bottom: 1.2rem;
+  margin-bottom: 2vh;
   text-align: center;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 2.5vh, 1.1rem);
 `;
 
 const Question = styled.h2`
-  font-size: 1.8rem;
+  font-size: clamp(1.5rem, 4vh, 1.8rem);
   text-align: center;
-  margin-bottom: 2.2rem;
+  margin-bottom: 4vh;
   color: #fff;
   font-weight: 600;
   letter-spacing: -0.5px;
@@ -220,7 +256,7 @@ const ButtonContainer = styled.div`
   display: flex;
   gap: 1.5rem;
   justify-content: center;
-  margin-top: 2.5rem;
+  margin-top: 2vh;
 `;
 
 const AnswerButton = styled.button`
@@ -229,9 +265,9 @@ const AnswerButton = styled.button`
   border: none;
   color: #B9F3E4;
   font-weight: 600;
-  padding: 0.8rem 0;
+  padding: clamp(0.7rem, 2vh, 0.9rem) 0;
   border-radius: 999px;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 2.5vh, 1.1rem);
   cursor: pointer;
   transition: all 0.2s ease;
   max-width: 140px;
@@ -239,24 +275,29 @@ const AnswerButton = styled.button`
   &:hover {
     background: #2f4450;
   }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px #96E7D4;
+  }
 `;
 
 const ResultCard = styled(QuestionCard)`
   text-align: center;
-  padding: 3rem 2rem;
+  padding: 5vh 2rem;
 `;
 
 const ResultTitle = styled.h2`
-  font-size: 2rem;
+  font-size: clamp(1.8rem, 4vh, 2rem);
   color: #fff;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2vh;
   font-weight: 700;
 `;
 
 const ResultScore = styled.p`
-  font-size: 1.3rem;
+  font-size: clamp(1.1rem, 3vh, 1.3rem);
   color: #94a3b8;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5vh;
 `;
 
 const Score = styled.span`
@@ -265,9 +306,9 @@ const Score = styled.span`
 `;
 
 const ResultMessage = styled.p<{ $good: boolean }>`
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 2.8vh, 1.2rem);
   color: ${props => props.$good ? '#96E7D4' : '#f87171'};
-  margin-bottom: 2rem;
+  margin-bottom: 3vh;
   line-height: 1.5;
 `;
 
@@ -276,12 +317,14 @@ const HomeButton = styled.button`
   border: none;
   color: #131828;
   font-weight: 600;
-  padding: 1rem 2rem;
+  padding: clamp(0.8rem, 2.2vh, 1rem) clamp(1.5rem, 4vw, 2rem);
   border-radius: 999px;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 2.5vh, 1.1rem);
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: 2rem;
+  margin-top: 2vh;
+  opacity: ${props => props.disabled ? 0.6 : 1};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
 
   &:hover {
     background: #7fcebb;
