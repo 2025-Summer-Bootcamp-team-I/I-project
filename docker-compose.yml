@@ -1,27 +1,27 @@
 version: "3.9"
 
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true
-    working_dir: /app
-    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+  #   frontend:
+  #     build:
+  #       context: ./frontend
+  #       dockerfile: Dockerfile
+  #     ports:
+  #       - "3000:3000"
+  #     volumes:
+  #       - ./frontend:/app
+  #       - /app/node_modules
+  #     environment:
+  #       - NODE_ENV=development
+  #       - CHOKIDAR_USEPOLLING=true
+  #     working_dir: /app
+  #     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     env_file:
-      - ./backend/.env
+      - ./bac43kend/.env
     ports:
       - "8000:8000"
     volumes:
@@ -29,7 +29,8 @@ services:
     working_dir: /app
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
 
@@ -44,6 +45,7 @@ services:
       - CHROMA_DB_IMPL=duckdb+parquet
       - CHROMA_SERVER_DB_DIR=/data
 
+#처음에 크로마 db에 데이터 없을때만 실행
 #  pipeline:
 #    build:
 #      context: ./backend
@@ -57,11 +59,13 @@ services:
 #    environment:
 #      - OPENAI_API_KEY=${OPENAI_API_KEY}
 #      - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
-#      #- SCITE_API_KEY=${SCITE_API_KEY}
+#      # - SCITE_API_KEY=${SCITE_API_KEY}   # 필요시 활성화
 #    depends_on:
-#      - chroma-server
+#      chroma-server:
+#        condition: service_started
 #    volumes:
 #      - chroma-data:/data
+
 
   mysql:
     image: mysql:8.0
@@ -76,6 +80,11 @@ services:
       - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # 🔒 모니터링 구성 일시 비활성화 (Prometheus, Grafana, cAdvisor)
   # prometheus:
