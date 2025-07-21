@@ -20,6 +20,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
     ports:
       - "8000:8000"
     volumes:
@@ -28,6 +30,38 @@ services:
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     depends_on:
       - mysql
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+  chroma-server:
+    image: ghcr.io/chroma-core/chroma:latest
+    container_name: chroma-server
+    ports:
+      - "8002:8000"
+    volumes:
+      - chroma-data:/data
+    environment:
+      - CHROMA_DB_IMPL=duckdb+parquet
+      - CHROMA_SERVER_DB_DIR=/data
+
+#  pipeline:
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile
+#    command:
+#      - python
+#      - -u
+#      - app/rag/pipeline.py
+#    env_file:
+#      - ./backend/.env
+#    environment:
+#      - OPENAI_API_KEY=${OPENAI_API_KEY}
+#      - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
+#      #- SCITE_API_KEY=${SCITE_API_KEY}
+#    depends_on:
+#      - chroma-server
+#    volumes:
+#      - chroma-data:/data
 
   mysql:
     image: mysql:8.0
@@ -73,4 +107,5 @@ services:
 
 volumes:
   mysql-data:
+  chroma-data:
   grafana-storage:
