@@ -71,9 +71,14 @@ const HighchartsGlobalStyle = createGlobalStyle`
     
     b {
       font-size: 17px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       
       .status {
         font-size: 13px;
+        flex-shrink: 0;
+        padding-left: 8px;
       }
     }
 
@@ -143,17 +148,7 @@ const ChatCard: React.FC<ExamCardProps> = ({ exam, status }) => (
     <StatusBadge status={status}>{status}</StatusBadge>
     <ExamName $isHighlighted>{exam.name}</ExamName>
     <ExamContent>
-      <ExamCol>
-        <Label>결과 요약</Label>
-        <Summary>
-          {exam.summary.split("\n").map((line, i) => (
-            <React.Fragment key={i}>
-              {line.includes("점수:") ? <ScoreHighlight>{line}</ScoreHighlight> : line}
-              <br />
-            </React.Fragment>
-          ))}
-        </Summary>
-      </ExamCol>
+
       <ExamCol>
         <Label>분석 및 제안</Label>
         <Suggestion>{exam.suggestion}</Suggestion>
@@ -168,7 +163,6 @@ const DrawingCard: React.FC<ExamCardProps> = ({ exam, status }) => (
     <ExamName $isHighlighted>{exam.name}</ExamName>
     <ExamContent>
       <ExamCol>
-        <Label>결과 요약</Label>
         <ImageBox>
           <ResultImg src={exam.image} alt="그림 검사 결과" />
         </ImageBox>
@@ -185,6 +179,7 @@ const DrawingCard: React.FC<ExamCardProps> = ({ exam, status }) => (
 const ReportPage: React.FC = () => {
   const navigate = useNavigate();
   const pdfRef = useRef<HTMLDivElement>(null);
+  const chartComponentRef = useRef<HighchartsReact.RefObject>(null);
   const resetReportId = useReportIdStore((state) => state.resetReportId);
   const { width: windowWidth } = useWindowSize();
 
@@ -220,6 +215,12 @@ const ReportPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [ad8Score, circumference]);
 
+  useEffect(() => {
+    if (chartComponentRef.current && chartComponentRef.current.chart) {
+      chartComponentRef.current.chart.reflow();
+    }
+  }, [windowWidth]);
+
   // 컴포넌트가 마운트될 때 report를 history에 추가
   useEffect(() => {
     if (report) {
@@ -248,7 +249,6 @@ const ReportPage: React.FC = () => {
   const chartOptions: Highcharts.Options = {
     chart: {
       type: 'pie',
-      marginLeft: windowWidth > 900 ? -40 : 0,
       options3d: {
         enabled: true,
         alpha: 55,
@@ -262,7 +262,7 @@ const ReportPage: React.FC = () => {
             return; // Don't render image until dimensions are loaded
           }
 
-          const maxSize = 170;
+          const maxSize = 200;
           const { width: originalWidth, height: originalHeight } = imgDimensions;
           
           let newWidth, newHeight;
@@ -276,8 +276,8 @@ const ReportPage: React.FC = () => {
 
           const centerX = this.plotLeft + this.plotWidth * 0.5;
           const centerY = this.plotTop + this.plotHeight * 0.5;
-          const yOffset = 57; // 이미지를 위로 올릴 값
-          const xOffset = 8; // 이미지를 왼쪽으로 옮길 값
+          const yOffset = 72; // 이미지를 위로 올릴 값
+          const xOffset = -1; // 이미지를 왼쪽으로 옮길 값
 
           if ((this as any).customImage) {
             (this as any).customImage.attr({
@@ -293,7 +293,19 @@ const ReportPage: React.FC = () => {
               centerY - newHeight / 2 - yOffset,
               newWidth,
               newHeight
-            ).add().toFront();
+            )
+            .attr({ opacity: 0 })
+            .add()
+            .toFront();
+
+            (this as any).customImage.animate(
+              {
+                opacity: 1,
+              },
+              {
+                duration: 800,
+              }
+            );
           }
         }
       }
@@ -311,11 +323,27 @@ const ReportPage: React.FC = () => {
     },
     plotOptions: {
       pie: {
+        animation: false,
         innerSize: '50%',
         allowPointSelect: false,
         depth: 20,
         startAngle: 45,
         size: windowWidth > 900 ? '75%' : '100%',
+        events: {
+          afterAnimate: function(this: Highcharts.Series) {
+            this.points.forEach(point => {
+              if (point.graphic) {
+                point.graphic.attr({
+                  opacity: 0
+                }).animate({
+                  opacity: 1
+                }, {
+                  duration: 800
+                });
+              }
+            });
+          }
+        },
         dataLabels: {
           enabled: true,
           crop: false,
@@ -353,8 +381,8 @@ const ReportPage: React.FC = () => {
             }
 
             return `<div class="${labelClass}">
-                        <b>${this.name} <span class="status ${statusClass}">(${statusText})</span></b>
-                        <br>
+                        <b><span>${this.name}</span><span class="status ${statusClass}">(${statusText})</span></b>
+
                         <span class="description">${pointOptions.description || ''}</span>
                     </div>`;
           },
@@ -450,11 +478,11 @@ const ReportPage: React.FC = () => {
       <HighchartsGlobalStyle />
       <Background isSurveyActive={true} />
       <Header />
-      <TitleArea>
-        <FixedTitle>최종 분석 리포트</FixedTitle>
-      </TitleArea>
       <MainContent>
         <ScrollContent>
+          <TitleArea>
+            <FixedTitle>최종 분석 리포트</FixedTitle>
+          </TitleArea>
           <PdfTarget ref={pdfRef}>
             {/* 상단 종합 */}
             <TopSection>
@@ -462,6 +490,7 @@ const ReportPage: React.FC = () => {
                 <HighchartsReact
                   highcharts={Highcharts}
                   options={chartOptions}
+                  ref={chartComponentRef}
                 />
               </PieChartWrapper>
             </TopSection>
@@ -503,7 +532,6 @@ const ReportPage: React.FC = () => {
 };
 
 export default ReportPage;
-
 // --- 스타일은 위와 동일하게 붙여넣기 (생략 가능, 위 코드 참고)
 const Container = styled.div`
   width: 100vw;
@@ -516,17 +544,12 @@ const Container = styled.div`
 `;
 
 const TitleArea = styled.div`
-  position: fixed;
-  top: 72px;  // Header 높이
-  left: 0;
-  right: 0;
   width: 100%;
   height: 5rem;
   background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
 `;
 
 const FixedTitle = styled.h1`
@@ -542,7 +565,7 @@ const FixedTitle = styled.h1`
 
 const MainContent = styled.div`
   position: fixed;
-  top: 9rem;  // Header(72px) + TitleArea(5rem) 높이 합
+  top: 72px;  // Header 높이
   left: 0;
   right: 0;
   bottom: 0;
@@ -569,7 +592,7 @@ const ScrollContent = styled.div`
 `;
 
 const PdfTarget = styled.div`
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 0 2rem;
 
@@ -586,7 +609,7 @@ const TopSection = styled.div`
 
 const PieChartWrapper = styled.div`
   position: relative;
-  width: 1000px;
+  width: 1100px;
   max-width: 100%;
   height: 400px;
   svg:focus {
@@ -602,23 +625,24 @@ const SectionTitle = styled.h2`
   font-weight: 600;
   color: #C4B5FD;
   margin-bottom: 2rem;
-  max-width: 680px;
-  margin-left: 4.5rem;   // auto → 1.5rem 정도로 변경
-  margin-right: auto;    // 오른쪽은 auto로 놔두면 자연스럽게 살짝 왼쪽으로 이동
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
-  text-align: left;      // 살짝 왼쪽 느낌이 더 강해짐
-  padding-left: 0;       // 필요없으면 0, 약간 왼쪽 패딩 주고 싶으면 0.5rem
+  text-align: left;
+  padding-left: 0;
 `;
 
 const OverallSummaryCard = styled.div`
-  background: rgba(30, 30, 45, 0.5);
+  background: rgba(30, 30, 45, 0);
   border: 1px solid rgba(167, 139, 250, 0.1);
   border-radius: 1rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   padding: 2rem;
   margin-bottom: 3rem;
   margin-top: -4rem;
+  padding-top: 1rem;
   backdrop-filter: blur(10px);
   max-width: 800px;
   margin-left: auto;
@@ -662,7 +686,8 @@ const ExamCard = styled.div<{ $cardType?: string }>`
   border-radius: 1rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   padding: 1.8rem;
-  margin-bottom: 1.2rem;
+  padding-left: 1rem;
+  margin-bottom: 2rem;
   backdrop-filter: blur(10px);
   max-width: 800px;
   margin-left: auto;
@@ -762,6 +787,7 @@ const ExamName = styled.div<{ $isHighlighted?: boolean }>`
   color: ${({ $isHighlighted }) => $isHighlighted ? '#5EEAD4' : '#E2E8F0'};
   margin-bottom: 0.5rem;
   margin-top: -1rem;
+  margin-left: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
 
@@ -781,7 +807,6 @@ const ExamCol = styled.div`
   min-width: 230px;
   background: rgba(20, 20, 35, 0.3);
   padding: 1rem 1.5rem;
-
   &:not(:first-child) {
     border-left: 1px solid rgba(167, 139, 250, 0.1);
   }
@@ -821,12 +846,12 @@ const ScoreHighlight = styled.span`
   border-radius: 0.3rem;
 `;
 const ImageBox = styled.div`
-  margin-top: 1.1rem;
+  margin-top: 10/6rem;
   text-align: center;
 `;
 const ResultImg = styled.img`
-  width: 160px;
-  height: 160px;
+  width: 180px;
+  height: 180px;
   object-fit: contain;
   border-radius: 18px;
   background: #23263b;
@@ -887,3 +912,4 @@ const ActionBtn = styled.button<{ $pdf?: boolean }>`
 const BottomSpacer = styled.div`
   height: 130px;
 `;
+
