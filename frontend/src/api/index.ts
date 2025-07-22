@@ -117,7 +117,7 @@ export const getChatLogs = async (chatId: number) => {
 
 // 채팅 스트리밍 API
 export const streamChat = async (chatRequest: ChatRequest, onData: (data: string) => void) => {
-  const response = await fetch('http://localhost:8000/chat/stream', {
+  const response = await fetch(`${axiosInstance.defaults.baseURL}/chat/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -138,10 +138,14 @@ export const streamChat = async (chatRequest: ChatRequest, onData: (data: string
       const { done, value } = await reader.read();
       if (done) break;
       const chunk = decoder.decode(value, { stream: true });
+      console.log("Raw chunk:", chunk); // 진단용 로그 추가
       // SSE 데이터 형식(data: ...\n\n)을 파싱
       const lines = chunk.split('\n\n').filter(line => line.startsWith('data:'));
+      console.log("Parsed lines:", lines); // 진단용 로그 추가
       for (const line of lines) {
+        console.log("Parsed line:", line); // 진단용 로그 추가
         const data = line.substring(5).trim();
+        console.log("Extracted data:", data); // 진단용 로그 추가
         onData(data);
       }
     }
@@ -149,6 +153,7 @@ export const streamChat = async (chatRequest: ChatRequest, onData: (data: string
     reader.releaseLock();
   }
 };
+
 
 // 채팅 평가 및 결과 저장 API
 export const evaluateChat = async (chatId: number, reportId: number) => {
