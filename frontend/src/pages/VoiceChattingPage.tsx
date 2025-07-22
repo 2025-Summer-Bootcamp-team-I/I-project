@@ -1,12 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import Background from '../components/Background';
-import Header from '../components/Header'; // Header 컴포넌트 임포트
+import Header from '../components/Header';
 import { useChatStore } from '../store/chatStore';
-import voiceChatRobot from '../assets/imgs/voiceChat-Robot.png'; // 로봇 이미지 임포트
+import { useReportIdStore } from '../store/reportIdStore';
+import { speechToText, textToSpeech } from '../api';
+import voiceChatRobot from '../assets/imgs/voiceChat-Robot.png';
 
-// Keyframes for animations
 const pulse = keyframes`
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.05); opacity: 0.8; }
@@ -18,22 +19,21 @@ const micPulse = keyframes`
   100% { transform: scale(1.2); opacity: 0; }
 `;
 
-// Styled Components 정의
 const PageContainer = styled.div`
   position: relative;
   width: 100%;
-  min-height: calc(100vh - 4rem); /* Header 높이 제외한 뷰포트 높이 */
+  min-height: calc(100vh - 4rem);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* 세로 중앙 정렬 */
-  padding: 1rem; /* 기본 패딩 */
+  justify-content: center;
+  padding: 1rem;
   color: white;
-  box-sizing: border-box; /* 패딩이 너비/높이에 포함되도록 */
+  box-sizing: border-box;
 
   @media (max-width: 768px) {
     padding: 0.5rem;
-    min-height: calc(100vh - 3rem); /* 모바일 Header 높이 제외 */
+    min-height: calc(100vh - 3rem);
   }
 `;
 
@@ -41,9 +41,9 @@ const BackButton = styled.button`
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
-  position: fixed; /* 뷰포트 기준으로 고정 */
-  top: 5rem; /* Header 아래에 위치하도록 조정 */
-  left: 2rem; /* 좌측에서 2rem */
+  position: fixed;
+  top: 5rem;
+  left: 2rem;
   z-index: 30;
   border-radius: 9999px;
   padding: 0.5rem;
@@ -61,7 +61,7 @@ const BackButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    top: 4rem; /* 모바일 Header 아래에 위치하도록 조정 */
+    top: 4rem;
     left: 1rem;
     padding: 0.4rem;
     svg {
@@ -73,40 +73,38 @@ const BackButton = styled.button`
 
 const ContentWrapper = styled.div`
   width: 100%;
-  max-width: 42rem; /* max-w-2xl (42rem) */
+  max-width: 42rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-sizing: border-box; /* 패딩이 너비/높이에 포함되도록 */
-  gap: 1.5rem; /* 자식 요소들 간의 간격 */
-  margin-top: 10vh; /* 전체 콘텐츠를 아래로 내림 */
+  box-sizing: border-box;
+  gap: 1.5rem;
+  margin-top: 10vh;
 
   @media (max-width: 768px) {
     max-width: 95%;
     gap: 1rem;
-    margin-top: 6vh; /* 모바일에서 전체 콘텐츠를 아래로 내림 */
+    margin-top: 6vh;
   }
 `;
 
 const QuestionText = styled.p`
-  color: #67e8f9; /* 시안 색상 */
+  color: #67e8f9;
   font-size: 1.5rem;
   font-weight: 600;
-  /* margin-bottom: 2rem; 로봇 이미지와의 간격 */
   text-align: center;
   line-height: 1.5;
   padding-bottom: -1rem;
 
   @media (max-width: 768px) {
     font-size: 1rem;
-    /* margin-bottom: 1.5rem; */
   }
 `;
 
 const VoiceAICharacter = styled.div<{ $isListening: boolean }>`
-  width: 30vh; /* w-64 */
-  height: 30vh; /* h-64 */
+  width: 30vh;
+  height: 30vh;
   margin-left: auto;
   margin-right: auto;
   border-radius: 9999px;
@@ -117,7 +115,7 @@ const VoiceAICharacter = styled.div<{ $isListening: boolean }>`
   img {
     width: 100%;
     height: 100%;
-    object-fit: contain; /* 이미지가 잘리지 않도록 */
+    object-fit: contain;
   }
 
   @media (max-width: 768px) {
@@ -127,10 +125,10 @@ const VoiceAICharacter = styled.div<{ $isListening: boolean }>`
 `;
 
 const MicButton = styled.button<{ $isListening: boolean }>`
-  width: 8vh; /* w-24 */
-  height: 8vh; /* h-24 */
-  min-width: 4rem; /* 최소 너비 설정 */
-  min-height: 4rem; /* 최소 높이 설정 */
+  width: 8vh;
+  height: 8vh;
+  min-width: 4rem;
+  min-height: 4rem;
   background-color: ${({ $isListening }) => $isListening ? '#ef4444' : '#06b6d4'};
   border-radius: 9999px;
   border: none;
@@ -154,8 +152,8 @@ const MicButton = styled.button<{ $isListening: boolean }>`
   }
 
   svg {
-    width: 99%; /* 부모 크기에 비례하여 조절 */
-    height: 99%; /* 부모 크기에 비례하여 조절 */
+    width: 99%;
+    height: 99%;
     color: white;
   }
 
@@ -173,32 +171,73 @@ const MicButton = styled.button<{ $isListening: boolean }>`
   @media (max-width: 768px) {
     width: 6vh;
     height: 6vh;
-    min-width: 3rem; /* 모바일 최소 너비 설정 */
-    min-height: 3rem; /* 모바일 최소 높이 설정 */
+    min-width: 3rem;
+    min-height: 3rem;
     svg {
       width: 99%;
       height: 99%;
     }
-    /* margin-top: 1.5rem; */
   }
 `;
 
 const VoiceStatus = styled.p`
-  color: #9ca3af; /* text-gray-400 */
-  /* margin-top: 1rem; 마이크 버튼과의 간격 */
-  font-size: 1.125rem; /* text-lg */
+  color: #9ca3af;
+  font-size: 1.125rem;
 
   @media (max-width: 768px) {
     font-size: 1rem;
-    /* margin-top: 0.8rem; */
   }
 `;
 
 const VoiceChattingPage: React.FC = () => {
-  const { isListening, toggleListening } = useChatStore();
-  const navigate = useNavigate();
+  const {
+    chatId,
+    messages,
+    isLoading,
+    isStreaming,
+    createChat,
+    sendMessage,
+    clearMessages,
+  } = useChatStore();
+  const { reportId } = useReportIdStore();
+  const [isListening, setIsListening] = useState(false);
+  const [currentAiMessage, setCurrentAiMessage] = useState('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (reportId) {
+      createChat(reportId);
+    }
+    return () => {
+      clearMessages();
+    };
+  }, [reportId, createChat, clearMessages]);
+
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.role === 'ai' && lastMessage.message !== currentAiMessage) {
+      setCurrentAiMessage(lastMessage.message);
+      if (!isStreaming && lastMessage.message.trim().length > 0) {
+        handleTextToSpeech(lastMessage.message);
+      }
+    }
+  }, [messages, isStreaming, currentAiMessage]);
+
+  const handleTextToSpeech = async (text: string) => {
+    try {
+      const audioBlob = await textToSpeech(text);
+      const audioUrl = URL.createObjectURL(audioBlob);
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.src = audioUrl;
+        audioPlayerRef.current.play();
+      }
+    } catch (error) {
+      console.error("Error with TTS:", error);
+    }
+  };
 
   const handleToggleListening = () => {
     if (isListening) {
@@ -206,7 +245,7 @@ const VoiceChattingPage: React.FC = () => {
     } else {
       startRecording();
     }
-    toggleListening();
+    setIsListening(!isListening);
   };
 
   const startRecording = async () => {
@@ -222,23 +261,35 @@ const VoiceChattingPage: React.FC = () => {
         }
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        console.log("Recorded audio URL:", audioUrl);
-        // You can now send this audioBlob to a server or play it back
+        if (audioBlob.size === 0) return;
+
+        const file = new File([audioBlob], "recording.webm", { type: 'audio/webm' });
+
+        try {
+          const sttResponse = await speechToText(file);
+          if (sttResponse.text && chatId && reportId) {
+            const chatRequest = {
+              report_id: reportId,
+              chat_id: chatId,
+              message: sttResponse.text,
+            };
+            sendMessage(chatRequest);
+          }
+        } catch (error) {
+          console.error("Error with STT:", error);
+        }
+
         audioChunksRef.current = [];
-        
-        // Stop all media tracks to turn off the microphone indicator
         mediaRecorder.stream.getTracks().forEach(track => track.stop());
       };
 
       mediaRecorder.start();
     } catch (err) {
       console.error("Error starting recording:", err);
-      // If there's an error (e.g., permission denied), toggle state back
       if (isListening) {
-        toggleListening();
+        setIsListening(false);
       }
     }
   };
@@ -252,7 +303,6 @@ const VoiceChattingPage: React.FC = () => {
   const handleBack = () => {
     if (isListening) {
       stopRecording();
-      toggleListening();
     }
     navigate(-1);
   };
@@ -268,20 +318,21 @@ const VoiceChattingPage: React.FC = () => {
         </BackButton>
         <ContentWrapper>
           <QuestionText>
-            안녕하세요! 대화 검사를 시작하겠습니다.<br />오늘 기분은 어떠신가요?
+            {messages.length > 0 ? messages[messages.length - 1].message : "안녕하세요! 대화 검사를 시작하겠습니다. 오늘 기분은 어떠신가요?"}
           </QuestionText>
           <VoiceAICharacter $isListening={isListening}>
             <img src={voiceChatRobot} alt="Voice Chat Robot" />
           </VoiceAICharacter>
-          <MicButton $isListening={isListening} onClick={handleToggleListening}>
+          <MicButton $isListening={isListening} onClick={handleToggleListening} disabled={isLoading || isStreaming}>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
             </svg>
           </MicButton>
           <VoiceStatus>
-            {isListening ? '듣고 있어요...' : '버튼을 누르고 말씀해주세요'}
+            {isListening ? '듣고 있어요...' : (isLoading || isStreaming ? '응답을 생성 중입니다...' : '버튼을 누르고 말씀해주세요')}
           </VoiceStatus>
         </ContentWrapper>
+        <audio ref={audioPlayerRef} hidden />
       </PageContainer>
     </Background>
   );

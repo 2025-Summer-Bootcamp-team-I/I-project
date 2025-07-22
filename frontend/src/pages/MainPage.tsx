@@ -305,7 +305,7 @@ const MainPage = () => {
       }
       if (!reportId) {
         try {
-          const reportResponse = await createEmptyReport();
+          const reportResponse = await createEmptyReport({});
           setReportId(reportResponse.report_id);
           console.log("빈 리포트 생성 성공:", reportResponse);
         } catch (error) {
