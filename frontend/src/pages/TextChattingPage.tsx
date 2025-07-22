@@ -1,22 +1,22 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import Background from '../components/Background';
-import Header from '../components/Header'; // Header 컴포넌트 임포트
-import { useChatStore } from '../store/chatStore'; // Zustand store 임포트
+import Header from '../components/Header';
+import { useChatStore } from '../store/chatStore';
+import { useReportIdStore } from '../store/reportIdStore';
 
-// Styled Components 정의
 const PageContainer = styled.div`
   position: relative;
   width: 100%;
-  min-height: 100vh; /* 뷰포트 전체 높이 차지 */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* 세로 중앙 정렬 */
-  padding: 1rem; /* 기본 패딩 */
+  justify-content: center;
+  padding: 1rem;
   color: white;
-  box-sizing: border-box; /* 패딩이 너비/높이에 포함되도록 */
+  box-sizing: border-box;
 
   @media (max-width: 768px) {
     padding: 0.5rem;
@@ -27,9 +27,9 @@ const BackButton = styled.button`
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
-  position: fixed; /* 뷰포트 기준으로 고정 */
-  top: 5rem; /* Header 아래에 위치하도록 조정 */
-  left: 2rem; /* 좌측에서 2rem */
+  position: fixed;
+  top: 5rem;
+  left: 2rem;
   z-index: 30;
   border-radius: 9999px;
   padding: 0.5rem;
@@ -47,7 +47,7 @@ const BackButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    top: 4rem; /* 모바일 Header 아래에 위치하도록 조정 */
+    top: 4rem;
     left: 1rem;
     padding: 0.4rem;
     svg {
@@ -59,12 +59,12 @@ const BackButton = styled.button`
 
 const ContentWrapper = styled.div`
   width: 100%;
-  max-width: 42rem; /* max-w-2xl (42rem) */
-  text-align: center; /* 내부 텍스트 중앙 정렬 */
+  max-width: 42rem;
+  text-align: center;
   display: flex;
   flex-direction: column;
-  align-items: center; /* 내부 요소들 (제목, 설명, 버튼 그룹) 가로 중앙 정렬 */
-  box-sizing: border-box; /* 패딩이 너비/높이에 포함되도록 */
+  align-items: center;
+  box-sizing: border-box;
 
   @media (max-width: 768px) {
     max-width: 95%;
@@ -72,12 +72,12 @@ const ContentWrapper = styled.div`
 `;
 
 const AIChatacter = styled.div`
-  width: 12rem; /* w-48 */
-  height: 12rem; /* h-48 */
+  width: 12rem;
+  height: 12rem;
   margin-left: auto;
   margin-right: auto;
   margin-bottom: 1rem;
-  margin-top: 2rem; /* Added margin-top to push it down */
+  margin-top: 2rem;
 
   svg {
     width: 100%;
@@ -88,12 +88,12 @@ const AIChatacter = styled.div`
     width: 8rem;
     height: 8rem;
     margin-bottom: 0.5rem;
-    margin-top: 1rem; /* Added margin-top for mobile */
+    margin-top: 1rem;
   }
 `;
 
 const ChatBox = styled.div`
-  background: rgba(17, 24, 39, 0.8); /* bg-slate-800/50에서 더 짙게 조정 */
+  background: rgba(17, 24, 39, 0.8);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(6, 182, 212, 0.2);
   border-radius: 1rem;
@@ -106,7 +106,7 @@ const ChatBox = styled.div`
 `;
 
 const ChatLog = styled.div`
-  height: 40vh; /* height from temp.html */
+  height: 40vh;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #4A5568 #2D3748;
@@ -114,7 +114,6 @@ const ChatLog = styled.div`
   flex-direction: column;
   padding: 0.5rem;
 
-  /* Custom scrollbar styles from temp.html */
   &::-webkit-scrollbar {
     width: 8px;
   }
@@ -137,6 +136,7 @@ const ChatBubble = styled.div<{ $sender: 'ai' | 'user' }>`
   padding: 10px 15px;
   border-radius: 15px;
   margin-bottom: 10px;
+  color: white;
 
   ${props => props.$sender === 'ai' && `
     background-color: #2d3748;
@@ -212,11 +212,47 @@ const SendButton = styled.button`
   }
 `;
 
+const BlinkingCursor = styled.span`
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  background-color: white;
+  animation: blink 1s step-end infinite;
+  @keyframes blink {
+    from, to { background-color: transparent }
+    50% { background-color: white; }
+  }
+`;
+
+const ErrorMessage = styled.p`
+  color: #f87171;
+  margin-top: 1rem;
+`;
+
 const TextChattingPage: React.FC = () => {
-  const { messages, inputMessage, addMessage, setInputMessage } = useChatStore();
+  const {
+    chatId,
+    messages,
+    isLoading,
+    isStreaming,
+    error,
+    createChat,
+    sendMessage,
+    clearMessages,
+  } = useChatStore();
+  const { reportId } = useReportIdStore();
+  const [inputMessage, setInputMessage] = useState('');
   const chatLogRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const hasInitialMessageSent = useRef(false); // useRef를 컴포넌트 최상위 레벨로 이동
+
+  useEffect(() => {
+    if (reportId) {
+      createChat(reportId);
+    }
+    return () => {
+      clearMessages();
+    };
+  }, [reportId, createChat, clearMessages]);
 
   useEffect(() => {
     if (chatLogRef.current) {
@@ -224,22 +260,15 @@ const TextChattingPage: React.FC = () => {
     }
   }, [messages]);
 
-  useEffect(() => {
-    // 초기 AI 메시지는 한 번만 추가되도록 수정
-    if (!hasInitialMessageSent.current && messages.length === 0) {
-      addMessage({ text: "안녕하세요! 대화 검사를 시작하겠습니다. 오늘 기분은 어떠신가요?", sender: 'ai' });
-      hasInitialMessageSent.current = true; // 메시지 전송 후 플래그 설정
-    }
-  }, [messages, addMessage]);
-
-  const handleUserMessage = () => {
-    if (inputMessage.trim()) {
-      addMessage({ text: inputMessage, sender: 'user' });
+  const handleSendMessage = () => {
+    if (inputMessage.trim() && chatId && reportId) {
+      const chatRequest = {
+        report_id: reportId,
+        chat_id: chatId,
+        message: inputMessage,
+      };
+      sendMessage(chatRequest);
       setInputMessage('');
-
-      setTimeout(() => {
-        addMessage({ text: "그렇군요. 흥미로운 이야기네요. 조금 더 자세히 말씀해주시겠어요?", sender: 'ai' });
-      }, 1500);
     }
   };
 
@@ -249,7 +278,7 @@ const TextChattingPage: React.FC = () => {
 
   return (
     <Background isSurveyActive={true}>
-      <Header showLogoText={true} /> {/* Header 컴포넌트 추가 */}
+      <Header showLogoText={true} />
       <PageContainer>
         <BackButton onClick={handleBack}>
           <svg fill="none" stroke="white" viewBox="0 0 24 24">
@@ -274,11 +303,16 @@ const TextChattingPage: React.FC = () => {
           </AIChatacter>
           <ChatBox>
             <ChatLog ref={chatLogRef} className="custom-scrollbar">
-              {messages.map((msg, index) => (
-                <ChatBubble key={index} $sender={msg.sender}>
-                  {msg.text}
+              {messages.map((msg) => (
+                <ChatBubble key={msg.id} $sender={msg.role}>
+                  {msg.message}
                 </ChatBubble>
               ))}
+              {isStreaming && messages[messages.length - 1]?.role === 'ai' && (
+                <ChatBubble $sender="ai">
+                  <BlinkingCursor />
+                </ChatBubble>
+              )}
             </ChatLog>
             <ChatInputContainer>
               <ChatInput
@@ -286,13 +320,15 @@ const TextChattingPage: React.FC = () => {
                 placeholder="메시지를 입력하세요..."
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleUserMessage(); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSendMessage(); }}
+                disabled={isLoading || isStreaming}
               />
-              <SendButton onClick={handleUserMessage}>
-                전송
+              <SendButton onClick={handleSendMessage} disabled={isLoading || isStreaming}>
+                {isStreaming ? '응답 중...' : '전송'}
               </SendButton>
             </ChatInputContainer>
           </ChatBox>
+          {error && <ErrorMessage>{error}</ErrorMessage>}
         </ContentWrapper>
       </PageContainer>
     </Background>
