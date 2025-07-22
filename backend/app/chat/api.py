@@ -1,3 +1,4 @@
+#app/chat/api.py
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import UploadFile, File, Form
 from sqlalchemy.orm import Session
@@ -5,6 +6,8 @@ from sse_starlette.sse import EventSourceResponse
 import asyncio
 import json
 
+import json
+from sse_starlette.sse import EventSourceResponse
 from app.database import get_db
 from app.auth.utils import get_current_user
 from app.auth.models import User
@@ -19,6 +22,7 @@ from app.report.models import Report
 
 router = APIRouter(tags=["Chat"])
 
+
 def is_end_message(message: str) -> bool:
     end_keywords = ["끝", "그만", "종료", "마치자", "끝낼래", "대화 그만", "대화 종료"]
     return any(kw in message for kw in end_keywords)
@@ -27,7 +31,7 @@ def is_gpt_end_response(response: str) -> bool:
     end_phrases = ["오늘 대화는 여기까지 할게요. 좋은 하루 보내세요."]
     return any(phrase in response for phrase in end_phrases)
 
-
+#
 @router.post(
     "",
     response_model=ChatResponse,
@@ -47,7 +51,6 @@ def chat(
     )
     return {"response": response}
 
-
 @router.post("/stream")
 async def stream_chat(
         request: ChatRequest,
@@ -61,6 +64,8 @@ async def stream_chat(
         task = asyncio.create_task(chain.acall(request.message))
 
         async for token in handler.aiter():
+            print(f"[DEBUG] raw token: {repr(token)}")  # 원본 token 확인
+
             response_text += token
 
             clean_token = token

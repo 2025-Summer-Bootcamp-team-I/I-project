@@ -92,15 +92,6 @@ export interface DrawingTestResult {
   risk_level: RiskLevel;
 }
 
-export interface MyReportSummary {
-  report_id: number;
-  created_at: string;
-  final_risk: RiskLevel;
-  ad8_risk: RiskLevel;
-  chat_risk: RiskLevel;
-  drawing_risk: RiskLevel;
-}
-
 export interface CreateChatRequest {
   report_id: number;
 }
@@ -129,4 +120,14 @@ export interface EvaluateChatResponse {
   chat_result: string;
   chat_risk: RiskLevel;
   message: string;
+}
+
+// 마이페이지 API 관련 타입들
+export interface MyReportSummary {
+  report_id: number;
+  created_at: string; // ISO 날짜 문자열
+  final_risk?: RiskLevel;
+  ad8_risk?: RiskLevel;
+  chat_risk?: RiskLevel;
+  drawing_risk?: RiskLevel;
 }
