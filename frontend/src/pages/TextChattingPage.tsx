@@ -17,11 +17,13 @@ const PageContainer = styled.div`
   padding: 1rem;
   color: white;
   box-sizing: border-box;
+  padding-bottom: 8rem; /* Add padding to create space at the bottom for the button bar */
 
   @media (max-width: 768px) {
     padding: 0.5rem;
+    padding-bottom: 7rem; /* Adjust for smaller screens */
   }
-`;
+`;;
 
 const BackButton = styled.button`
   background: rgba(255, 255, 255, 0.05);
@@ -229,6 +231,35 @@ const ErrorMessage = styled.p`
   margin-top: 1rem;
 `;
 
+const BottomButtonBar = styled.div`
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  gap: 1.3rem;
+  background: transparent;
+  padding: 2rem 0 1.5rem 0;
+  z-index: 99;
+`;
+
+const ActionBtn = styled.button<{ $pdf?: boolean }>`
+  background: ${({ $pdf }) => ($pdf ? "#7C3AED" : "rgba(124, 58, 237, 0.1)")};
+  color: ${({ $pdf }) => ($pdf ? "#FFFFFF" : "#A78BFA")};
+  font-weight: 600;
+  border-radius: 1rem;
+  border: 1px solid ${({ $pdf }) => ($pdf ? "#7C3AED" : "rgba(167, 139, 250, 0.2)")};
+  font-size: 1.1rem;
+  padding: 0.8rem 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  &:hover {
+    background: ${({ $pdf }) => ($pdf ? "#6D28D9" : "rgba(124, 58, 237, 0.15)")};
+    border-color: ${({ $pdf }) => ($pdf ? "#6D28D9" : "rgba(167, 139, 250, 0.3)")};
+  }
+`;
+
 const TextChattingPage: React.FC = () => {
   const {
     chatId,
@@ -238,10 +269,12 @@ const TextChattingPage: React.FC = () => {
     error,
     createChat,
     sendMessage,
+    evaluateChat,
     clearMessages,
   } = useChatStore();
   const { reportId } = useReportIdStore();
   const [inputMessage, setInputMessage] = useState('');
+  const [isEvaluating, setIsEvaluating] = useState(false);
   const chatLogRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -274,6 +307,22 @@ const TextChattingPage: React.FC = () => {
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const handleTerminateChat = async () => {
+    if (!chatId || !reportId || isEvaluating) return;
+
+    setIsEvaluating(true);
+    try {
+      await evaluateChat(chatId, reportId);
+      alert("채팅 평가가 완료되었습니다.");
+      navigate('/chatting-select');
+    } catch (err) {
+      console.error("Failed to evaluate chat:", err);
+      alert("채팅 평가 중 오류가 발생했습니다.");
+    } finally {
+      setIsEvaluating(false);
+    }
   };
 
   return (
@@ -330,6 +379,11 @@ const TextChattingPage: React.FC = () => {
           </ChatBox>
           {error && <ErrorMessage>{error}</ErrorMessage>}
         </ContentWrapper>
+        <BottomButtonBar>
+          <ActionBtn onClick={handleTerminateChat} disabled={isEvaluating}>
+            {isEvaluating ? "제출 중..." : "채팅 종료"}
+          </ActionBtn>
+        </BottomButtonBar>
       </PageContainer>
     </Background>
   );
