@@ -116,7 +116,7 @@ export const getChatLogs = async (chatId: number) => {
 };
 
 // 채팅 스트리밍 API
-export const streamChat = async (chatRequest: ChatRequest, onData: (data: string) => void) => {
+export const streamChat = async (chatRequest: ChatRequest, onData: (data: any) => void) => {
   const response = await fetch(`${axiosInstance.defaults.baseURL}/chat/stream`, {
     method: 'POST',
     headers: {
@@ -132,21 +132,34 @@ export const streamChat = async (chatRequest: ChatRequest, onData: (data: string
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
+  let buffer = '';
 
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      console.log("Raw chunk:", chunk); // 진단용 로그 추가
-      // SSE 데이터 형식(data: ...\n\n)을 파싱
-      const lines = chunk.split('\n\n').filter(line => line.startsWith('data:'));
-      console.log("Parsed lines:", lines); // 진단용 로그 추가
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep the last partial line in the buffer
+
       for (const line of lines) {
-        console.log("Parsed line:", line); // 진단용 로그 추가
-        const data = line.substring(5).trim();
-        console.log("Extracted data:", data); // 진단용 로그 추가
-        onData(data);
+        if (line.startsWith('data:')) {
+          const dataString = line.substring(5).trim();
+          if (dataString === '[DONE]') {
+            return; // Stream finished
+          }
+          if (dataString) {
+            try {
+              const json = JSON.parse(dataString);
+              onData(json);
+            } catch (e) {
+              console.error('Error parsing JSON:', e, 'Data:', dataString);
+            }
+          }
+        }
       }
     }
   } finally {
@@ -157,7 +170,11 @@ export const streamChat = async (chatRequest: ChatRequest, onData: (data: string
 
 // 채팅 평가 및 결과 저장 API
 export const evaluateChat = async (chatId: number, reportId: number) => {
-  const response = await axiosInstance.post<EvaluateChatResponse>(`/chat/chats/${chatId}/evaluate`, { report_id: reportId });
+  const response = await axiosInstance.post<EvaluateChatResponse>(
+    `/chat/chats/${chatId}/evaluate`,
+    null, // 요청 본문은 비워둡니다.
+    { params: { report_id: reportId } } // report_id를 쿼리 매개변수로 전달합니다.
+  );
   return response.data;
 };
 
