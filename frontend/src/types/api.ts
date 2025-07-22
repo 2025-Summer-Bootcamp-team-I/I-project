@@ -126,8 +126,8 @@ export interface EvaluateChatResponse {
 export interface MyReportSummary {
   report_id: number;
   created_at: string; // ISO 날짜 문자열
-  final_risk?: string;
-  ad8_risk?: string;
-  chat_risk?: string;
-  drawing_risk?: string;
+  final_risk?: RiskLevel;
+  ad8_risk?: RiskLevel;
+  chat_risk?: RiskLevel;
+  drawing_risk?: RiskLevel;
 }

@@ -41,12 +41,11 @@ const BackButton = styled.button`
 `;
 
 // 위험도에 따라 상태(danger, warning, good)를 반환하는 함수
-const getRiskStatus = (risk?: string) => {
+const getRiskStatus = (risk?: '양호' | '경계' | '위험' | null) => {
   if (!risk) return "unknown";
-  const lowerRisk = risk.toLowerCase();
-  if (lowerRisk.includes("높음") || lowerRisk.includes("위험") || lowerRisk.includes("고위험")) return "danger";
-  if (lowerRisk.includes("중간") || lowerRisk.includes("경계") || lowerRisk.includes("보통")) return "warning";
-  if (lowerRisk.includes("낮음") || lowerRisk.includes("양호") || lowerRisk.includes("양호")) return "good";
+  if (risk === "위험") return "danger";
+  if (risk === "경계") return "warning";
+  if (risk === "양호") return "good";
   return "unknown";
 };
 
@@ -61,7 +60,7 @@ const LightbulbIcon = ({ color }: { color: string }) => (
 );
 
 // 각 검사 아이콘 컴포넌트
-const TestIcon = ({ label, risk }: { label: string, risk?: string }) => {
+const TestIcon = ({ label, risk }: { label: string, risk?: '양호' | '경계' | '위험' | null }) => {
     const status = getRiskStatus(risk);
     const colorMap = {
         danger: '#F87171', // Red-400
