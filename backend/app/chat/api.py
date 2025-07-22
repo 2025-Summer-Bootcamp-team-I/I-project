@@ -64,7 +64,6 @@ async def stream_chat(
         task = asyncio.create_task(chain.acall(request.message))
 
         async for token in handler.aiter():
-            print(f"[DEBUG] raw token: {repr(token)}")  # 원본 token 확인
 
             response_text += token
 
@@ -72,7 +71,6 @@ async def stream_chat(
 
             # JSON 포맷 감싸기
             json_data = json.dumps({"token": clean_token})
-            print(f"[DEBUG] yield: data: {json_data}")  # 실제 전송 내용 확인
 
             yield json_data
 
