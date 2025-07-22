@@ -32,3 +32,4 @@ passlib[bcrypt]==1.7.4
 tenacity
 python-dotenv
 requests
+celery==5.3.6
