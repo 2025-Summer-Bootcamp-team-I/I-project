@@ -12,7 +12,7 @@ from app.auth import api as auth_api
 from app.report import api as report_api
 from app.trans import stt as stt_api
 from app.ad8 import api as ad8_api
-
+from app.chat import api as chat_api
 from app.drawing import api as drawing_api
 from app.trans import tts as tts_api
 from sqlalchemy.exc import OperationalError
@@ -74,6 +74,7 @@ app.include_router(stt_api.router,tags=["STT"])
 app.include_router(tts_api.router, tags=["TTS"])
 app.include_router(drawing_api.router, prefix="/drawing", tags=["Drawing"])
 app.include_router(ad8_api.router, prefix="/ad8", tags=["AD8"])
+app.include_router(chat_api.router, prefix="/chat", tags=["Chat"])
 
 # 기본 루트 엔드포인트
 @app.get("/", tags=["Default"])

@@ -1,3 +1,4 @@
+#app/report/schemas.py
 from pydantic import BaseModel
 from typing import List, Optional
 from .models import RiskLevel
@@ -109,3 +110,4 @@ class SimpleReportResponse(BaseModel):
 
     class Config:
         orm_mode = True
+

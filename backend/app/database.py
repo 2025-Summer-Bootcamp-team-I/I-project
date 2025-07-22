@@ -1,7 +1,16 @@
+import sys
+import os
+
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = "mysql+pymysql://iteam:iteampass@mysql:3306/iteamdb"
+load_dotenv()
+MYSQL_USER = os.getenv("MYSQL_USER")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
+
+DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@mysql:3306/{MYSQL_DATABASE}"
 
 engine = create_engine(
     DATABASE_URL,
@@ -20,8 +29,15 @@ def get_db():
         yield db
     finally:
         db.close()
-        
-        
-import sys
-import os
+
+def create_tables():
+
+    import app.chat.models
+    import app.report.models
+    import app.auth.models
+    import app.drawing.models
+    import app.ad8.models
+
+    Base.metadata.create_all(bind=engine)
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))

@@ -128,9 +128,9 @@ export const speechToText = async (file: File) => {
 };
 
 // TTS API
-export const textToSpeech = async (text: string) => {
+export const textToSpeech = async (text: string): Promise<Blob> => {
   try {
-    const response = await axiosInstance.post('/tts', { text });
+    const response = await axiosInstance.post('/tts', { text }, { responseType: 'blob' });
     return response.data;
   } catch (error) {
     console.error('Error with TTS API:', error);
