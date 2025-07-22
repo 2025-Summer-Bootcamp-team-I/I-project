@@ -16,7 +16,7 @@ from app.chat.service import get_chat_logs
 from app.report.models import Report
 
 
-router = APIRouter(prefix="/chat", tags=["Chat"])
+router = APIRouter(tags=["Chat"])
 
 def is_end_message(message: str) -> bool:
     end_keywords = ["끝", "그만", "종료", "마치자", "끝낼래", "대화 그만", "대화 종료"]
