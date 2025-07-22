@@ -97,12 +97,6 @@ export const getReportResult = async (reportId: number) => {
   return response.data;
 };
 
-// 마이페이지 리포트 목록 조회 API
-export const getMyReports = async () => {
-  const response = await axiosInstance.get<MyReportSummary[]>('/mypage/reports');
-  return response.data;
-};
-
 // 채팅방 생성 API
 export const createChat = async (chatData: CreateChatRequest) => {
   const response = await axiosInstance.post<CreateChatResponse>('/chat/create', chatData);
@@ -178,4 +172,15 @@ export const speechToText = async (file: File) => {
 export const textToSpeech = async (text: string): Promise<Blob> => {
   const response = await axiosInstance.post('/tts', { text }, { responseType: 'blob' });
   return response.data;
+};
+
+// 마이페이지 - 사용자의 모든 리포트 목록 조회 API
+export const getMyReports = async () => {
+  try {
+    const response = await axiosInstance.get<MyReportSummary[]>('/mypage/reports');
+    return response.data;
+  } catch (error) {
+    console.error('Error getting my reports:', error);
+    throw error;
+  }
 };

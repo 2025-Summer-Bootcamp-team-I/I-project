@@ -40,11 +40,14 @@ const BackButton = styled.button`
   }
 `;
 
-// 점수에 따라 상태(danger, warning, good)를 반환하는 함수
-const getResultStatus = (score: number) => {
-  if (score < 40) return "danger";
-  if (score < 70) return "warning";
-  return "good";
+// 위험도에 따라 상태(danger, warning, good)를 반환하는 함수
+const getRiskStatus = (risk?: string) => {
+  if (!risk) return "unknown";
+  const lowerRisk = risk.toLowerCase();
+  if (lowerRisk.includes("높음") || lowerRisk.includes("위험") || lowerRisk.includes("고위험")) return "danger";
+  if (lowerRisk.includes("중간") || lowerRisk.includes("경계") || lowerRisk.includes("보통")) return "warning";
+  if (lowerRisk.includes("낮음") || lowerRisk.includes("양호") || lowerRisk.includes("양호")) return "good";
+  return "unknown";
 };
 
 // Lightbulb 아이콘 SVG 컴포넌트
@@ -58,12 +61,13 @@ const LightbulbIcon = ({ color }: { color: string }) => (
 );
 
 // 각 검사 아이콘 컴포넌트
-const TestIcon = ({ label, score }: { label: string, score: number }) => {
-    const status = getResultStatus(score);
+const TestIcon = ({ label, risk }: { label: string, risk?: string }) => {
+    const status = getRiskStatus(risk);
     const colorMap = {
         danger: '#F87171', // Red-400
         warning: '#FBBF24', // Amber-400
         good: '#6EE7B7', // Teal-300
+        unknown: '#94A3B8', // Gray-400
     };
     const color = colorMap[status];
 
@@ -71,129 +75,89 @@ const TestIcon = ({ label, score }: { label: string, score: number }) => {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
             <LightbulbIcon color={color} />
             <span style={{ fontSize: '1.075rem', fontWeight: 500, color: '#D1D5DB' }}>{label}</span>
+            {risk && <span style={{ fontSize: '0.875rem', color: color, fontWeight: 500 }}>{risk}</span>}
         </div>
     );
 };
 
 const MyPage = () => {
   const navigate = useNavigate();
-  const reports = useReportHistoryStore((state) => state.reports);
-  const addReport = useReportHistoryStore((state) => state.addReport);
+  const { myReports, isLoading, error, fetchMyReports } = useReportHistoryStore();
 
-  // 임시 테스트 데이터 추가
+  // 컴포넌트 마운트 시 리포트 목록 가져오기
   useEffect(() => {
-    if (reports.length === 0) {
-      const testReports = [
-        {
-          report_id: Date.now() - 4 * 24 * 60 * 60 * 1000, // 4일 전
-          user_id: 1,
-          drawingtest_result: "원을 잘 그렸습니다. 공간구성력이 양호합니다.",
-          chat_result: "대화의 흐름 이해와 언어 표현이 매우 양호합니다.",
-          ad8test_result: "모든 항목에 대해 변화가 없다고 답변하셨습니다.",
-          final_result: "전반적인 인지 기능이 양호한 수준입니다.",
-          total_score: 88, // 양호
-          ad8_score: 15,
-          drawing_score: 90,
-          text_score: 88,
-          memory_score: 95,
-          Time_Space_score: 80,
-          Judgment_score: 82,
-          visual_score: 88,
-          language_score: 93,
-        },
-        {
-          report_id: Date.now() - 3 * 24 * 60 * 60 * 1000, // 3일 전
-          user_id: 1,
-          drawingtest_result: "그림의 일부가 불완전합니다.",
-          chat_result: "간헐적으로 대화의 흐름을 놓치는 경향이 있습니다.",
-          ad8test_result: "몇몇 항목에서 변화가 감지되었습니다.",
-          final_result: "경미한 인지 기능 저하가 의심됩니다.",
-          total_score: 65, // 주의
-          ad8_score: 45,
-          drawing_score: 60,
-          text_score: 68,
-          memory_score: 70,
-          Time_Space_score: 62,
-          Judgment_score: 65,
-          visual_score: 68,
-          language_score: 60,
-        },
-        {
-          report_id: Date.now() - 2 * 24 * 60 * 60 * 1000, // 2일 전
-          user_id: 1,
-          drawingtest_result: "그림을 완성하지 못했습니다.",
-          chat_result: "대화 이해에 어려움이 있습니다.",
-          ad8test_result: "대부분의 항목에서 상당한 변화가 감지되었습니다.",
-          final_result: "인지 기능 저하가 뚜렷하게 나타납니다.",
-          total_score: 35, // 위험
-          ad8_score: 20,
-          drawing_score: 30,
-          text_score: 38,
-          memory_score: 25,
-          Time_Space_score: 32,
-          Judgment_score: 35,
-          visual_score: 38,
-          language_score: 20,
-        },
-        {
-          report_id: Date.now() - 1 * 24 * 60 * 60 * 1000, // 1일 전
-          user_id: 1,
-          drawingtest_result: "원을 잘 그렸습니다. 공간구성력이 양호합니다.",
-          chat_result: "대화의 흐름 이해와 언어 표현이 매우 양호합니다.",
-          ad8test_result: "모든 항목에 대해 변화가 없다고 답변하셨습니다.",
-          final_result: "전반적인 인지 기능이 양호한 수준입니다.",
-          total_score: 92, // 양호
-          ad8_score: 10,
-          drawing_score: 95,
-          text_score: 90,
-          memory_score: 98,
-          Time_Space_score: 85,
-          Judgment_score: 88,
-          visual_score: 90,
-          language_score: 95,
-        },
-        {
-          report_id: Date.now(), // 오늘
-          user_id: 1,
-          drawingtest_result: "그림의 일부가 불완전합니다.",
-          chat_result: "간헐적으로 대화의 흐름을 놓치는 경향이 있습니다.",
-          ad8test_result: "몇몇 항목에서 변화가 감지되었습니다.",
-          final_result: "경미한 인지 기능 저하가 의심됩니다.",
-          total_score: 58, // 주의
-          ad8_score: 50,
-          drawing_score: 55,
-          text_score: 62,
-          memory_score: 60,
-          Time_Space_score: 55,
-          Judgment_score: 58,
-          visual_score: 60,
-          language_score: 55,
-        },
-      ];
-      testReports.forEach(report => addReport(report));
-    }
-  }, [reports.length, addReport]);
+    fetchMyReports();
+  }, [fetchMyReports]);
 
-  // timestamp를 날짜 문자열로 변환
-  const getFormattedDate = (timestamp: number | undefined) => {
-    if (!timestamp) return "날짜 없음";
-    return new Date(timestamp).toLocaleDateString('ko-KR', {
+  // 날짜 문자열을 포맷팅하는 함수
+  const getFormattedDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
   };
 
-  const handleViewReport = (reportId: number | undefined) => {
-    if (!reportId) return;
+  const handleViewReport = (reportId: number) => {
     navigate(`/report/${reportId}`);
   };
+
+  // 로딩 중일 때
+  if (isLoading) {
+    return (
+      <Container>
+        <Background />
+        <Header />
+        <BackButton onClick={() => navigate(-1)} aria-label="뒤로가기">
+          <svg fill="none" stroke="white" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </BackButton>
+        <Content>
+          <InnerContent>
+            <Title>나의 검사 기록</Title>
+            <LoadingState>
+              <LoadingMessage>검사 기록을 불러오는 중...</LoadingMessage>
+            </LoadingState>
+          </InnerContent>
+        </Content>
+      </Container>
+    );
+  }
+
+  // 에러가 있을 때
+  if (error) {
+    return (
+      <Container>
+        <Background />
+        <Header />
+        <BackButton onClick={() => navigate(-1)} aria-label="뒤로가기">
+          <svg fill="none" stroke="white" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </BackButton>
+        <Content>
+          <InnerContent>
+            <Title>나의 검사 기록</Title>
+            <ErrorState>
+              <ErrorMessage>{error}</ErrorMessage>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                <RetryButton onClick={fetchMyReports}>다시 시도</RetryButton>
+                {error.includes('로그인') && (
+                  <LoginButton onClick={() => navigate('/login')}>로그인</LoginButton>
+                )}
+              </div>
+            </ErrorState>
+          </InnerContent>
+        </Content>
+      </Container>
+    );
+  }
 
   return (
     <Container>
       <Background />
       <Header />
-      {/* 좌측 상단에 뒤로가기 버튼 추가 */}
       <BackButton onClick={() => navigate(-1)} aria-label="뒤로가기">
         <svg fill="none" stroke="white" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -202,7 +166,7 @@ const MyPage = () => {
       <Content>
         <InnerContent>
           <Title>나의 검사 기록</Title>
-          {reports.length === 0 ? (
+          {myReports.length === 0 ? (
             <EmptyState>
               <EmptyMessage>아직 검사 기록이 없습니다.</EmptyMessage>
               <StartButton onClick={() => navigate('/main')}>
@@ -211,30 +175,36 @@ const MyPage = () => {
             </EmptyState>
           ) : (
             <ReportList>
-              {reports.map((report, index) => {
-                const status = getResultStatus(report.total_score);
+              {myReports.map((report) => {
+                const finalStatus = getRiskStatus(report.final_risk);
                 const statusText = {
                   danger: "위험",
-                  warning: "주의",
+                  warning: "경계",
                   good: "양호",
+                  unknown: "미정",
                 };
 
                 return (
-                  <ReportCard key={index} status={status}>
+                  <ReportCard key={report.report_id} status={finalStatus}>
                     <div>
-                      <ReportDate>{getFormattedDate(report.report_id)}</ReportDate>
+                      <ReportDate>{getFormattedDate(report.created_at)}</ReportDate>
                       <div style={{ marginBottom: '1.5rem' }}>
                         <p style={{ fontSize: '1rem', color: '#D1D5DB', marginBottom: '0.25rem' }}>최종 결과</p>
                         <h2 style={{ fontSize: '2.25rem', fontWeight: 'bold', margin: 0, lineHeight: 1.2 }}>
-                          {statusText[status]}
+                          {statusText[finalStatus]}
                         </h2>
+                        {report.final_risk && (
+                          <p style={{ fontSize: '0.875rem', color: '#94A3B8', marginTop: '0.5rem' }}>
+                            {report.final_risk}
+                          </p>
+                        )}
                       </div>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '1rem 0', borderTop: '1px solid rgba(255, 255, 255, 0.1)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                        <TestIcon label="AD-8 검사" score={report.ad8_score} />
-                        <TestIcon label="대화 검사" score={report.text_score} />
-                        <TestIcon label="그림 검사" score={report.drawing_score} />
+                        <TestIcon label="AD-8 검사" risk={report.ad8_risk} />
+                        <TestIcon label="대화 검사" risk={report.chat_risk} />
+                        <TestIcon label="그림 검사" risk={report.drawing_risk} />
                     </div>
                     
                     <ViewButton onClick={() => handleViewReport(report.report_id)}>
@@ -302,6 +272,63 @@ const Title = styled.h1`
   text-align: center;
 `;
 
+const LoadingState = styled.div`
+  text-align: center;
+  padding: 4rem;
+  background: rgba(30, 30, 45, 0.5);
+  border-radius: 1rem;
+  backdrop-filter: blur(10px);
+`;
+
+const LoadingMessage = styled.p`
+  color: #94A3B8;
+  font-size: 1.2rem;
+`;
+
+const ErrorState = styled.div`
+  text-align: center;
+  padding: 4rem;
+  background: rgba(30, 30, 45, 0.5);
+  border-radius: 1rem;
+  backdrop-filter: blur(10px);
+`;
+
+const ErrorMessage = styled.p`
+  color: #F87171;
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+`;
+
+const RetryButton = styled.button`
+  background: #A78BFA;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 0.5rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #9061F9;
+  }
+`;
+
+const LoginButton = styled.button`
+  background: #4299E1;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 0.5rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #3182CE;
+  }
+`;
+
 const EmptyState = styled.div`
   text-align: center;
   padding: 4rem;
@@ -358,7 +385,7 @@ const ReportCard = styled.div<{ status: string }>`
   }
 
   h2 {
-    color: ${({ status }) => (status === 'danger' ? '#F87171' : status === 'warning' ? '#FBBF24' : '#6EE7B7')};
+    color: ${({ status }) => (status === 'danger' ? '#F87171' : status === 'warning' ? '#FBBF24' : status === 'good' ? '#6EE7B7' : '#94A3B8')};
   }
 `;
 
