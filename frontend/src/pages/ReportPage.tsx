@@ -13,7 +13,7 @@ import { useReportHistoryStore } from "../store/reportHistoryStore";
 import lightbulbIcon from '../assets/imgs/lightbulb.png'; // 경계, 기본
 import lightbulbBlueIcon from '../assets/imgs/lightbulb-blue.png'; // 양호
 import lightbulbRedIcon from '../assets/imgs/lightbulb-red.png'; // 주의
-import drawingExampleIcon from '../assets/imgs/ex.png';
+
 
 // Highcharts Point 타입 확장
 declare module 'highcharts' {
@@ -152,18 +152,37 @@ const AD8Card: React.FC<ExamCardProps & { ad8Score: number; maxAD8Score: number;
 );
 
 const ChatCard: React.FC<ExamCardProps> = ({ exam, status }) => {
-  //const [scoreLine, ...chatLines] = exam.summary.split("\n").filter(line => line.trim());         // 대화 데이터 로직직
-  //const scoreText = scoreLine?.replace("점수: ", "");
-  const chatLines = [
-    "사용자: 안녕하세요, 오늘 날씨가 좋네요.",
-    "AI: 안녕하세요! 네, 정말 화창한 날씨예요. 기분 좋은 하루 보내고 계신가요?",
-    "사용자: 덕분에 기분이 좋네요. 혹시 간단한 기억력 테스트 같은 걸 해볼 수 있을까요?",
-    "AI: 물론이죠! 제가 몇 가지 단어를 불러드리면, 잠시 후에 순서대로 기억해서 말씀해주시겠어요? 준비되셨나요?",
-    "사용자: 네, 준비됐어요.",
-    "AI: 좋습니다. 첫 번째 단어는 '하늘', 두 번째는 '강아지', 세 번째는 '책상'입니다. 이제 제가 불렀던 단어들을 순서대로 말씀해주세요.",
-    "사용자: 하늘, 강아지, 책상.",
-    "AI: 정확합니다! 아주 잘 기억하고 계시네요."
-  ];
+  const [, ...chatHistoryJson] = exam.summary.split("\n");
+  // const scoreText = scoreLine?.replace("점수: ", "");
+
+  let chatLines: string[] = [];
+  try {
+    // chat_result가 JSON 문자열 형태일 경우 파싱
+    const chatHistory = JSON.parse(chatHistoryJson.join('\n'));
+    if (Array.isArray(chatHistory)) {
+      chatLines = chatHistory.map(log => {
+        const speaker = log.role === 'user' ? '사용자' : 'AI';
+        return `${speaker}: ${log.message}`;
+      });
+    }
+  } catch (error) {
+    // 파싱 실패 시, chat_result가 이미 배열이거나 다른 형태일 수 있음.
+    // 혹은 summary에 대화 기록이 없을 수도 있습니다.
+    // console.error("Chat history parsing error:", error);
+    
+    // 예비 하드코딩 데이터
+    chatLines = [
+      "사용자: 안녕하세요, 오늘 날씨가 좋네요.",
+      "AI: 안녕하세요! 네, 정말 화창한 날씨예요. 기분 좋은 하루 보내고 계신가요?",
+      "사용자: 덕분에 기분이 좋네요. 혹시 간단한 기억력 테스트 같은 걸 해볼 수 있을까요?",
+      "AI: 물론이죠! 제가 몇 가지 단어를 불러드리면, 잠시 후에 순서대로 기억해서 말씀해주시겠어요? 준비되셨나요?",
+      "사용자: 네, 준비됐어요.",
+      "AI: 좋습니다. 첫 번째 단어는 '하늘', 두 번째는 '강아지', 세 번째는 '책상'입니다. 이제 제가 불렀던 단어들을 순서대로 말씀해주세요.",
+      "사용자: 하늘, 강아지, 책상.",
+      "AI: 정확합니다! 아주 잘 기억하고 계시네요."
+    ];
+  }
+
   return (
     <ExamCard>
       <StatusBadge status={status}>{status}</StatusBadge>
@@ -490,21 +509,21 @@ const ReportPage: React.FC = () => {
   const examResults: ExamResult[] = [
     {
       name: "설문 검사 (AD-8)",
-      summary: "2/8",
+      summary: report.ad8test_result,
       suggestion: "최근 기억력이나 판단력의 변화를 스스로 점검하는 것이 중요합니다. 변화가 감지된다면 주의를 기울이고 일상생활을 관찰해보세요.",
       status: surveyStatus,
     },
     {
       name: "대화 검사",
-      summary: "점수: 45 / 100",
+      summary: `점수: ${report.text_score} / 100\n${report.chat_result}`,
       suggestion: "대화의 흐름을 이해하고 적절하게 반응하는 능력이 우수합니다. 꾸준히 대화하고 책을 읽는 습관을 가지면 더욱 좋습니다.",
       status: dialogStatus,
     },
     {
       name: "그림 검사",
-      summary: "시계 그림 평가: 경계",
+      summary: report.drawingtest_result,
       suggestion: "도형을 그리는 과정에서 어려움이 있었다면 주의력이나 시공간 능력 저하일 수 있습니다. 꾸준히 퍼즐이나 그리기 활동을 해보세요.",
-      image: drawingExampleIcon,
+      image: report.drawing_image,
       status: drawingStatus,
     },
   ];
