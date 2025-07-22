@@ -48,17 +48,14 @@ def chat(
     return {"response": response}
 
 
-@router.post(
-    "/stream",
-    summary="채팅 스트리밍",
-    description="AI와의 채팅을 실시간 스트리밍으로 제공합니다."
-)
+@router.post("/stream")
 async def stream_chat(
         request: ChatRequest,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
     async def event_generator():
+        import json
         response_text = ""
         chain, memory, handler = get_streaming_chain(request.report_id)
         task = asyncio.create_task(chain.acall(request.message))
@@ -66,14 +63,16 @@ async def stream_chat(
         async for token in handler.aiter():
             response_text += token
 
-            # ✅ JSON 형식으로 감싸기
-            json_data = json.dumps({"token": token})
-            yield f"data: {json_data}\n\n"
+            clean_token = token
 
-        # ✅ 스트리밍 종료 신호
-        yield "data: [DONE]\n\n"
+            # JSON 포맷 감싸기
+            json_data = json.dumps({"token": clean_token})
+            print(f"[DEBUG] yield: data: {json_data}")  # 실제 전송 내용 확인
 
-        # ✅ DB 저장
+            yield json_data
+
+        yield "[DONE]"
+
         save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
         save_chat_log(db, request.chat_id, RoleEnum.ai, response_text)
 
