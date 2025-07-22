@@ -23,7 +23,7 @@ const PageContainer = styled.div`
     padding: 0.5rem;
     padding-bottom: 7rem; /* Adjust for smaller screens */
   }
-`;;
+`;
 
 const BackButton = styled.button`
   background: rgba(255, 255, 255, 0.05);
