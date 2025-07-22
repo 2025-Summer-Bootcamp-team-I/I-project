@@ -2,7 +2,7 @@ name: CI/CD - FastAPI + React (Vite)
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ develop, main ]
   pull_request:
     paths:
       - '**.ts'
@@ -58,3 +58,4 @@ jobs:
           if [ -d backend ]; then
             python -m compileall backend
           fi
+
