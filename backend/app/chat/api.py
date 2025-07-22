@@ -3,6 +3,7 @@ from fastapi import UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
 import asyncio
+import json
 
 from app.database import get_db
 from app.auth.utils import get_current_user
@@ -16,7 +17,7 @@ from app.chat.service import get_chat_logs
 from app.report.models import Report
 
 
-router = APIRouter(prefix="/chat", tags=["Chat"])
+router = APIRouter(tags=["Chat"])
 
 def is_end_message(message: str) -> bool:
     end_keywords = ["끝", "그만", "종료", "마치자", "끝낼래", "대화 그만", "대화 종료"]
@@ -64,8 +65,15 @@ async def stream_chat(
 
         async for token in handler.aiter():
             response_text += token
-            yield f"data: {token}\n\n"
 
+            # ✅ JSON 형식으로 감싸기
+            json_data = json.dumps({"token": token})
+            yield f"data: {json_data}\n\n"
+
+        # ✅ 스트리밍 종료 신호
+        yield "data: [DONE]\n\n"
+
+        # ✅ DB 저장
         save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
         save_chat_log(db, request.chat_id, RoleEnum.ai, response_text)
 
