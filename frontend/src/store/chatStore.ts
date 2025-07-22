@@ -78,15 +78,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     get().addMessage(aiMessage);
 
     try {
-      await apiStreamChat(chatRequest, (chunk) => {
-        console.log("Received chunk:", chunk); // 진단용 로그 추가
-        set((state) => {
-          const newMessages = state.messages.map((msg) =>
-            msg.id === aiMessage.id ? { ...msg, message: msg.message + chunk } : msg
-          );
-          console.log("Updated messages state:", newMessages); // 진단용 로그 추가
-          return { messages: newMessages };
-        });
+      await apiStreamChat(chatRequest, (data) => {
+        const token = data.token;
+        if (typeof token === 'string') {
+          set((state) => {
+            const newMessages = state.messages.map((msg) =>
+              msg.id === aiMessage.id ? { ...msg, message: msg.message + token } : msg
+            );
+            return { messages: newMessages };
+          });
+        }
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
