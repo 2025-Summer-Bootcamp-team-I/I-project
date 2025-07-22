@@ -1,25 +1,25 @@
-version: "3.9"
-
 services:
-#   frontend:
-#     build:
-#       context: ./frontend
-#       dockerfile: Dockerfile
-#     ports:
-#       - "3000:3000"
-#     volumes:
-#       - ./frontend:/app
-#       - /app/node_modules
-#     environment:
-#       - NODE_ENV=development
-#       - CHOKIDAR_USEPOLLING=true
-#     working_dir: /app
-#     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+  #   frontend:
+  #     build:
+  #       context: ./frontend
+  #       dockerfile: Dockerfile
+  #     ports:
+  #       - "3000:3000"
+  #     volumes:
+  #       - ./frontend:/app
+  #       - /app/node_modules
+  #     environment:
+  #       - NODE_ENV=development
+  #       - CHOKIDAR_USEPOLLING=true
+  #     working_dir: /app
+  #     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
     ports:
       - "8000:8000"
     volumes:
@@ -29,6 +29,42 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+  chroma-server:
+    image: ghcr.io/chroma-core/chroma:latest
+    container_name: chroma-server
+    ports:
+      - "8002:8000"
+    volumes:
+      - chroma-data:/data
+    environment:
+      - CHROMA_DB_IMPL=duckdb+parquet
+      - CHROMA_SERVER_DB_DIR=/data
+
+#처음에 크로마 db에 데이터 없을때만 실행
+
+#  pipeline:
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile
+#    command:
+#      - python
+#      - -u
+#      - app/rag/pipeline.py
+#    env_file:
+#      - ./backend/.env
+#    environment:
+#      - OPENAI_API_KEY=${OPENAI_API_KEY}
+#      - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
+#      # - SCITE_API_KEY=${SCITE_API_KEY}   # 필요시 활성화
+#    depends_on:
+#      chroma-server:
+#        condition: service_started
+#    volumes:
+#      - chroma-data:/data
+
 
   mysql:
     image: mysql:8.0
@@ -79,4 +115,5 @@ services:
 
 volumes:
   mysql-data:
+  chroma-data:
   grafana-storage:
