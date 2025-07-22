@@ -1,9 +1,12 @@
+#app/chat/api.py
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
 import asyncio
 
+import json
+from sse_starlette.sse import EventSourceResponse
 from app.database import get_db
 from app.auth.utils import get_current_user
 from app.auth.models import User
@@ -16,7 +19,7 @@ from app.chat.service import get_chat_logs
 from app.report.models import Report
 
 
-router = APIRouter(prefix="/chat", tags=["Chat"])
+router = APIRouter(prefix="", tags=["Chat"])
 
 def is_end_message(message: str) -> bool:
     end_keywords = ["끝", "그만", "종료", "마치자", "끝낼래", "대화 그만", "대화 종료"]
@@ -26,7 +29,7 @@ def is_gpt_end_response(response: str) -> bool:
     end_phrases = ["오늘 대화는 여기까지 할게요. 좋은 하루 보내세요."]
     return any(phrase in response for phrase in end_phrases)
 
-
+#
 @router.post(
     "",
     response_model=ChatResponse,
@@ -47,24 +50,31 @@ def chat(
     return {"response": response}
 
 
-@router.post(
-    "/stream",
-    summary="채팅 스트리밍",
-    description="AI와의 채팅을 실시간 스트리밍으로 제공합니다."
-)
+@router.post("/stream")
 async def stream_chat(
         request: ChatRequest,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
     async def event_generator():
+        import json
         response_text = ""
         chain, memory, handler = get_streaming_chain(request.report_id)
         task = asyncio.create_task(chain.acall(request.message))
 
         async for token in handler.aiter():
             response_text += token
-            yield f"data: {token}\n\n"
+
+            # token에서 중복된 data: 제거
+            clean_token = token.strip()
+            while clean_token.startswith("data:"):
+                clean_token = clean_token[len("data:"):].strip()
+
+            # JSON 포맷으로 감싸기
+            json_data = json.dumps({"token": clean_token})
+            yield f"data: {json_data}\n\n"
+
+        yield "data: [DONE]\n\n"
 
         save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
         save_chat_log(db, request.chat_id, RoleEnum.ai, response_text)
