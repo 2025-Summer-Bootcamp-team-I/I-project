@@ -58,7 +58,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ isStreaming: true, error: null });
 
     const userMessage: ChatLogResponse = {
-      id: Date.now(),
+      id: Math.floor(Math.random() * 1_000_000_000),
       chat_id: chatRequest.chat_id,
       role: 'user',
       message: chatRequest.message,
@@ -68,7 +68,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     get().addMessage(userMessage);
 
     const aiMessage: ChatLogResponse = {
-      id: Date.now() + 1,
+      id: Math.floor(Math.random() * 1_000_000_000) + 1,
       chat_id: chatRequest.chat_id,
       role: 'ai',
       message: '',
