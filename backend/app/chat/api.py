@@ -6,7 +6,7 @@ from sse_starlette.sse import EventSourceResponse
 import asyncio
 import json
 
-import json
+from app.chat.stream_state import is_streaming, mark_stream_start, mark_stream_end
 from sse_starlette.sse import EventSourceResponse
 from app.database import get_db
 from app.auth.utils import get_current_user
@@ -31,7 +31,6 @@ def is_gpt_end_response(response: str) -> bool:
     end_phrases = ["오늘 대화는 여기까지 할게요. 좋은 하루 보내세요."]
     return any(phrase in response for phrase in end_phrases)
 
-#
 @router.post(
     "",
     response_model=ChatResponse,
@@ -51,42 +50,57 @@ def chat(
     )
     return {"response": response}
 
-  
+
+from app.chat.stream_state import is_streaming, mark_stream_start, mark_stream_end
+import logging
+
+logger = logging.getLogger(__name__)
+
 @router.post("/stream")
 async def stream_chat(
         request: ChatRequest,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
+    logger.info(f"[STREAM START] chat_id={request.chat_id}, user_id={current_user.user_id}")
+
+    if is_streaming(request.chat_id):
+        logger.warning(f"[STREAM DUPLICATE BLOCKED] chat_id={request.chat_id}")
+        raise HTTPException(status_code=409, detail="해당 채팅방은 이미 스트리밍 중입니다.")
+
+    mark_stream_start(request.chat_id)
+
     async def event_generator():
-        import json
         response_text = ""
         chain, memory, handler = get_streaming_chain(request.report_id)
         task = asyncio.create_task(chain.acall(request.message))
 
-        async for token in handler.aiter():
-            print(f"[DEBUG] raw token: {repr(token)}")  # 원본 token 확인
+        try:
+            async for token in handler.aiter():
+                logger.debug(f"[TOKEN] {repr(token)}")
 
-            response_text += token
+                clean_token = token.strip()
+                while clean_token.startswith("data:"):
+                    clean_token = clean_token[len("data:"):].strip()
+                json_data = json.dumps({"token": clean_token})
 
-            # 중복된 data: 제거
-            clean_token = token.strip()
-            while clean_token.startswith("data:"):
-                clean_token = clean_token[len("data:"):].strip()
+                yield json_data
 
-            print(f"[DEBUG] clean token: {repr(clean_token)}")  # 정리된 token 확인
+            logger.info(f"[STREAM DONE] chat_id={request.chat_id}")
+            yield "[DONE]"
 
-            # JSON 포맷 감싸기
-            json_data = json.dumps({"token": clean_token})
-            print(f"[DEBUG] yield: data: {json_data}")  # 실제 전송 내용 확인
+        except Exception as e:
+            logger.exception(f"[STREAM ERROR] chat_id={request.chat_id}, error={str(e)}")
+            raise e
 
-            yield json_data
+        finally:
+            mark_stream_end(request.chat_id)
+            logger.info(f"[STREAM END] chat_id={request.chat_id} 상태 초기화")
 
-        print("[DEBUG] yield: data: [DONE]")  # 스트림 종료 시점
-        yield "[DONE]"
-
-        save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
-        save_chat_log(db, request.chat_id, RoleEnum.ai, response_text)
+            # 로그 저장
+            save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
+            save_chat_log(db, request.chat_id, RoleEnum.ai, response_text)
+            logger.info(f"[LOG SAVED] chat_id={request.chat_id}, user_text_len={len(request.message)}, ai_text_len={len(response_text)}")
 
     return EventSourceResponse(event_generator())
 

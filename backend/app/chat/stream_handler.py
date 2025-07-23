@@ -11,12 +11,12 @@ from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, H
 
 from app.chat.memory_store import get_memory
 
-# ✅ 환경변수에서 OpenAI 키 로드
+# 환경변수에서 OpenAI 키 로드
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 if not openai_api_key:
     raise RuntimeError("OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다.")
 
-# ✅ Chroma 벡터 DB 클라이언트 생성
+# Chroma 벡터 DB 클라이언트 생성
 client = chromadb.HttpClient(host="chroma-server", port=8000)
 vectordb = Chroma(
     client=client,
@@ -24,7 +24,7 @@ vectordb = Chroma(
     embedding_function=OpenAIEmbeddings(openai_api_key=openai_api_key)
 )
 
-# ✅ 프롬프트 템플릿 정의 (chat_with_ai와 동일하게)
+# 프롬프트 템플릿 정의 (chat_with_ai와 동일하게)
 system_prompt = """
 당신은 친근한 대화 파트너입니다.
 - 제공된 참고 논문(Context)을 활용해 실제 연구에서 사용된 치매 선별 질문을 자연스럽고 일상 대화로 묻습니다.
@@ -46,7 +46,7 @@ prompt = ChatPromptTemplate.from_messages([
     )
 ])
 
-# ✅ 스트리밍 처리용 체인 생성 함수
+# 스트리밍 처리용 체인 생성 함수
 def get_streaming_chain(report_id: int):
     memory = get_memory(report_id)
     handler = AsyncIteratorCallbackHandler()
