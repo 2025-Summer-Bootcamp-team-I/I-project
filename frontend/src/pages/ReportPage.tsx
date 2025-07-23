@@ -8,11 +8,16 @@ import html2pdf from "html2pdf.js";
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import 'highcharts/highcharts-3d';
-import { useReportStore } from "../store/reportStore";
+import { useReportStore, type ChatLog } from "../store/reportStore";
 import { useReportHistoryStore } from "../store/reportHistoryStore";
+import { getReportResult } from "../api"; // API 호출 함수 import
 import lightbulbIcon from '../assets/imgs/lightbulb.png'; // 경계, 기본
 import lightbulbBlueIcon from '../assets/imgs/lightbulb-blue.png'; // 양호
 import lightbulbRedIcon from '../assets/imgs/lightbulb-red.png'; // 주의
+import { getChatLogs } from "../api";
+
+
+console.log("ReportPage.tsx 파일이 로드되었습니다!");
 
 
 // Highcharts Point 타입 확장
@@ -124,6 +129,7 @@ const HighchartsGlobalStyle = createGlobalStyle`
 interface ExamCardProps {
   exam: { name: string; summary: string; suggestion: string; image?: string; };
   status: '양호' | '경계' | '위험';
+  chatLogs?: ChatLog[]; // chatLogs를 props로 추가
 }
 
 const AD8Card: React.FC<ExamCardProps & { ad8Score: number; maxAD8Score: number; offset: number; }> = ({ exam, status, ad8Score, maxAD8Score, offset }) => (
@@ -151,37 +157,13 @@ const AD8Card: React.FC<ExamCardProps & { ad8Score: number; maxAD8Score: number;
   </ExamCard>
 );
 
-const ChatCard: React.FC<ExamCardProps> = ({ exam, status }) => {
-  const [, ...chatHistoryJson] = exam.summary.split("\n");
-  // const scoreText = scoreLine?.replace("점수: ", "");
-
-  let chatLines: string[] = [];
-  try {
-    // chat_result가 JSON 문자열 형태일 경우 파싱
-    const chatHistory = JSON.parse(chatHistoryJson.join('\n'));
-    if (Array.isArray(chatHistory)) {
-      chatLines = chatHistory.map(log => {
-        const speaker = log.role === 'user' ? '사용자' : 'AI';
-        return `${speaker}: ${log.message}`;
-      });
-    }
-  } catch (error) {
-    // 파싱 실패 시, chat_result가 이미 배열이거나 다른 형태일 수 있음.
-    // 혹은 summary에 대화 기록이 없을 수도 있습니다.
-    // console.error("Chat history parsing error:", error);
-    
-    // 예비 하드코딩 데이터
-    chatLines = [
-      "사용자: 안녕하세요, 오늘 날씨가 좋네요.",
-      "AI: 안녕하세요! 네, 정말 화창한 날씨예요. 기분 좋은 하루 보내고 계신가요?",
-      "사용자: 덕분에 기분이 좋네요. 혹시 간단한 기억력 테스트 같은 걸 해볼 수 있을까요?",
-      "AI: 물론이죠! 제가 몇 가지 단어를 불러드리면, 잠시 후에 순서대로 기억해서 말씀해주시겠어요? 준비되셨나요?",
-      "사용자: 네, 준비됐어요.",
-      "AI: 좋습니다. 첫 번째 단어는 '하늘', 두 번째는 '강아지', 세 번째는 '책상'입니다. 이제 제가 불렀던 단어들을 순서대로 말씀해주세요.",
-      "사용자: 하늘, 강아지, 책상.",
-      "AI: 정확합니다! 아주 잘 기억하고 계시네요."
-    ];
-  }
+const ChatCard: React.FC<ExamCardProps> = ({ exam, status, chatLogs }) => {
+  const chatLines = (chatLogs || [])
+    .filter(item => item.role === 'user' || item.role === 'ai')
+    .map(item => {
+      const prefix = item.role === 'user' ? '사용자:' : 'AI:';
+      return `${prefix} ${item.message}`;
+    });
 
   return (
     <ExamCard>
@@ -191,23 +173,27 @@ const ChatCard: React.FC<ExamCardProps> = ({ exam, status }) => {
         <ExamCol>
           <Label>대화 내용</Label>
           <ChatWindow>
-            {chatLines.map((line, i) => {
-              const isUser = line.startsWith("사용자:");
-              const message = line.substring(line.indexOf(":") + 1).trim();
-              
-              if (!message) return null;
+            {chatLines.length > 0 ? (
+              chatLines.map((line, i) => {
+                const isUser = line.startsWith("사용자:");
+                const message = line.substring(line.indexOf(":") + 1).trim();
+                
+                if (!message) return null;
 
-              return (
-                <MessageBubble key={i} $isUser={isUser}>
-                  {message}
-                </MessageBubble>
-              );
-            })}
+                return (
+                  <MessageBubble key={i} $isUser={isUser}>
+                    {message}
+                  </MessageBubble>
+                );
+              })
+            ) : (
+              <div style={{ textAlign: 'center', color: '#94A3B8', alignSelf: 'center' }}>대화 기록이 없습니다.</div>
+            )}
           </ChatWindow>
         </ExamCol>
         <ExamCol>
           <Label>분석 및 제안</Label>
-          <Suggestion>{exam.suggestion}</Suggestion>
+          <Suggestion>{exam.suggestion}</Suggestion> 
         </ExamCol>
       </ExamContent>
     </ExamCard>
@@ -233,38 +219,95 @@ const DrawingCard: React.FC<ExamCardProps> = ({ exam, status }) => (
 );
 
 
+
 const ReportPage: React.FC = () => {
   const navigate = useNavigate();
   const pdfRef = useRef<HTMLDivElement>(null);
   const chartComponentRef = useRef<HighchartsReact.RefObject>(null);
+  
+  const reportId = useReportIdStore((state) => state.reportId);
   const resetReportId = useReportIdStore((state) => state.resetReportId);
+
+  
   const { width: windowWidth } = useWindowSize();
 
-  // zustand에서 report와 addReport 불러옴
   const report = useReportStore((state) => state.report);
+  const setReport = useReportStore((state) => state.setReport);
   const addReport = useReportHistoryStore((state) => state.addReport);
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [imgDimensions, setImgDimensions] = useState({ width: 0, height: 0 });
   const [offset, setOffset] = useState(0);
 
-  const drawingStatus = '경계';
-  const dialogStatus = '양호';
-  const surveyStatus = '양호';
+  const chatId = useReportIdStore((state) => state.chatId);
+  const [chatLogs, setChatLogs] = useState<ChatLog[]>([]);
+  
+  useEffect(() => {
+    console.log("ReportPage에서 불러온 chatId:", chatId);
+  }, [chatId]);
 
-  const getLightbulbIcon = () => {
-    const statuses: ('양호' | '경계' | '위험')[] = [drawingStatus, dialogStatus, surveyStatus];
-    const counts = {
-      '양호': statuses.filter(s => s === '양호').length,
-      '경계': statuses.filter(s => s === '경계').length,
-      '위험': statuses.filter(s => s === '위험').length,
+  useEffect(() => {
+    if (chatId) {
+      getChatLogs(chatId)
+        .then((logs) => {
+          setChatLogs(logs);
+          const messages = logs.map(log => log.message);
+          console.log("getChatLogs에서 추출한 메시지 배열:", messages);
+        })
+        .catch((err) => {
+          console.error("채팅 로그 불러오기 실패:", err);
+        });
+    }
+  }, [chatId]);
+  // --- 데이터 로딩 및 상태 업데이트 useEffects ---
+  useEffect(() => {
+    // reportId가 없으면 에러 처리
+    if (!reportId) {
+      setError("리포트 ID가 없습니다. 메인 페이지로 이동합니다.");
+      setTimeout(() => navigate('/main'), 3000);
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchReport = async () => {
+      try {
+        setIsLoading(true);
+        const reportData = await getReportResult(reportId);
+        setReport(reportData); // 스토어 업데이트
+        console.log("백엔드에서 받은 final_risk:", reportData.final_risk);
+        console.log("백엔드에서 받은 채팅 로그:", (reportData as any).chat_logs);
+      } catch (err) {
+        setError("리포트를 불러오는 데 실패했습니다.");
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    if (counts['양호'] >= 2) return lightbulbBlueIcon;
-    if (counts['위험'] >= 2) return lightbulbRedIcon;
-    return lightbulbIcon; // 2개 이상 경계, 모두 다른 경우
-  };
+    fetchReport();
+  }, [reportId, setReport, navigate]);
 
-  const selectedLightbulbIcon = getLightbulbIcon();
+  // 히스토리 추가 useEffect
+  useEffect(() => {
+    if (report) {
+      const reportWithId = {
+        ...report,
+        report_id: report.report_id || reportId
+      };
+      // 히스토리에 이미 같은 ID의 리포트가 있는지 확인 후 추가
+      // (이 부분은 reportHistoryStore의 로직에 따라 달라질 수 있음)
+      addReport(reportWithId);
+    }
+  }, [report, reportId, addReport]);
+  
+  const selectedLightbulbIcon = React.useMemo(() => {
+    if (!report) return lightbulbIcon; // 기본 아이콘
+    const finalRisk = report.final_risk || '경계';
+    if (finalRisk === '양호') return lightbulbBlueIcon;
+    if (finalRisk === '위험') return lightbulbRedIcon;
+    return lightbulbIcon;
+  }, [report]);
 
   useEffect(() => {
     const img = new Image();
@@ -274,16 +317,16 @@ const ReportPage: React.FC = () => {
     img.src = selectedLightbulbIcon;
   }, [selectedLightbulbIcon]);
 
-  const ad8Score = 2; // 임의의 값
-  const maxAD8Score = 8;
-  const radius = 62;
-  const circumference = 2 * Math.PI * radius;
-
   useEffect(() => {
-    const progressOffset = circumference - (ad8Score / maxAD8Score) * circumference;
-    const timer = setTimeout(() => setOffset(progressOffset), 100);
-    return () => clearTimeout(timer);
-  }, [ad8Score, circumference]);
+    if (report) {
+      const maxAD8Score = 8;
+      const radius = 62;
+      const circumference = 2 * Math.PI * radius;
+      const progressOffset = circumference - (report.ad8_score / maxAD8Score) * circumference;
+      const timer = setTimeout(() => setOffset(progressOffset), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [report]);
 
   useEffect(() => {
     if (chartComponentRef.current && chartComponentRef.current.chart) {
@@ -291,22 +334,19 @@ const ReportPage: React.FC = () => {
     }
   }, [windowWidth]);
 
-  // 컴포넌트가 마운트될 때 report를 history에 추가
-  useEffect(() => {
-    if (report) {
-      // report_id가 없으면 현재 timestamp를 id로 사용
-      const reportWithId = {
-        ...report,
-        report_id: report.report_id || Date.now()
-      };
-      addReport(reportWithId);
-    }
-  }, [report, addReport]);
 
-  if (!report) return <Container>로딩 중...</Container>;
+  // --- Early returns ---
+  if (isLoading) return <Container>리포트를 불러오는 중입니다...</Container>;
+  if (error) return <Container>{error}</Container>;
+  if (!report) return <Container>표시할 리포트 데이터가 없습니다.</Container>;
 
-  const summaryText = "전반적인 인지 기능이 '경계' 수준으로 나타났습니다. 일부 영역에서 약간의 저하가 관찰되나, 일상생활에 큰 영향을 미칠 정도는 아닙니다. 보고서의 영역별 제안을 참고하여 부족한 부분을 보완하고, 주기적인 인지 건강 점검을 통해 변화를 관찰하는 것이 중요합니다.";
-
+  // --- 렌더링에 필요한 변수 선언 ---
+  const drawingStatus = report.drawing_risk || '경계';
+  const dialogStatus = report.chat_risk || '경계';
+  const surveyStatus = report.ad8_risk || '경계';
+  const ad8Score = report.ad8_score;
+  const maxAD8Score = 8;
+  
   const getStatusColor = (status: '양호' | '경계' | '위험') => {
     if (status === '양호') return '#18A092';
     if (status === '경계') return '#F7D46E';
@@ -344,20 +384,22 @@ const ReportPage: React.FC = () => {
           const centerX = this.plotLeft + this.plotWidth * 0.5;
           const centerY = this.plotTop + this.plotHeight * 0.5;
           const yOffset = 80; // 이미지를 위로 올릴 값
-          const xOffset = -1; // 이미지를 왼쪽으로 옮길 값
+          
+          const imageX = centerX - newWidth / 2;
+          const imageY = centerY - newHeight / 2 - yOffset;
 
           if ((this as any).customImage) {
             (this as any).customImage.attr({
-              x: centerX - newWidth / 2 - xOffset,
-              y: centerY - newHeight / 2 - yOffset,
+              x: imageX,
+              y: imageY,
               width: newWidth,
               height: newHeight,
             }).toFront();
           } else {
             (this as any).customImage = this.renderer.image(
               selectedLightbulbIcon,
-              centerX - newWidth / 2 - xOffset,
-              centerY - newHeight / 2 - yOffset,
+              imageX,
+              imageY,
               newWidth,
               newHeight
             )
@@ -373,6 +415,42 @@ const ReportPage: React.FC = () => {
                 duration: 800,
               }
             );
+          }
+
+          const textX = centerX + newWidth / 2 + 15;
+          const textY = centerY - yOffset - 30;
+
+          const textStyle = {
+            color: '#E2E8F0',
+            fontSize: '25px',
+            fontWeight: '600',
+          };
+
+          // 텍스트 렌더링: 매번 css를 적용하여 스타일 변경이 확실히 반영되도록 함
+          if ((this as any).customText) {
+            (this as any).customText.attr({
+              x: textX,
+              y: textY,
+            }).css(textStyle).toFront();
+          } else {
+            (this as any).customText = this.renderer.text(
+              '종합 인지 결과',
+              textX,
+              textY,
+            )
+            .css(textStyle)
+            .attr({
+              align: 'left',
+              opacity: 0,
+            })
+            .add()
+            .toFront();
+
+            (this as any).customText.animate({
+              opacity: 1,
+            }, {
+              duration: 800,
+            });
           }
         }
       }
@@ -416,24 +494,27 @@ const ReportPage: React.FC = () => {
           crop: false,
           overflow: 'allow',
           formatter: function (this: Highcharts.Point) {
-            const pointOptions = this.options as { description?: string, status?: '양호' | '경계' | '위험' };
+            const pointOptions = this.options as { status?: '양호' | '경계' | '위험' };
             let statusText = pointOptions.status || '위험';
             let statusClass = '';
             let statusColor = '';
+            let description = '';
             
             switch (statusText) {
               case '위험':
-                statusText = '위험';
                 statusClass = 'status-danger';
                 statusColor = '#EF4444';
+                description = '기능 저하가 뚜렷하게 나타나고 있습니다. 전문가와의 상담을 권장합니다.';
                 break;
               case '경계':
                 statusClass = 'status-warning';
                 statusColor = '#FBBF24';
+                description = '약간의 기능 저하가 관찰되나, 일상에 큰 영향은 없습니다. 꾸준한 관리가 필요합니다.';
                 break;
               case '양호':
                 statusClass = 'status-safe';
                 statusColor = '#22C55E';
+                description = '해당 영역의 인지 기능이 안정적으로 유지되고 있습니다.';
                 break;
             }
 
@@ -457,7 +538,7 @@ const ReportPage: React.FC = () => {
                             <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; margin-right: 5px; vertical-align: middle;"></span><span style="vertical-align: middle;">${statusText}</span>
                           </span>
                         </b>
-                        <span class="description">${pointOptions.description || ''}</span>
+                        <span class="description">${description}</span>
                     </div>`;
           },
           useHTML: true,
@@ -474,26 +555,13 @@ const ReportPage: React.FC = () => {
       type: 'pie',
       name: '점유율',
       data: [
-        { name: '그림 검사', y: 33, color: getStatusColor(drawingStatus), sliced: true, status: drawingStatus, description: '도형을 그리는 과정에서 어려움이 있었다면 주의력이나 시공간 능력 저하일 수 있습니다. 꾸준히 퍼즐이나 그리기 활동을 해보세요.' },
-        { name: '대화 검사', y: 33, color: getStatusColor(dialogStatus), sliced: true, status: dialogStatus, description: '대화의 흐름을 이해하고 적절하게 반응하는 능력이 우수합니다. 꾸준히 대화하고 책을 읽는 습관을 가지면 더욱 좋습니다.' },
-        { name: '설문 검사 (AD-8)', y: 34, color: getStatusColor(surveyStatus), sliced: true, status: surveyStatus, description: '최근 기억력이나 판단력의 변화를 스스로 점검하는 것은 매우 중요합니다. 변화가 감지된 항목에 주의를 기울이며 일상 생활을 관찰해보세요.' },
+        { name: '그림 검사', y: 33, color: getStatusColor(drawingStatus), sliced: true, status: drawingStatus },
+        { name: '대화 검사', y: 33, color: getStatusColor(dialogStatus), sliced: true, status: dialogStatus },
+        { name: '설문 검사 (AD-8)', y: 34, color: getStatusColor(surveyStatus), sliced: true, status: surveyStatus },
       ]
     }],
-    legend: {
-      enabled: false,
-      itemHoverStyle: {
-        color: '#FFFFFF'
-      },
-      itemHiddenStyle: {
-        color: '#666666'
-      },
-      layout: windowWidth > 640 ? 'horizontal' : 'vertical',
-      align: windowWidth > 640 ? 'center' : 'left',
-      verticalAlign: windowWidth > 640 ? 'bottom' : 'middle',
-    },
-    credits: {
-      enabled: false
-    }
+    legend: { enabled: false },
+    credits: { enabled: false }
   };
 
 
@@ -503,27 +571,28 @@ const ReportPage: React.FC = () => {
     suggestion: string;
     image?: string;
     status: '양호' | '경계' | '위험';
+    chat_logs?: ChatLog[];
   }
 
-  // 각 검사별 요약
   const examResults: ExamResult[] = [
     {
       name: "설문 검사 (AD-8)",
-      summary: report.ad8test_result,
-      suggestion: "최근 기억력이나 판단력의 변화를 스스로 점검하는 것이 중요합니다. 변화가 감지된다면 주의를 기울이고 일상생활을 관찰해보세요.",
+      summary: `${report.ad8_score}/8`,
+      suggestion: report.ad8test_result,
       status: surveyStatus,
     },
     {
       name: "대화 검사",
-      summary: `점수: ${report.text_score} / 100\n${report.chat_result}`,
-      suggestion: "대화의 흐름을 이해하고 적절하게 반응하는 능력이 우수합니다. 꾸준히 대화하고 책을 읽는 습관을 가지면 더욱 좋습니다.",
+      summary: report.chat_result,
+      suggestion: report.chat_result,
       status: dialogStatus,
+      chat_logs: report.chat_logs,
     },
     {
       name: "그림 검사",
       summary: report.drawingtest_result,
-      suggestion: "도형을 그리는 과정에서 어려움이 있었다면 주의력이나 시공간 능력 저하일 수 있습니다. 꾸준히 퍼즐이나 그리기 활동을 해보세요.",
-      image: report.drawing_image,
+      suggestion: report.drawingtest_result,
+      image: report.drawing_image_url ? `http://localhost:8000${report.drawing_image_url}` : undefined,
       status: drawingStatus,
     },
   ];
@@ -567,21 +636,20 @@ const ReportPage: React.FC = () => {
             {/* 종합 인지 기능 평가 결과 */}
             <OverallSummaryCard>
               <SummaryCardTitle>종합 인지 기능 평가 결과</SummaryCardTitle>
-              <SummaryText>{summaryText}</SummaryText>
+              <SummaryText>{report.final_result}</SummaryText>
             </OverallSummaryCard>
 
             {/* 검사별 요약 */}
             <SectionTitle>검사별 결과 및 해석</SectionTitle>
             {examResults.map((exam, idx) => {
-              const status = exam.status;
               if (exam.name === "설문 검사 (AD-8)") {
-                return <AD8Card key={idx} exam={exam} status={status} ad8Score={ad8Score} maxAD8Score={maxAD8Score} offset={offset} />;
+                return <AD8Card key={idx} exam={exam} status={exam.status} ad8Score={ad8Score} maxAD8Score={maxAD8Score} offset={offset} />;
               }
               if (exam.name === "대화 검사") {
-                return <ChatCard key={idx} exam={exam} status={status} />;
+                return <ChatCard key={idx} exam={exam} status={exam.status} chatLogs={chatLogs} />;
               }
               if (exam.name === "그림 검사") {
-                return <DrawingCard key={idx} exam={exam} status={status} />;
+                return <DrawingCard key={idx} exam={exam} status={exam.status} />;
               }
               return null;
             })}
@@ -946,7 +1014,7 @@ const MessageBubble = styled.div<{ $isUser: boolean }>`
 
 const Suggestion = styled.div`
   color: #CBD5E1;
-  font-size: 0.9rem;
+  font-size: 1rem;
   line-height: 1.6;
 
   @media (max-width: 768px) {
