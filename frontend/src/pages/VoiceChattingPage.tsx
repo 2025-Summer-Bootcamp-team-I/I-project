@@ -244,6 +244,7 @@ const VoiceChattingPage: React.FC = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
+  const intervalIdRef = useRef<number | null>(null); // 새로 추가된 useRef
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -259,6 +260,9 @@ const VoiceChattingPage: React.FC = () => {
       }
       if (animationFrameIdRef.current) {
         cancelAnimationFrame(animationFrameIdRef.current);
+      }
+      if (intervalIdRef.current) { // intervalIdRef.current 클리어 로직 추가
+        clearInterval(intervalIdRef.current);
       }
     };
   }, [reportId, createChat, clearMessages]);
@@ -329,7 +333,7 @@ const VoiceChattingPage: React.FC = () => {
 
         audioPlayerRef.current.onloadedmetadata = () => {
           const audioDuration = audioPlayerRef.current?.duration || 0;
-          const charDelay = (audioDuration * 1000) / text.length; // 각 글자가 나타날 시간 간격
+          const charDelay = text.length > 0 ? (audioDuration * 1000) / text.length : 0; // text.length가 0인 경우 처리
 
           intervalId = setInterval(() => {
             if (charIndex < text.length) {
@@ -340,6 +344,7 @@ const VoiceChattingPage: React.FC = () => {
               if (intervalId) clearInterval(intervalId);
             }
           }, charDelay);
+          intervalIdRef.current = intervalId; // intervalIdRef에 저장
         };
 
         audioPlayerRef.current.onplay = () => {
@@ -348,7 +353,7 @@ const VoiceChattingPage: React.FC = () => {
 
         audioPlayerRef.current.onended = () => {
           stopVolumeMonitoring();
-          if (intervalId) clearInterval(intervalId);
+          if (intervalIdRef.current) clearInterval(intervalIdRef.current); // intervalIdRef.current 클리어
           setDisplayedAiMessage(text); // 음성 재생이 끝나면 전체 텍스트 표시
           // 음성 재생이 시작된 후에 AI 메시지를 화면에 추가
           const aiMessage: ChatLogResponse = {
@@ -367,6 +372,7 @@ const VoiceChattingPage: React.FC = () => {
     } catch (error) {
       console.error("Error with TTS:", error);
       stopVolumeMonitoring(); // 오류 발생 시에도 모니터링 중지
+      if (intervalIdRef.current) clearInterval(intervalIdRef.current); // 오류 발생 시에도 intervalIdRef.current 클리어
       setDisplayedAiMessage(text); // 오류 발생 시에도 전체 텍스트 표시
     }
   };
