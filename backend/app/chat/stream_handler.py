@@ -41,7 +41,7 @@ system_prompt = """
 prompt = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template(system_prompt + "\n\n참고 논문(Context): {context}"),
 
-HumanMessagePromptTemplate.from_template(
+    HumanMessagePromptTemplate.from_template(
         "이전 대화 요약(chat_history):\n{chat_history}\n\n"
         "사용자 발화: {question}"
     )
