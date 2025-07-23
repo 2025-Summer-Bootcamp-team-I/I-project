@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import Background from '../components/Background';
 import Header from '../components/Header';
-import { useChatStore } from '../store/chatStore';
+import { useVoiceChatStore } from '../store/voiceChatStore';
 import { useReportIdStore } from '../store/reportIdStore';
 import { speechToText, textToSpeech } from '../api';
+import type { ChatLogResponse } from '../types/api';
 import voiceChatRobot from '../assets/imgs/voiceChat-Robot.png';
 
 const pulse = keyframes`
@@ -194,14 +195,13 @@ const VoiceChattingPage: React.FC = () => {
     chatId,
     messages,
     isLoading,
-    isStreaming,
     createChat,
     sendMessage,
     clearMessages,
-  } = useChatStore();
+    addMessage,
+  } = useVoiceChatStore();
   const { reportId } = useReportIdStore();
   const [isListening, setIsListening] = useState(false);
-  const [currentAiMessage, setCurrentAiMessage] = useState('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
@@ -216,16 +216,6 @@ const VoiceChattingPage: React.FC = () => {
     };
   }, [reportId, createChat, clearMessages]);
 
-  useEffect(() => {
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage && lastMessage.role === 'ai' && lastMessage.message !== currentAiMessage) {
-      setCurrentAiMessage(lastMessage.message);
-      if (!isStreaming && lastMessage.message.trim().length > 0) {
-        handleTextToSpeech(lastMessage.message);
-      }
-    }
-  }, [messages, isStreaming, currentAiMessage]);
-
   const handleTextToSpeech = async (text: string) => {
     try {
       const audioBlob = await textToSpeech(text);
@@ -233,6 +223,16 @@ const VoiceChattingPage: React.FC = () => {
       if (audioPlayerRef.current) {
         audioPlayerRef.current.src = audioUrl;
         audioPlayerRef.current.play();
+        // 음성 재생이 시작된 후에 AI 메시지를 화면에 추가
+        const aiMessage: ChatLogResponse = {
+          id: Math.floor(Math.random() * 1_000_000_000) + 1,
+          chat_id: chatId!,
+          role: 'ai',
+          message: text,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        addMessage(aiMessage);
       }
     } catch (error) {
       console.error("Error with TTS:", error);
@@ -275,7 +275,10 @@ const VoiceChattingPage: React.FC = () => {
               chat_id: chatId,
               message: sttResponse.text,
             };
-            sendMessage(chatRequest);
+            const aiResponseText = await sendMessage(chatRequest);
+            if (aiResponseText) {
+              handleTextToSpeech(aiResponseText);
+            }
           }
         } catch (error) {
           console.error("Error with STT:", error);
@@ -323,13 +326,13 @@ const VoiceChattingPage: React.FC = () => {
           <VoiceAICharacter $isListening={isListening}>
             <img src={voiceChatRobot} alt="Voice Chat Robot" />
           </VoiceAICharacter>
-          <MicButton $isListening={isListening} onClick={handleToggleListening} disabled={isLoading || isStreaming}>
+          <MicButton $isListening={isListening} onClick={handleToggleListening} disabled={isLoading}>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
             </svg>
           </MicButton>
           <VoiceStatus>
-            {isListening ? '듣고 있어요...' : (isLoading || isStreaming ? '응답을 생성 중입니다...' : '버튼을 누르고 말씀해주세요')}
+            {isListening ? '듣고 있어요...' : (isLoading ? '응답을 생성 중입니다...' : '버튼을 누르고 말씀해주세요')}
           </VoiceStatus>
         </ContentWrapper>
         <audio ref={audioPlayerRef} hidden />

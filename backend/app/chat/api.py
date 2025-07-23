@@ -51,7 +51,6 @@ def chat(
     )
     return {"response": response}
 
-  
 @router.post("/stream")
 async def stream_chat(
         request: ChatRequest,
@@ -65,24 +64,16 @@ async def stream_chat(
         task = asyncio.create_task(chain.acall(request.message))
 
         async for token in handler.aiter():
-            print(f"[DEBUG] raw token: {repr(token)}")  # 원본 token 확인
 
             response_text += token
 
-            # 중복된 data: 제거
-            clean_token = token.strip()
-            while clean_token.startswith("data:"):
-                clean_token = clean_token[len("data:"):].strip()
-
-            print(f"[DEBUG] clean token: {repr(clean_token)}")  # 정리된 token 확인
+            clean_token = token
 
             # JSON 포맷 감싸기
             json_data = json.dumps({"token": clean_token})
-            print(f"[DEBUG] yield: data: {json_data}")  # 실제 전송 내용 확인
 
             yield json_data
 
-        print("[DEBUG] yield: data: [DONE]")  # 스트림 종료 시점
         yield "[DONE]"
 
         save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
