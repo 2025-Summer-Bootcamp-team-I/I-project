@@ -15,6 +15,7 @@ import type {
   ChatRequest,
   ChatLogResponse,
   EvaluateChatResponse,
+  ChatResponse,
 } from '../types/api';
 
 // axios 인스턴스 생성
@@ -188,6 +189,12 @@ export const speechToText = async (file: File) => {
 // TTS API
 export const textToSpeech = async (text: string): Promise<Blob> => {
   const response = await axiosInstance.post('/tts', { text }, { responseType: 'blob' });
+  return response.data;
+};
+
+// 일반 채팅 메시지 전송 API (스트리밍 아님)
+export const sendChatRequest = async (chatRequest: ChatRequest) => {
+  const response = await axiosInstance.post<ChatResponse>('/chat', chatRequest);
   return response.data;
 };
 
