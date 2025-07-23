@@ -1,4 +1,4 @@
-#pipeline.py
+#app/rag/pipeline.py
 import os
 import requests
 import shutil
@@ -68,7 +68,12 @@ def filter_by_year_citations(papers):
 def download_pdf(paper, save_dir=TEMP_DIR):
     os.makedirs(save_dir, exist_ok=True)
     url = paper["openAccessPdf"]["url"]
-    filename = os.path.join(save_dir, url.split("/")[-1])
+
+    # 파일명 = 논문 제목 기반으로 안전하게 구성
+    title = paper.get("title", "제목 없음").strip()
+    safe_title = "".join(c for c in title if c.isalnum() or c in " _-").rstrip()
+    filename = os.path.join(save_dir, f"{safe_title}.pdf")
+
     try:
         r = requests.get(url, stream=True)
         if r.status_code == 403:
@@ -129,7 +134,8 @@ def run_pipeline():
             continue
         print(f"다운로드 완료: {path}")
         try:
-            result = embed_pdf_to_chroma(path)
+            title = paper.get("title", "제목 없음").strip()
+            result = embed_pdf_to_chroma(path, title=title)
             print(f"임베딩 결과: {result}")
             total += 1
         except PdfStreamError as e:
