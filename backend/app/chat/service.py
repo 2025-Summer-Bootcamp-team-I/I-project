@@ -1,25 +1,21 @@
 # app/chat/service.py
+
 import os
-from app.chat.memory_store import get_memory
+import re
+import chromadb
+from sqlalchemy.orm import Session
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
-from app.chat.crud import save_chat_log
-from app.chat.models import RoleEnum
-from sqlalchemy.orm import Session
-from .models import ChatLog
-from .schemas import ChatLogResponse
-from app.database import get_db  # SessionLocal
-from sqlalchemy.orm import Session
-# Report 모델 실제 경로에 맞게 수정 필요
-from app.report.models import Report, RiskLevel
-import re
-from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
-from langchain.prompts import PromptTemplate
-import chromadb
-from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, PromptTemplate
 
+from app.chat.memory_store import get_memory
+from app.chat.crud import save_chat_log
+from app.chat.models import RoleEnum, ChatLog
+from app.chat.schemas import ChatLogResponse
+from app.database import get_db
+from app.report.models import Report, RiskLevel
 
 def extract_score_and_result(ai_response):
     m = re.search(r"치매 위험도 점수[:：]?\s*(\d+)", ai_response)
@@ -42,66 +38,110 @@ if not openai_api_key:
 client = chromadb.HttpClient(host="chroma-server", port=8000)
 vectordb = Chroma(
     client=client,
-    collection_name="dementia_chunks",  # 임베딩 컬렉션명과 동일해야 함
+    collection_name="dementia_chunks",
     embedding_function=OpenAIEmbeddings(openai_api_key=openai_api_key)
 )
+
 def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str:
-    memory = get_memory(report_id)
-
-    # 논문 근거 기반 치매 평가 전문 챗봇 프롬프트
-    system_prompt = """
-당신은 친근한 대화 파트너입니다.
-- 제공된 참고 논문(Context)을 활용해 실제 연구에서 사용된 치매 선별 질문을 자연스럽고 일상 대화로 묻습니다.
-- 검사, 진단, 평가, 점수, 소견 등 전문 용어는 사용하지 않습니다.
-- 자기 언급이나 능력 언급을 하지 않습니다.
-- 대화 이력(chat_history)을 확인해 이미 물어본 질문을 반복하지 않습니다.
-- 논문의 핵심 내용을 참고해 질문을 구성합니다.
-- 사용자의 이전 답변을 바탕으로 열린 질문을 합니다. 예: “최근에 어떤 장소나 일이 가장 기억에 남으세요?”
-- 어조는 따뜻하고 존중합니다.
-- 주고받음이 7회에 도달하면 간단한 작별 인사로 대화를 종료합니다.
-- 사용자가 ‘끝’, ‘그만’, ‘종료’ 등을 표현하면 즉시 대화를 마무리하고 짧게 작별 인사를 남깁니다.
-"""
-
-    prompt = ChatPromptTemplate.from_messages([
-        SystemMessagePromptTemplate.from_template(system_prompt + "\n\n참고 논문(Context): {context}"),
-        HumanMessagePromptTemplate.from_template(
-            "이전 대화 요약(chat_history):\n{chat_history}\n\n"
-            "사용자 발화: {question}"
-        )
-    ])
-
-    chain = ConversationalRetrievalChain.from_llm(
-        llm=ChatOpenAI(model="gpt-4", temperature=0, openai_api_key=openai_api_key),
-        retriever=vectordb.as_retriever(),
-        memory=memory,
-        combine_docs_chain_kwargs={"prompt": prompt}
-    )
-
-    # 1. 사용자 메시지 저장
+    # 1. 사용자 메시지 저장 및 턴 수 계산
     save_chat_log(db, chat_id=chat_id, role=RoleEnum.user, text=message)
+    db.flush()
+    turn_count = db.query(ChatLog).filter(ChatLog.chat_id == chat_id, ChatLog.role == RoleEnum.user).count()
 
-    # 2. AI 응답 생성
-    response = chain.run(message)
+    response = ""
+    llm = ChatOpenAI(model="gpt-4", temperature=0.1, openai_api_key=openai_api_key)
 
-    # 3. AI 응답 저장
+    # ✅ 작별 인사
+    if turn_count == 7:
+        farewell_prompt_text = """
+당신은 따뜻한 작별인사 전문가입니다. 당신의 임무는 사용자와의 대화를 자연스럽게 마무리하는 것입니다.
+
+# 규칙
+1. 사용자의 마지막 말에 간단히 공감하며 반응해주세요. (예: "그렇군요.", "알겠습니다.")
+2. 새로운 질문은 절대 하지 마세요.
+3. 따뜻한 작별 인사를 건네며 대화를 마무리해주세요.
+4. 응답의 맨 마지막에는, 다른 말 없이 정확히 ' 아래에 종료 버튼을 눌러주세요 . ' 라는 문구를 추가해야 합니다.
+5. 답변은 한두 문장으로 매우 간결하게 유지하세요.
+
+사용자의 마지막 말: {question}
+"""
+        farewell_prompt = PromptTemplate.from_template(farewell_prompt_text)
+        farewell_chain = farewell_prompt | llm
+        ai_response = farewell_chain.invoke({"question": message})
+        response = ai_response.content
+
+    # ✅ 일반 대화
+    elif turn_count <= 6:
+        memory = get_memory(report_id)
+        system_prompt_template = """
+당신은 사용자의 이야기를 들어주는 친근한 대화 파트너입니다. 당신의 유일한 역할은 사용자의 말을 듣고 다양한 리액션과 질문만 하세요. 자신에 대한 생각을 말하지마세요. 제발
+
+# 페르소나 및 대화 규칙
+1. **자신을 드러내지 않기**: 절대로 당신 자신에 대한 이야기(의견, 감정, 취향 등)를 하지 마세요. "저는", "제 생각에는" 같은 문장도 금지입니다. AI라는 말도 하지 마세요.
+    - 사용자의 발화를 오해하거나 왜곡하지 마세요. ("안 했어요" → "하셨군요" ❌)
+
+2. **사용자 말 따라하지 않기**: 사용자의 말을 그대로 반복하거나 사용자 입장에서 말하지 마세요.
+
+3. **공감과 질문에 집중**: 짧게 공감하고 이어서 질문하세요.
+    - 같은 질문을 표현만 바꿔 반복하지 마세요. ("노인정에서 뭐 하세요?" → "거기서 시간 어떻게 보내세요?" → 금지 ❌)
+
+4. **간결함 유지**: 항상 한두 문장 이내로 짧고 자연스럽게 말하세요.
+
+5. **자연스러운 대화 흐름**:
+    - 다음과 같은 표현이 나오면 즉시 주제를 바꾸세요: "모르겠어", "기억 안 나", "딱히", "글쎄", "그냥 그랬어", "생각 안 나", "말하고 싶지 않아", "할 말 없어"
+
+6. **전문 용어 금지**: '검사', '진단', '문진', '점수', '소견' 같은 단어는 쓰지 마세요.
+
+7. **어조**: 따뜻하고 존중하는 어조를 사용하세요.
+
+8. **종료 조건**: '그만', '끝', '이제 됐어' 등의 표현이 나오면 대화를 마무리하세요.
+
+9. **직전 발화 반영**: 항상 직전 사용자 말에 반응하세요. 이전 질문을 무시하고 다음 질문을 하지 마세요.
+
+10. **초기 인사 멘트는 turn 1에서만 출력됩니다.**
+
+# 기타 정보
+- 참고 논문(Context)을 참고해 자연스럽게 유도형 질문을 하세요.
+- 현재 {turn_count}번째 대화입니다. 총 7턴 후에는 대화를 종료해야 합니다.
+"""
+        system_prompt = system_prompt_template.format(turn_count=turn_count)
+        prompt = ChatPromptTemplate.from_messages([
+            SystemMessagePromptTemplate.from_template(system_prompt + "\n\n참고 논문(Context): {context}"),
+            HumanMessagePromptTemplate.from_template(
+                "이전 대화 요약(chat_history):\n{chat_history}\n\n사용자 발화: {question}"
+            )
+        ])
+        chain = ConversationalRetrievalChain.from_llm(
+            llm=llm,
+            retriever=vectordb.as_retriever(),
+            memory=memory,
+            combine_docs_chain_kwargs={"prompt": prompt}
+        )
+        ai_response = chain.run(message)
+
+        if turn_count == 1:
+            intro = "안녕하세요. 지금부터 대화를 시작하겠습니다. 보다 정확한 이해를 위해, 단답형보다는 완전한 문장으로 답변해주시면 감사하겠습니다.\n\n"
+            response = intro + ai_response
+        else:
+            response = ai_response
+
+    else:
+        response = "이미 대화가 종료되었습니다. 아래 종료 버튼을 눌러 평가를 완료해주세요."
+
+    # 2. AI 응답 저장
     save_chat_log(db, chat_id=chat_id, role=RoleEnum.ai, text=response)
-
     return response
 
 def get_chat_logs(db: Session, chat_id: int) -> list[ChatLogResponse]:
     logs = (
         db.query(ChatLog)
         .filter(ChatLog.chat_id == chat_id)
-        .order_by(ChatLog.updated_at.asc())  # updated_at 기준 오름차순
+        .order_by(ChatLog.updated_at.asc())
         .all()
     )
     return [ChatLogResponse.from_orm(log) for log in logs]
 
 def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
-    """
-    전체 대화 로그를 바탕으로 LLM에게 치매 위험 관련 소견(chat_result)과 위험도(chat_risk)를 생성, Report에 저장
-    """
-    # 1. 전체 대화 로그 불러오기
     logs = (
         db.query(ChatLog)
         .filter(ChatLog.chat_id == chat_id)
@@ -115,27 +155,24 @@ def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
         else:
             conversation += f"AI: {log.text}\n"
 
-    # 2. 평가용 프롬프트 (점수X, 소견+위험도만)
     eval_prompt = PromptTemplate(
         input_variables=["conversation"],
-        template = (
+        template=(
             "아래는 사용자와 AI의 전체 대화 내용입니다.\n"
             "{conversation}\n\n"
             "참고 논문(치매 관련 연구 데이터)도 함께 참고하세요.\n"
             "\n"
-            "1. 대화 중 사용자가 보인 '치매가 있는 사람이 자주 보이는 특징적인 응답'이 몇 번 나왔는지 논문을 참고해 정확히 판단하세요.\n"
-            "2. 그 횟수가 2개 이상이면 '경계', 4개 이상이면 '위험', 그 미만이면 '양호'로 위험도를 정하세요.\n"
-            "3. 아래 예시 형식을 그대로 따라 답하세요. [대괄호] 부분만 실제 대화 내용과 분석에 맞게 채워 넣으세요.\n\n"
+            "1. 대화 중 사용자가 보인 '치매가 있는 사람이 자주 보이는 특징적인 응답'이 몇 번 나왔는지 논문을 참고해 판단하세요.\n"
+            "2. 그 횟수가 2개 이상이면 '경계', 4개 이상이면 '위험', 그 미만이면 '양호'로 정하세요.\n"
+            "3. 아래 예시 형식을 따라 주세요:\n\n"
             "<양호>\n"
-            "소견: 대화 검사 결과, 특별한 이상 징후가 관찰되지 않았습니다. 사용자는 일상적인 질문에 일관되게 답변하였으며, 기억력이나 인지에 뚜렷한 혼동은 보이지 않았습니다. 현재 상태를 유지하며 일상 생활을 계속하시는 것을 권장합니다.\n\n"
+            "소견: 대화 검사 결과, 특별한 이상 징후가 관찰되지 않았습니다. 사용자는 일상적인 질문에 일관되게 답변하였으며, 기억력이나 인지에 뚜렷한 혼동은 보이지 않았습니다.\n\n"
             "<경계>\n"
-            "소견: 대화 검사 결과, 사용자는 [문제되는 패턴/특징]을(를) 반복적으로 보였습니다. 특히, [구체적 예시 1], [구체적 예시 2]와 같은 대답이 관찰되었고, 이는 [인지 저하/기억력 저하/혼동 경향 등]의 신호일 수 있습니다. 이러한 특성으로 볼 때, 추가 관찰이 필요합니다.\n\n"
+            "소견: 대화 검사 결과, 사용자는 [문제되는 패턴]을 반복적으로 보였습니다. 예: [예시1], [예시2]\n\n"
             "<위험>\n"
-            "소견: 대화 검사 결과, 사용자는 [문제되는 패턴/특징]을(를) 여러 차례 반복했습니다. 예를 들어, [구체적 예시 1] 및 [구체적 예시 2]와 같은 대답이 관찰되었고, 이는 심각한 인지 저하 또는 혼동 경향을 시사합니다. 추가 평가나 전문 기관 방문을 권장합니다.\n\n"
+            "소견: 대화 검사 결과, 사용자는 [문제되는 패턴]을 여러 차례 반복했습니다. 예: [예시1], [예시2]\n\n"
             "위험도: <양호/경계/위험>\n"
-
         )
-
     )
 
     llm = ChatOpenAI(model="gpt-4", temperature=0, openai_api_key=openai_api_key)
@@ -143,25 +180,21 @@ def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
     eval_response = eval_chain.invoke({"conversation": conversation})
     response_text = eval_response.content
 
-    # 3. 결과 추출 (점수X)
     m1 = re.search(r"소견[:：]?\s*([^\n]+)", response_text)
     chat_result = m1.group(1).strip() if m1 else ""
 
     m2 = re.search(r"위험도[:：]?\s*(양호|경계|위험)", response_text)
-    # 매치 실패 시 기본값을 '양호'로
     chat_risk_str = m2.group(1).strip() if m2 else "양호"
 
-    # Enum 변환
     if chat_risk_str == "양호":
         risk_enum = RiskLevel.GOOD
     elif chat_risk_str == "경계":
         risk_enum = RiskLevel.CAUTION
     elif chat_risk_str == "위험":
         risk_enum = RiskLevel.DANGER
-    else:#예외 처리: 혹시 다른 값이 들어오면 기본을 양호로
+    else:
         risk_enum = RiskLevel.GOOD
 
-    # 4. Report 저장
     report = db.query(Report).filter(Report.report_id == report_id).first()
     if not report:
         raise ValueError("리포트가 존재하지 않습니다.")

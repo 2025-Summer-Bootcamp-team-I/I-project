@@ -29,8 +29,6 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
 
   chroma-server:
     image: ghcr.io/chroma-core/chroma:latest
