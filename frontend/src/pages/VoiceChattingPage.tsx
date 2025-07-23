@@ -6,6 +6,7 @@ import Header from '../components/Header';
 import { useVoiceChatStore } from '../store/voiceChatStore';
 import { useReportIdStore } from '../store/reportIdStore';
 import { speechToText, textToSpeech } from '../api';
+import type { ChatLogResponse } from '../types/api';
 import voiceChatRobot from '../assets/imgs/voiceChat-Robot.png';
 
 const pulse = keyframes`
