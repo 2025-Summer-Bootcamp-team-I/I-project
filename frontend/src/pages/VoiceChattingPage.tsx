@@ -320,6 +320,10 @@ const VoiceChattingPage: React.FC = () => {
 
   const handleTextToSpeech = async (text: string) => {
     try {
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
+        intervalIdRef.current = null;
+      }
       setCurrentRobotImage(voiceChatRobot3); // TTS 재생 시작 시 robot3으로 변경
       setDisplayedAiMessage(''); // 새로운 TTS 시작 시 기존 메시지 초기화
       const audioBlob = await textToSpeech(text);
