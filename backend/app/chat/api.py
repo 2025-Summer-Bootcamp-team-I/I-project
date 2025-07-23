@@ -51,7 +51,6 @@ def chat(
     )
     return {"response": response}
 
-  
 @router.post("/stream")
 async def stream_chat(
         request: ChatRequest,
@@ -65,24 +64,16 @@ async def stream_chat(
         task = asyncio.create_task(chain.acall(request.message))
 
         async for token in handler.aiter():
-            print(f"[DEBUG] raw token: {repr(token)}")  # 원본 token 확인
 
             response_text += token
 
-            # 중복된 data: 제거
-            clean_token = token.strip()
-            while clean_token.startswith("data:"):
-                clean_token = clean_token[len("data:"):].strip()
-
-            print(f"[DEBUG] clean token: {repr(clean_token)}")  # 정리된 token 확인
+            clean_token = token
 
             # JSON 포맷 감싸기
             json_data = json.dumps({"token": clean_token})
-            print(f"[DEBUG] yield: data: {json_data}")  # 실제 전송 내용 확인
 
             yield json_data
 
-        print("[DEBUG] yield: data: [DONE]")  # 스트림 종료 시점
         yield "[DONE]"
 
         save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
@@ -94,8 +85,8 @@ async def stream_chat(
 @router.post(
     "/create",
     response_model=CreateChatResponse,
-    summary="채팅방 생성",
-    description="지정한 report_id에 대해 새 채팅방을 생성합니다."
+    summary="채팅방 생성 및 AI 인사",
+    description="지정한 report_id에 대해 새 채팅방을 생성하고, AI의 첫 인사말을 반환합니다."
 )
 def create_chat(
         request: CreateChatRequest,
@@ -109,14 +100,20 @@ def create_chat(
     if not report:
         raise HTTPException(status_code=404, detail="해당 report_id가 존재하지 않습니다.")
 
+    # 1. 채팅방 생성
     chat = Chat(report_id=report.report_id)
     db.add(chat)
     db.commit()
     db.refresh(chat)
 
+    # 2. AI의 첫 인사말 생성 및 저장
+    initial_greeting = "안녕하세요. 지금부터 대화를 시작하겠습니다. 보다 정확한 검사를 위해, 단답형보다는 완전한 문장으로 답변해주시면 감사하겠습니다."
+    save_chat_log(db, chat_id=chat.chat_id, role=RoleEnum.ai, text=initial_greeting)
+    
+    # 3. 생성된 chat_id와 인사말 반환
     return CreateChatResponse(
         chat_id=chat.chat_id,
-        message="채팅방이 생성되었습니다."
+        message=initial_greeting
     )
 
 

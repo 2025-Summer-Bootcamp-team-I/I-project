@@ -2,30 +2,28 @@ import { create } from 'zustand';
 import {
   createChat as apiCreateChat,
   getChatLogs as apiGetChatLogs,
-  streamChat as apiStreamChat,
   evaluateChat as apiEvaluateChat,
+  sendChatRequest,
 } from '../api';
-import type { ChatLogResponse, ChatRequest } from '../types/api';
+import type { ChatLogResponse, ChatRequest, ChatResponse } from '../types/api';
 
-interface ChatState {
+interface VoiceChatState {
   chatId: number | null;
   messages: ChatLogResponse[];
   isLoading: boolean;
-  isStreaming: boolean;
   error: string | null;
   createChat: (reportId: number) => Promise<number | undefined>;
   loadChatLogs: (chatId: number) => Promise<void>;
-  sendMessage: (chatRequest: ChatRequest) => Promise<void>;
+  sendMessage: (chatRequest: ChatRequest) => Promise<string>; // AI 응답 텍스트를 반환하도록 변경
   evaluateChat: (chatId: number, reportId: number) => Promise<void>;
   addMessage: (message: ChatLogResponse) => void;
   clearMessages: () => void;
 }
 
-export const useChatStore = create<ChatState>((set, get) => ({
+export const useVoiceChatStore = create<VoiceChatState>((set, get) => ({
   chatId: null,
   messages: [],
   isLoading: false,
-  isStreaming: false,
   error: null,
 
   createChat: async (reportId: number) => {
@@ -55,46 +53,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   sendMessage: async (chatRequest: ChatRequest) => {
-    set({ isStreaming: true, error: null });
+    set({ isLoading: true, error: null });
 
-    const userMessage: ChatLogResponse = {
-      id: Math.floor(Math.random() * 1_000_000_000),
-      chat_id: chatRequest.chat_id,
-      role: 'user',
-      message: chatRequest.message,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    get().addMessage(userMessage);
-
-    const aiMessage: ChatLogResponse = {
-      id: Math.floor(Math.random() * 1_000_000_000) + 1,
-      chat_id: chatRequest.chat_id,
-      role: 'ai',
-      message: '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    get().addMessage(aiMessage);
+    // 사용자의 메시지를 화면에 출력하지 않으므로, messages 배열에 추가하지 않습니다.
+    // const userMessage: ChatLogResponse = {
+    //   id: Math.floor(Math.random() * 1_000_000_000),
+    //   chat_id: chatRequest.chat_id,
+    //   role: 'user',
+    //   message: chatRequest.message,
+    //   created_at: new Date().toISOString(),
+    //   updated_at: new Date().toISOString(),
+    // };
+    // get().addMessage(userMessage);
 
     try {
-      await apiStreamChat(chatRequest, (data) => {
-        const token = data.token;
-        if (typeof token === 'string') {
-          set((state) => {
-            const newMessages = state.messages.map((msg) =>
-              msg.id === aiMessage.id ? { ...msg, message: msg.message + token } : msg
-            );
-            return { messages: newMessages };
-          });
-        }
-      });
+      const response: ChatResponse = await sendChatRequest(chatRequest);
+      set({ isLoading: false }); // 응답을 받았으므로 로딩 상태 해제
+      return response.response; // AI 응답 텍스트 반환
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
-      set({ error: errorMessage });
+      set({ error: errorMessage, isLoading: false });
       console.error(errorMessage);
-    } finally {
-      set({ isStreaming: false });
+      throw error; // 에러를 다시 throw하여 호출자에게 알림
     }
   },
 
