@@ -26,6 +26,7 @@ function App() {
         <Route path="/drawing" element={<DrawingPage />} />
         <Route path="/loading" element={<LoadingPage />} />
         <Route path="/report" element={<ReportPage />} />
+        <Route path="/report/:reportId" element={<ReportPage />} />
         <Route path="/chatting-select" element={<ChattingSelectPage />} />
         <Route path="/chatting/voice" element={<VoiceChattingPage />} />
         <Route path="/chatting/text" element={<TextChattingPage />} />
