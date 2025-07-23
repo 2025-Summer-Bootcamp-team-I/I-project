@@ -116,6 +116,10 @@ export interface ChatLogResponse {
   updated_at: string;
 }
 
+export interface ChatResponse {
+  response: string;
+}
+
 export interface EvaluateChatResponse {
   chat_result: string;
   chat_risk: RiskLevel;
