@@ -104,9 +104,12 @@ export const createChat = async (chatData: CreateChatRequest) => {
   return response.data;
 };
 
-// 채팅 로그 조회 API
-export const getChatLogs = async (chatId: number) => {
-  const response = await axiosInstance.get<ChatLogResponse[]>(`/chat/logs/${chatId}`);
+/**
+ * 리포트ID(reportId)로 해당 리포트의 모든 채팅 로그를 조회합니다.
+ * 백엔드에서 /chat/logs/{report_id} 엔드포인트를 사용합니다.
+ */
+export const getChatLogs = async (reportId: number) => {
+  const response = await axiosInstance.get<ChatLogResponse[]>(`/chat/logs/${reportId}`);
   return response.data;
 };
 
@@ -170,6 +173,15 @@ export const evaluateChat = async (chatId: number, reportId: number) => {
     null, // 요청 본문은 비워둡니다.
     { params: { report_id: reportId } } // report_id를 쿼리 매개변수로 전달합니다.
   );
+  return response.data;
+};
+
+/**
+ * 리포트ID(reportId)로 해당 리포트를 최종화(finalize)합니다.
+ * 백엔드에서 /reports/{report_id}/finalize 엔드포인트를 사용합니다.
+ */
+export const finalizeReport = async (reportId: number) => {
+  const response = await axiosInstance.put(`/reports/${reportId}/finalize`);
   return response.data;
 };
 

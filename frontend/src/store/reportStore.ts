@@ -1,8 +1,11 @@
-// src/store/reportStore.ts
 import { create } from "zustand";
 import exImage from "../assets/imgs/ex.png"; // 예시 이미지, 실제 그림 이미지로 바꿀 것!
 
-export interface ReportResult {
+/**
+ * 스토어에서 사용될 일관된 리포트 데이터 구조입니다.
+ * API 응답과 약간 다를 수 있으며, null 값들이 기본값으로 처리된 상태입니다.
+ */
+export interface ReportResponse {
   report_id?: number;
   user_id?: number;
   drawingtest_result: string; // 그림 검사 ai 조건 요약 (text)
@@ -12,38 +15,54 @@ export interface ReportResult {
   total_score: number;        // 최종 점수
   ad8_score: number;
   drawing_score: number;
-  text_score: number;
   memory_score: number;
-  Time_Space_score: number;
-  Judgment_score: number;
   visual_score: number;
   language_score: number;
-  drawing_image?: string;     // 그림 검사 이미지 (base64 또는 url, 없으면 exImage)
+  ad8_risk: string | null;
+  drawing_risk: string | null;
+  chat_risk: string | null;
+  final_risk: string | null;
+  drawing_image_url: string; // 스토어에서는 항상 URL 문자열을 갖도록 처리 (null 없음)
+  ad8_details: {
+    total_responses: number | null,
+    correct_responses: number | null
+  }; // 스토어에서는 항상 객체 형태를 유지 (null 없음)
 }
 
+/**
+ * API에서 실제로 응답으로 오는 데이터 구조입니다.
+ * 스토어 타입과 달리 일부 속성이 null일 수 있습니다.
+ */
+interface ApiReportResponse extends Omit<ReportResponse, 'drawing_image_url' | 'ad8_details'> {
+    drawing_image_url: string | null;
+    ad8_details: {
+        total_responses: number;
+        correct_responses: number;
+    } | null;
+}
+
+
 interface ReportState {
-  report: ReportResult | null;
-  setReport: (data: ReportResult) => void;
+  report: ReportResponse | null;
+  setReport: (data: ApiReportResponse) => void; // 파라미터 타입을 API 응답 타입으로 명시
 }
 
 export const useReportStore = create<ReportState>((set) => ({
-  report: {
-    report_id: 1,
-    user_id: 1,
-    drawingtest_result: "원을 잘 그렸습니다. 공간구성력이 양호합니다.",
-    chat_result: "대화의 흐름 이해와 언어 표현이 매우 양호합니다.",
-    ad8test_result: "모든 항목에 대해 변화가 없다고 답변하셨습니다.",
-    final_result: "전반적인 인지 기능이 양호한 수준입니다.",
-    total_score: 88,
-    ad8_score: 15,
-    drawing_score: 90,
-    text_score: 88,
-    memory_score: 95,
-    Time_Space_score: 80,
-    Judgment_score: 82,
-    visual_score: 88,
-    language_score: 93,
-    drawing_image: exImage, // src/assets/imgs/ex.png 사용
+  report: null,
+  /**
+   * API에서 받은 데이터를 스토어 상태에 맞게 가공하여 저장합니다.
+   * @param data API에서 받은 원본 리포트 데이터
+   */
+  setReport: (data) => {
+    // 스토어에 저장하기 전에 데이터를 가공합니다.
+    const processedReport: ReportResponse = {
+      ...data,
+      // ad8_details가 null이면 기본 객체를, 아니면 기존 값을 사용합니다.
+      ad8_details: data.ad8_details ?? { total_responses: null, correct_responses: null },
+      // drawing_image_url이 null이면 예시 이미지를, 아니면 기존 URL을 사용합니다.
+      drawing_image_url: data.drawing_image_url ?? exImage,
+    };
+    
+    set({ report: processedReport });
   },
-  setReport: (data) => set({ report: data }),
 }));
