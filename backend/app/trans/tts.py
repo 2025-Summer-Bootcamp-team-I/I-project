@@ -65,15 +65,8 @@ async def generate_tts(data: TTSRequest):
         logger.info(f"🎧 응답 오디오 크기: {len(res.content)} bytes")
         logger.info(f"📎 응답 Content-Type: {res.headers.get('Content-Type')}")
 
-        # 응답이 비어있을 경우 경고만 주고 저장하지 않음
-        if not res.content:
-            logger.warning("❗ 응답은 성공했지만 오디오 데이터가 비어 있습니다.")
-        else:
-            output_path = os.path.join("output", "output.mp3")
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
-            with open(output_path, "wb") as f:
-                f.write(res.content)
-            logger.info(f"💾 오디오 파일 저장 완료: {output_path}")
+        # 파일 저장 로직 제거됨 (아까 High Priority 이슈 해결!)
+        # 이제 응답을 바로 클라이언트에게 반환할 거야.
 
     except httpx.HTTPStatusError as e:
         status_code = e.response.status_code
