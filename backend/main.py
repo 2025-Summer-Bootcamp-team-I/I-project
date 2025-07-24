@@ -6,9 +6,14 @@ import logging
 import traceback
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+from prometheus_fastapi_instrumentator import Instrumentator
+
 
 # .env 파일 로드
 load_dotenv()
+
+
+
 
 from app import database
 from app.auth import models
@@ -53,6 +58,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Prometheus 메트릭 수집기 초기화
+Instrumentator().instrument(app).expose(app)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -85,9 +93,13 @@ app.include_router(mypage_api.router)
 
 # 기본 루트 엔드포인트
 @app.get("/", tags=["Default"])
-
 def root():
     return {"msg": "API 서버는 현재 작동 중입니다!"}
+
+# 헬스체크 엔드포인트
+@app.get("/health", tags=["Health"])
+def health_check():
+    return {"status": "healthy", "service": "fastapi-backend"}
 
 if __name__ == "__main__":
     import uvicorn
