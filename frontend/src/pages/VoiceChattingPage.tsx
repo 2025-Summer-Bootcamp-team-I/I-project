@@ -205,19 +205,31 @@ const BottomButtonBar = styled.div`
 `;
 
 const ActionBtn = styled.button<{ $pdf?: boolean }>`
-  background: ${({ $pdf }) => ($pdf ? "#7C3AED" : "rgba(124, 58, 237, 0.1)")};
-  color: ${({ $pdf }) => ($pdf ? "#FFFFFF" : "#A78BFA")};
+  background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+  color: #FFFFFF;
   font-weight: 600;
   border-radius: 1rem;
-  border: 1px solid ${({ $pdf }) => ($pdf ? "#7C3AED" : "rgba(167, 139, 250, 0.2)")};
+  border: none; /* 그라데이션 배경을 위해 border 제거 */
   font-size: 1.1rem;
   padding: 0.8rem 2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   &:hover {
-    background: ${({ $pdf }) => ($pdf ? "#6D28D9" : "rgba(124, 58, 237, 0.15)")};
-    border-color: ${({ $pdf }) => ($pdf ? "#6D28D9" : "rgba(167, 139, 250, 0.3)")};
+    background: linear-gradient(135deg, #6D28D9 0%, #5B21B6 100%);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
+    transform: translateY(-2px);
+  }
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+  }
+  &:disabled {
+    background: #4B5563;
+    color: #9CA3AF;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
   }
 `;
 
@@ -232,7 +244,7 @@ const VoiceChattingPage: React.FC = () => {
     addMessage,
     evaluateChat,
   } = useVoiceChatStore();
-  const { reportId } = useReportIdStore();
+  const { reportId, setChatCompleted } = useReportIdStore();
   const [isListening, setIsListening] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [currentRobotImage, setCurrentRobotImage] = useState(voiceChatRobot1);
@@ -460,7 +472,8 @@ const VoiceChattingPage: React.FC = () => {
     try {
       await evaluateChat(chatId, reportId);
       alert("채팅 평가가 완료되었습니다.");
-      navigate('/chatting-select');
+      setChatCompleted(true);
+      navigate('/main');
     } catch (err) {
       console.error("Failed to evaluate chat:", err);
       alert("채팅 평가 중 오류가 발생했습니다.");
