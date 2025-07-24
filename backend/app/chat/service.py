@@ -1,4 +1,5 @@
 # app/chat/service.py
+# 파일 맨 위에 한 줄 추가
 
 import os
 import re
