@@ -11,6 +11,7 @@ import ReportPage from './pages/ReportPage';
 import ChattingSelectPage from './pages/ChattingSelectPage';
 import VoiceChattingPage from './pages/VoiceChattingPage';
 import TextChattingPage from './pages/TextChattingPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
@@ -23,13 +24,13 @@ function App() {
         <Route path="/main" element={<MainPage />} />
         <Route path="/mypage" element={<MyPage />} />
         <Route path="/ad8" element={<AD8Page />} />
-        <Route path="/drawing" element={<DrawingPage />} />
+        <Route path="/drawing" element={<ProtectedRoute requiredChat={true} alertMessage="대화 검사를 먼저 완료해주세요." redirectCardIndex={1}><DrawingPage /></ProtectedRoute>} />
         <Route path="/loading" element={<LoadingPage />} />
-        <Route path="/report" element={<ReportPage />} />
+        <Route path="/report" element={<ProtectedRoute requiredDrawing={true} alertMessage="그림 검사를 먼저 완료해주세요." redirectCardIndex={2}><ReportPage /></ProtectedRoute>} />
         <Route path="/report/:reportId" element={<ReportPage />} />
-        <Route path="/chatting-select" element={<ChattingSelectPage />} />
-        <Route path="/chatting/voice" element={<VoiceChattingPage />} />
-        <Route path="/chatting/text" element={<TextChattingPage />} />
+        <Route path="/chatting-select" element={<ProtectedRoute requiredAD8={true} alertMessage="AD8 검사를 먼저 완료해주세요." redirectCardIndex={0}><ChattingSelectPage /></ProtectedRoute>} />
+        <Route path="/chatting/voice" element={<ProtectedRoute requiredAD8={true} alertMessage="AD8 검사를 먼저 완료해주세요." redirectCardIndex={0}><VoiceChattingPage /></ProtectedRoute>} />
+        <Route path="/chatting/text" element={<ProtectedRoute requiredAD8={true} alertMessage="AD8 검사를 먼저 완료해주세요." redirectCardIndex={0}><TextChattingPage /></ProtectedRoute>} />
       </Routes>
     </Router>
   );
