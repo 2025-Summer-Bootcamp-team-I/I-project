@@ -1,18 +1,20 @@
+version: "3.8"
+
 services:
-  #   frontend:
-  #     build:
-  #       context: ./frontend
-  #       dockerfile: Dockerfile
-  #     ports:
-  #       - "3000:3000"
-  #     volumes:
-  #       - ./frontend:/app
-  #       - /app/node_modules
-  #     environment:
-  #       - NODE_ENV=development
-  #       - CHOKIDAR_USEPOLLING=true
-  #     working_dir: /app
-  #     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #   environment:
+  #     - NODE_ENV=development
+  #     - CHOKIDAR_USEPOLLING=true
+  #   working_dir: /app
+  #   command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
   backend:
     build:
@@ -41,29 +43,21 @@ services:
       - CHROMA_DB_IMPL=duckdb+parquet
       - CHROMA_SERVER_DB_DIR=/data
 
-#처음에 크로마 db에 데이터 없을때만 실행
-
-#  pipeline:
-#    build:
-#      context: ./backend
-#      dockerfile: Dockerfile
-#    command:
-#      - python
-#      - -u
-#      - app/rag/pipeline.py
-#    env_file:
-#      - ./backend/.env
-#    environment:
-#      - OPENAI_API_KEY=${OPENAI_API_KEY}
-#      - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
-#      # - SCITE_API_KEY=${SCITE_API_KEY}   # 필요시 활성화
-#    depends_on:
-#      chroma-server:
-#        condition: service_started
-#    volumes:
-#      - chroma-data:/data
-
-
+  # pipeline:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   command:
+  #     - python
+  #     - -u
+  #     - app/rag/pipeline.py
+  #   env_file:
+  #     - ./backend/.env
+  #   depends_on:
+  #     chroma-server:
+  #       condition: service_started
+  #   volumes:
+  #     - chroma-data:/data
 
   mysql:
     image: mysql:8.0
@@ -84,34 +78,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # 🔒 모니터링 구성 일시 비활성화 (Prometheus, Grafana, cAdvisor)
-  # prometheus:
-  #   image: prom/prometheus
-  #   container_name: prometheus
-  #   ports:
-  #     - "9090:9090"
-  #   volumes:
-  #     - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-
-  # grafana:
-  #   image: grafana/grafana
-  #   container_name: grafana
-  #   ports:
-  #     - "3001:3000"
-  #   volumes:
-  #     - grafana-storage:/var/lib/grafana
-
-  # cadvisor:
-  #   image: gcr.io/cadvisor/cadvisor:latest
-  #   container_name: cadvisor
-  #   ports:
-  #     - "8085:8080"
-  #   volumes:
-  #     - /:/rootfs:ro
-  #     - /var/run:/var/run:ro
-  #     - /sys:/sys:ro
-  #     - /var/lib/docker/:/var/lib/docker:ro
-
   redis:
     image: redis:latest
     container_name: redis
@@ -124,8 +90,8 @@ services:
     container_name: rabbitmq
     restart: always
     ports:
-      - "5672:5672"     # AMQP 프로토콜 포트
-      - "15672:15672"   # 웹 관리 UI 포트
+      - "5673:5672"
+      - "15673:15672"
 
   celery-worker:
     build:
