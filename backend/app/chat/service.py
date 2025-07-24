@@ -4,10 +4,10 @@ import os
 import re
 import chromadb
 from sqlalchemy.orm import Session
-from langchain_community.chat_models import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import ConversationalRetrievalChain
 from langchain_community.vectorstores import Chroma
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, PromptTemplate
 
 from app.chat.memory_store import get_memory
@@ -31,15 +31,15 @@ def save_report_text_score_and_result(db, report_id, text_score, chat_result):
         report.chat_result = chat_result
         db.commit()
 
-openai_api_key = os.environ.get("OPENAI_API_KEY")
-if not openai_api_key:
-    raise RuntimeError("OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다.")
+google_api_key = os.environ.get("GOOGLE_API_KEY")
+if not google_api_key:
+    raise RuntimeError("GOOGLE_API_KEY 환경변수가 설정되어 있지 않습니다.")
 
 client = chromadb.HttpClient(host="chroma-server", port=8000)
 vectordb = Chroma(
     client=client,
     collection_name="dementia_chunks",
-    embedding_function=OpenAIEmbeddings(openai_api_key=openai_api_key)
+    embedding_function=GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=google_api_key)
 )
 
 def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str:
@@ -49,7 +49,7 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
     turn_count = db.query(ChatLog).filter(ChatLog.chat_id == chat_id, ChatLog.role == RoleEnum.user).count()
 
     response = ""
-    llm = ChatOpenAI(model="gpt-4", temperature=0.1, openai_api_key=openai_api_key)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.1, google_api_key=google_api_key, convert_system_message_to_human=True)
 
     # ✅ 작별 인사
     if turn_count == 7:
@@ -57,10 +57,9 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
 당신은 따뜻한 작별인사 전문가입니다. 당신의 임무는 사용자와의 대화를 자연스럽게 마무리하는 것입니다.
 
 # 규칙
-1. 사용자의 마지막 말에 간단히 공감하며 반응해주세요. (예: "그렇군요.", "알겠습니다.")
-2. 새로운 질문은 절대 하지 마세요.
+1. 사용자의 마지막 말에 간단히 공감하며 반응해주세요.
 3. 따뜻한 작별 인사를 건네며 대화를 마무리해주세요.
-4. 응답의 맨 마지막에는, 다른 말 없이 정확히 ' 아래에 종료 버튼을 눌러주세요 . ' 라는 문구를 추가해야 합니다.
+4. 응답의 맨 마지막에는, 다른 말 없이 정확히 '아래에 종료 버튼을 눌러주세요.' 라는 문구를 추가해야 합니다.
 5. 답변은 한두 문장으로 매우 간결하게 유지하세요.
 
 사용자의 마지막 말: {question}
@@ -74,31 +73,31 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
     elif turn_count <= 6:
         memory = get_memory(report_id)
         system_prompt_template = """
-당신은 사용자의 이야기를 들어주는 친근한 대화 파트너입니다. 당신의 유일한 역할은 사용자의 말을 듣고 다양한 리액션과 질문만 하세요. 자신에 대한 생각을 말하지마세요. 제발
+당신은 사용자와 친근하게 대화하며, 당신은 당신의 이야기를 해서는 안되고, 사용자의 이야기를 경청하고 자연스럽게 대화를 이끌어 나가는 대화 파트너입니다.
+사용자의 답변 마지막에 '?'가 있을 경우에만 자신의 생각,경험,취향을 말하세요, 그외에는 리액션과 질문만 가능합니다.
 
-# 페르소나 및 대화 규칙
-1. **자신을 드러내지 않기**: 절대로 당신 자신에 대한 이야기(의견, 감정, 취향 등)를 하지 마세요. "저는", "제 생각에는" 같은 문장도 금지입니다. AI라는 말도 하지 마세요.
-    - 사용자의 발화를 오해하거나 왜곡하지 마세요. ("안 했어요" → "하셨군요" ❌)
 
-2. **사용자 말 따라하지 않기**: 사용자의 말을 그대로 반복하거나 사용자 입장에서 말하지 마세요.
+# [대화의 3대 절대 원칙]
+1. **중복 질문 금지**: 대화 기록을 항상 확인하여 이미 했던 질문이나 비슷한 질문을 절대 반복하지 마세요.
+2. **모순 질문 금지**: 사용자의 답변에 모순되는 질문을 하지 마세요. 사용자가 "평범했다"고 답하면 "특별한 순간"을 묻는 것은 모순입니다. 사용자가 대화를 이어가기 힘들어하면(예: "글쎄", "없어"), 즉시 다른 주제로 전환하세요.
+3. **자기 언급 및 추측 금지**: AI인 자신에 대해 말하거나('저는...'), 사용자의 의도를 추측하지 마세요('~가 궁금하시군요').
 
-3. **공감과 질문에 집중**: 짧게 공감하고 이어서 질문하세요.
-    - 같은 질문을 표현만 바꿔 반복하지 마세요. ("노인정에서 뭐 하세요?" → "거기서 시간 어떻게 보내세요?" → 금지 ❌)
+# [대화 진행 방법]
+- 모든 답변은 **[사용자 말에 대한 반응] + [관련된 새로운 질문]** 순서로 구성해야 합니다.
+- 반응은 짧게, 질문은 자연스럽게 이어져야 합니다.
+- 한 가지 주제에 대한 대화가 2번 이상 오갔다면, 자연스럽게 다른 주제로 넘어가세요.
 
-4. **간결함 유지**: 항상 한두 문장 이내로 짧고 자연스럽게 말하세요.
-
-5. **자연스러운 대화 흐름**:
-    - 다음과 같은 표현이 나오면 즉시 주제를 바꾸세요: "모르겠어", "기억 안 나", "딱히", "글쎄", "그냥 그랬어", "생각 안 나", "말하고 싶지 않아", "할 말 없어"
-
-6. **전문 용어 금지**: '검사', '진단', '문진', '점수', '소견' 같은 단어는 쓰지 마세요.
-
-7. **어조**: 따뜻하고 존중하는 어조를 사용하세요.
-
-8. **종료 조건**: '그만', '끝', '이제 됐어' 등의 표현이 나오면 대화를 마무리하세요.
-
-9. **직전 발화 반영**: 항상 직전 사용자 말에 반응하세요. 이전 질문을 무시하고 다음 질문을 하지 마세요.
-
-10. **초기 인사 멘트는 turn 1에서만 출력됩니다.**
+### **기타 주요 규칙**
+2. **한 주제에 얽매이지 않기**: 한 가지 주제(예: 음식, 날씨)에 대해 2회 이상 연속으로 질문했다면, 사용자의 답변을 받은 후 자연스럽게 다른 주제로 전환하세요.
+3. **자연스러운 공감 표현**: '공감합니다'와 같이 기계적인 표현 대신, "아, 그렇군요.", "정말요?"처럼 감정이 느껴지는 자연스러운 추임새를 사용하세요.
+4. **주도적인 대화 시작**: 사용자가 "아무 얘기나 해줘"라고 명시적으로 말하는 경우에만 먼저 적절한 일상 주제로 대화를 시작하세요. 일반적인 인사에는 간단하게 답하고 사용자가 대화를 이끌어가도록 하세요.
+5. **기억력 활용**: 사용자가 이전에 제공한 정보(예: 장소, 이름)를 기억하고, 동일한 내용을 다시 질문하지 마세요.
+6. **간결함 유지**: 항상 한두 문장 이내로 매우 짧고 자연스럽게 말하세요.
+7. **즉각적인 주제 전환**: 사용자가 "없어", "모르겠어", "관심 없어", "글쎄" 등 대화를 이어가기 어려워하는 표현을 사용하면, 바로 대화를 끝내지 말고 다른 주제로 자연스럽게 전환하세요. - **나쁜 예시**: (사용자: "과일 글쎄") → "그렇군요. 오늘 대화 나눠서 즐거웠습니다." (X) - **좋은 예시 1**: (사용자: "과일 글쎄") → "아, 그렇군요. 그럼 음식 말고, 평소에 즐겨 가시는 장소는 있으신가요?" (장소 전환) - **좋은 예시 2**: (사용자: "몰라") → "그럴 수 있죠. 혹시 요즘 듣는 노래 중에 좋아하시는 거 있으세요?" (음악 전환) - **좋은 예시 3**: (사용자: "관심 없어") → "괜찮아요. 그럼 혹시 최근에 있었던 인상 깊은 일이 있으셨나요?" (일상/감정 전환)
+8. **부정적 감정 대응**: 사용자가 짜증, 불쾌감, 거부 반응을 보이면, "아, 제가 실수가 있었네요. 죄송합니다." 와 같이 간결하게 사과하고 즉시 다른 주제로 전환하세요.
+9. **특정 계절일때만 할 수 있는 질문은 하지마세요. 예시:더위를 피하시는 방법을 알려주세요.
+10. **전문 용어 금지**: '검사', '진단', '문진', '점수', '소견' 같은 단어는 쓰지 마세요.
+11. **어조**: 따뜻하고 존중하는 어조를 사용하세요.
 
 # 기타 정보
 - 참고 논문(Context)을 참고해 자연스럽게 유도형 질문을 하세요.
@@ -118,12 +117,7 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
             combine_docs_chain_kwargs={"prompt": prompt}
         )
         ai_response = chain.run(message)
-
-        if turn_count == 1:
-            intro = "안녕하세요. 지금부터 대화를 시작하겠습니다. 보다 정확한 이해를 위해, 단답형보다는 완전한 문장으로 답변해주시면 감사하겠습니다.\n\n"
-            response = intro + ai_response
-        else:
-            response = ai_response
+        response = ai_response
 
     else:
         response = "이미 대화가 종료되었습니다. 아래 종료 버튼을 눌러 평가를 완료해주세요."
@@ -175,7 +169,7 @@ def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
         )
     )
 
-    llm = ChatOpenAI(model="gpt-4", temperature=0, openai_api_key=openai_api_key)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0, google_api_key=google_api_key)
     eval_chain = eval_prompt | llm
     eval_response = eval_chain.invoke({"conversation": conversation})
     response_text = eval_response.content
