@@ -137,7 +137,11 @@ def run_pipeline():
             title = paper.get("title", "제목 없음").strip()
             result = embed_pdf_to_chroma(path, title=title)
             print(f"임베딩 결과: {result}")
-            total += 1
+            # ChromaDB 연결 실패 시에도 성공으로 카운트 (예외처리되어 있음)
+            if "ChromaDB 연결 실패" in result:
+                print("ChromaDB 연결 실패로 임베딩을 건너뜁니다.")
+            else:
+                total += 1
         except PdfStreamError as e:
             print("PDF 파싱 에러 건너뜀:", path, e)
         except Exception as e:
