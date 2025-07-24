@@ -1,11 +1,54 @@
 global:
-  scrape_interval: 5s
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  
+
+# 알림 규칙
+rule_files:
+  - "rules/*.yml"
+
+# 알림 매니저 설정 (나중에 AlertManager 추가 시)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
 
 scrape_configs:
+  # FastAPI 백엔드 메트릭
   - job_name: "fastapi"
     static_configs:
       - targets: ["backend:8000"]
+    metrics_path: "/metrics"
+    scrape_interval: 10s
 
+  # cAdvisor 컨테이너 메트릭
   - job_name: "cadvisor"
     static_configs:
       - targets: ["cadvisor:8080"]
+    scrape_interval: 10s
+
+  # Redis 메트릭 (redis_exporter 필요)
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+    scrape_interval: 10s
+
+  # RabbitMQ 메트릭 (rabbitmq_exporter 필요)
+  - job_name: "rabbitmq"
+    static_configs:
+      - targets: ["rabbitmq-exporter:9419"]
+    scrape_interval: 10s
+
+  # MySQL 메트릭 (mysqld_exporter 필요)
+  - job_name: "mysql"
+    static_configs:
+      - targets: ["mysqld-exporter:9104"]
+    scrape_interval: 10s
+
+  # Celery 워커 메트릭
+  - job_name: "celery"
+    static_configs:
+      - targets: ["celery-worker:8000"]
+    metrics_path: "/metrics"
+    scrape_interval: 10s
