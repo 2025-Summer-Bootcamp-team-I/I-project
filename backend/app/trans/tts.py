@@ -14,7 +14,16 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# ⭐ 여기! 상수를 모듈 레벨로 옮겼어!
+MAX_TEXT_LENGTH = 2500 # ElevenLabs API의 무료 티어 최대 2500자 (유료 티어는 더 김)
+MIN_TEXT_LENGTH = 1
+
 VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "YBRudLRm83BV5Mazcr42")
+
+# ⭐ ⭐ 추가된 부분!
+# 파일 상단에 환경 변수 키와 기본 모델 정의
+ELEVENLABS_MODEL_ID_KEY = "ELEVENLABS_MODEL_ID"
+DEFAULT_TTS_MODEL = "eleven_flash_v2_5"
 
 class TTSRequest(BaseModel):
     text: str
@@ -22,8 +31,6 @@ class TTSRequest(BaseModel):
     @field_validator("text")
     @classmethod
     def text_must_be_within_length_limits(cls, v):
-        MAX_TEXT_LENGTH = 2500
-        MIN_TEXT_LENGTH = 1
         if not (MIN_TEXT_LENGTH <= len(v) <= MAX_TEXT_LENGTH):
             raise ValueError(f"텍스트 길이는 {MIN_TEXT_LENGTH}자에서 {MAX_TEXT_LENGTH}자 사이여야 합니다.")
         return v
@@ -44,7 +51,8 @@ async def generate_tts(data: TTSRequest):
 
     payload = {
         "text": data.text,
-        "model_id": os.getenv("ELEVENLABS_MODEL_ID", "eleven_flash_v2_5"), 
+        # ⭐ ⭐ 여기! 변경된 부분!
+        "model_id": os.getenv(ELEVENLABS_MODEL_ID_KEY, DEFAULT_TTS_MODEL), 
         "voice_settings": {
             "stability": 0.7,
             "similarity_boost": 0.7,
