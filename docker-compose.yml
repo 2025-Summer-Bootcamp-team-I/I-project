@@ -70,10 +70,10 @@ services:
     container_name: mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_USER: iteam
-      MYSQL_PASSWORD: iteampass
-      MYSQL_DATABASE: iteamdb
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_USER: ${MYSQL_USER:-iteam}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-iteampass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-iteamdb}
     ports:
       - "3307:3306"
     volumes:
@@ -166,10 +166,12 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    env_file:
+      - ./backend/.env
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - DATABASE_URL=mysql+pymysql://iteam:itampass@mysql:3306/iteamdb
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      - DATABASE_URL=${DATABASE_URL:-mysql+pymysql://iteam:iteampass@mysql:3306/iteamdb}
     volumes:
       - ./backend:/app
     working_dir: /app
@@ -212,7 +214,7 @@ services:
     ports:
       - "9104:9104"
     environment:
-      DATA_SOURCE_NAME: "root:root@mysql:3306/iteamdb"
+      DATA_SOURCE_NAME: "${MYSQLD_EXPORTER_DSN:-root:root@mysql:3306/iteamdb}"
     depends_on:
       mysql:
         condition: service_healthy
