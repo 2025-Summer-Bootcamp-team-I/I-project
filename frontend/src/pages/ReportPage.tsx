@@ -8,16 +8,17 @@ import html2pdf from "html2pdf.js";
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import 'highcharts/highcharts-3d';
-import { useReportStore, type ChatLog } from "../store/reportStore";
+import { useReportStore } from "../store/reportStore";
 import { useReportHistoryStore } from "../store/reportHistoryStore";
-import { getReportResult } from "../api"; // API 호출 함수 import
+import { getReportResult, getChatLogs, finalizeReport } from "../api"; // finalizeReport 추가
 import lightbulbIcon from '../assets/imgs/lightbulb.png'; // 경계, 기본
 import lightbulbBlueIcon from '../assets/imgs/lightbulb-blue.png'; // 양호
 import lightbulbRedIcon from '../assets/imgs/lightbulb-red.png'; // 주의
-import { getChatLogs } from "../api";
+import type { ChatLogResponse } from "../types/api";
 
 
-console.log("ReportPage.tsx 파일이 로드되었습니다!");
+
+
 
 
 // Highcharts Point 타입 확장
@@ -129,7 +130,7 @@ const HighchartsGlobalStyle = createGlobalStyle`
 interface ExamCardProps {
   exam: { name: string; summary: string; suggestion: string; image?: string; };
   status: '양호' | '경계' | '위험';
-  chatLogs?: ChatLog[]; // chatLogs를 props로 추가
+  chatLogs?: ChatLogResponse[]; // chatLogs를 props로 추가
 }
 
 const AD8Card: React.FC<ExamCardProps & { ad8Score: number; maxAD8Score: number; offset: number; }> = ({ exam, status, ad8Score, maxAD8Score, offset }) => (
@@ -235,29 +236,11 @@ const ReportPage: React.FC = () => {
   const addReport = useReportHistoryStore((state) => state.addReport);
   const [imgDimensions, setImgDimensions] = useState({ width: 0, height: 0 });
   const [offset, setOffset] = useState(0);
+  const [chatLogs, setChatLogs] = useState<ChatLogResponse[] | null>(null);
 
-  const chatId = report?.chat_id;
-  const [chatLogs, setChatLogs] = useState<ChatLog[]>([]);
 
-  useEffect(() => {
-    console.log("ReportPage에서 불러온 chatId:", chatId);
-  }, [chatId]);
 
-  useEffect(() => {
-    if (chatId) {
-      getChatLogs(chatId)
-        .then((logs) => {
-          setChatLogs(logs);
-          const messages = logs.map(log => log.message);
-          console.log("getChatLogs에서 추출한 메시지 배열:", messages);
-        })
-        .catch((err) => {
-          console.error("채팅 로그 불러오기 실패:", err);
-        });
-    }
-  }, [chatId]);
-  // --- 데이터 로딩 및 상태 업데이트 useEffects ---
-  // 3. 데이터 로딩 useEffect를 최종 reportId 기준으로 수정합니다.
+
   useEffect(() => {
     // ID가 URL과 스토어 어디에도 없으면 에러 처리
     if (!reportId) {
@@ -270,8 +253,14 @@ const ReportPage: React.FC = () => {
     const fetchReport = async () => {
       try {
         setIsLoading(true);
-        const reportData = await getReportResult(reportId); // 최종 ID로 데이터 조회
+        // 1. finalize API 먼저 호출
+        await finalizeReport(reportId);
+        // 2. 최신 리포트 데이터 받아오기
+        const reportData = await getReportResult(reportId);
         setReport(reportData);
+        // 3. chatLogs도 불러오기
+        const chatLogsData = await getChatLogs(reportId);
+        setChatLogs(chatLogsData || []);
       } catch (err) {
         setError("리포트를 불러오는 데 실패했습니다.");
         console.error(err);
@@ -296,12 +285,23 @@ const ReportPage: React.FC = () => {
     }
   }, [report, reportId, addReport]);
 
-  const selectedLightbulbIcon = React.useMemo(() => {
-    if (!report) return lightbulbIcon; // 기본 아이콘
-    const finalRisk = report.final_risk || '경계';
-    if (finalRisk === '양호') return lightbulbBlueIcon;
-    if (finalRisk === '위험') return lightbulbRedIcon;
-    return lightbulbIcon;
+  const [selectedLightbulbIcon, setSelectedLightbulbIcon] = useState(lightbulbIcon);
+
+  useEffect(() => {
+    if (report) {
+      // ⭐️ 콘솔 로그 추가: report.final_risk 값을 확인합니다.
+      console.log("useEffect에서 확인한 report.final_risk 값:", report.final_risk);
+
+      const finalRisk = report.final_risk || '경계';
+      
+      if (finalRisk === '양호') {
+        setSelectedLightbulbIcon(lightbulbBlueIcon);
+      } else if (finalRisk === '위험') {
+        setSelectedLightbulbIcon(lightbulbRedIcon);
+      } else {
+        setSelectedLightbulbIcon(lightbulbIcon);
+      }
+    }
   }, [report]);
 
   useEffect(() => {
@@ -336,11 +336,14 @@ const ReportPage: React.FC = () => {
   if (!report) return <Container>표시할 리포트 데이터가 없습니다.</Container>;
 
   // --- 렌더링에 필요한 변수 선언 ---
-  const drawingStatus = report.drawing_risk || '경계';
-  const dialogStatus = report.chat_risk || '경계';
-  const surveyStatus = report.ad8_risk || '경계';
+  const drawingStatus = (report.drawing_risk || '경계') as '양호' | '경계' | '위험';
+  const dialogStatus = (report.chat_risk || '경계') as '양호' | '경계' | '위험';
+  const surveyStatus = (report.ad8_risk || '경계') as '양호' | '경계' | '위험';
   const ad8Score = report.ad8_score;
   const maxAD8Score = 8;
+
+  // final_risk를 명확히 받아와서 사용 (없으면 '경계' 기본값)
+  const finalRisk = (report.final_risk || '경계') as '양호' | '경계' | '위험';
 
   const getStatusColor = (status: '양호' | '경계' | '위험') => {
     if (status === '양호') return '#18A092';
@@ -348,7 +351,8 @@ const ReportPage: React.FC = () => {
     return '#EE0000';
   };
 
-  const finalRiskText = report.final_risk || '경계'; // 기본값 설정
+  // final_risk를 사용하는 부분에 finalRisk로 대체
+  const finalRiskText = finalRisk; // 종합 인지 결과 등에서 사용
 
   const chartOptions: Highcharts.Options = {
     chart: {
@@ -570,7 +574,7 @@ const ReportPage: React.FC = () => {
     suggestion: string;
     image?: string;
     status: '양호' | '경계' | '위험';
-    chat_logs?: ChatLog[];
+    chat_logs?: ChatLogResponse[];
   }
 
   const examResults: ExamResult[] = [
@@ -578,21 +582,21 @@ const ReportPage: React.FC = () => {
       name: "설문 검사 (AD-8)",
       summary: `${report.ad8_score}/8`,
       suggestion: report.ad8test_result,
-      status: surveyStatus,
+      status: surveyStatus as '양호' | '경계' | '위험',
     },
     {
       name: "대화 검사",
       summary: report.chat_result,
-      suggestion: report.chat_result,
-      status: dialogStatus,
-      chat_logs: report.chat_logs,
+      suggestion: report.chat_result, // 분석 결과
+      status: dialogStatus as '양호' | '경계' | '위험',
+      chat_logs: chatLogs ?? [], // chatLogs를 명확히 할당
     },
     {
       name: "그림 검사",
       summary: report.drawingtest_result,
       suggestion: report.drawingtest_result,
       image: report.drawing_image_url ? `http://localhost:8000${report.drawing_image_url}` : undefined,
-      status: drawingStatus,
+      status: drawingStatus as '양호' | '경계' | '위험',
     },
   ];
 
@@ -635,7 +639,7 @@ const ReportPage: React.FC = () => {
             {/* 종합 인지 기능 평가 결과 */}
             <OverallSummaryCard>
               <SummaryCardTitle>종합 인지 기능 평가 결과</SummaryCardTitle>
-              <SummaryText>{report.final_result}</SummaryText>
+              <SummaryText>{report.final_result ? report.final_result : '종합 인지 결과가 없습니다.'}</SummaryText>
             </OverallSummaryCard>
 
             {/* 검사별 요약 */}
@@ -645,7 +649,8 @@ const ReportPage: React.FC = () => {
                 return <AD8Card key={idx} exam={exam} status={exam.status} ad8Score={ad8Score} maxAD8Score={maxAD8Score} offset={offset} />;
               }
               if (exam.name === "대화 검사") {
-                return <ChatCard key={idx} exam={exam} status={exam.status} chatLogs={chatLogs} />;
+                // chat_logs를 명확히 넘김
+                return <ChatCard key={idx} exam={exam} status={exam.status} chatLogs={exam.chat_logs} />;
               }
               if (exam.name === "그림 검사") {
                 return <DrawingCard key={idx} exam={exam} status={exam.status} />;
