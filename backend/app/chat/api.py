@@ -60,7 +60,7 @@ async def stream_chat(
     async def event_generator():
         import json
         response_text = ""
-        chain, memory, handler = get_streaming_chain(request.report_id)
+        chain, memory, handler, _ = get_streaming_chain(request.report_id, request.message)
         task = asyncio.create_task(chain.acall(request.message))
 
         async for token in handler.aiter():
