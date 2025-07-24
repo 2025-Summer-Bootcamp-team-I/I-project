@@ -5,6 +5,7 @@ from app.drawing.models import DrawingTest
 from app.ad8 import crud as ad8_crud
 from app.auth.models import User
 from fastapi import HTTPException
+from .models import RiskLevel
 
 def create_empty_report(db: Session, report: schemas.ReportCreate):
     # 유저가 존재하는지 먼저 확인
@@ -72,3 +73,17 @@ def get_report(db: Session, report_id: int):
     }
 
     return schemas.DetailedReportResponse(**report_data)
+
+def update_final_result_and_risk(
+    db: Session, report_id: int,
+    final_risk: RiskLevel, final_result: str
+):
+    report = db.query(models.Report).filter(models.Report.report_id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    report.final_risk = final_risk
+    report.final_result = final_result
+    db.commit()
+    db.refresh(report)
+    return report

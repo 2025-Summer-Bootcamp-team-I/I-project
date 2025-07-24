@@ -1,23 +1,26 @@
 #app/chat/api.py
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi import UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
 import asyncio
 import json
 
-import json
-from sse_starlette.sse import EventSourceResponse
 from app.database import get_db
 from app.auth.utils import get_current_user
 from app.auth.models import User
-from app.chat.schemas import ChatRequest, ChatResponse, ChatLogResponse, CreateChatRequest, CreateChatResponse, EvaluateChatResponse
+from app.chat.schemas import (
+    ChatRequest, ChatResponse, ChatLogResponse,
+    CreateChatRequest, CreateChatResponse, EvaluateChatResponse
+)
 from app.chat.models import RoleEnum, Chat
-from app.chat.service import chat_with_ai, evaluate_and_save_chat_result
+from app.chat.service import (
+    chat_with_ai, evaluate_and_save_chat_result,
+    get_chat_logs_by_report_id
+)
 from app.chat.crud import save_chat_log
 from app.chat.stream_handler import get_streaming_chain
-from app.chat.service import get_chat_logs
 from app.report.models import Report
+
 
 
 router = APIRouter(tags=["Chat"])
@@ -117,19 +120,9 @@ def create_chat(
     )
 
 
-@router.get(
-    "/logs/{chat_id}",
-    response_model=list[ChatLogResponse],
-    summary="채팅 로그 조회",
-    description="특정 chat_id에 대한 모든 채팅 로그를 반환합니다."
-)
-def read_chat_logs(
-        chat_id: int,
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)
-):
-    return get_chat_logs(db, chat_id)
-
+@router.get("/chat/logs/by-report/{report_id}", response_model=list[ChatLogResponse])
+def get_logs_by_report_id(report_id: int, db: Session = Depends(get_db)):
+    return get_chat_logs_by_report_id(db, report_id)
 
 @router.post(
     "/chats/{chat_id}/evaluate",

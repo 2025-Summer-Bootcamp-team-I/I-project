@@ -5,7 +5,7 @@ import os
 import uuid
 from dotenv import load_dotenv
 
-load_dotenv()
+#load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     raise RuntimeError("OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다.")

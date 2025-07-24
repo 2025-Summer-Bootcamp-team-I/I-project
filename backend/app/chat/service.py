@@ -9,7 +9,7 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, PromptTemplate
-
+from app.chat.models import Chat
 from app.chat.memory_store import get_memory
 from app.chat.crud import save_chat_log
 from app.chat.models import RoleEnum, ChatLog
@@ -51,7 +51,7 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
     response = ""
     llm = ChatOpenAI(model="gpt-4", temperature=0.1, openai_api_key=openai_api_key)
 
-    # ✅ 작별 인사
+    #  작별 인사
     if turn_count == 7:
         farewell_prompt_text = """
 당신은 따뜻한 작별인사 전문가입니다. 당신의 임무는 사용자와의 대화를 자연스럽게 마무리하는 것입니다.
@@ -70,7 +70,7 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
         ai_response = farewell_chain.invoke({"question": message})
         response = ai_response.content
 
-    # ✅ 일반 대화
+    # 일반 대화
     elif turn_count <= 6:
         memory = get_memory(report_id)
         system_prompt_template = """
@@ -111,6 +111,26 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
                 "이전 대화 요약(chat_history):\n{chat_history}\n\n사용자 발화: {question}"
             )
         ])
+
+        # 🔍 디버깅용: Chroma에서 context 직접 검색
+        retriever = vectordb.as_retriever()
+        docs = retriever.get_relevant_documents(message)
+
+        print("\n===== 검색된 논문 Context 일부 =====")
+        for i, doc in enumerate(docs[:3]):
+            print(f"[{i+1}] {doc.page_content[:300]}...\n")
+        print("====================================\n")
+
+        # 🔍 실제 프롬프트 주입 확인
+        formatted = prompt.format(
+            context="\n\n".join([d.page_content for d in docs]),
+            chat_history="(예시 대화)",
+            question=message
+        )
+        print("\n===== 실제 GPT에 전달될 프롬프트 (앞 1000자) =====")
+        print(formatted[:1000])
+        print("==================================================\n")
+
         chain = ConversationalRetrievalChain.from_llm(
             llm=llm,
             retriever=vectordb.as_retriever(),
@@ -132,10 +152,16 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
     save_chat_log(db, chat_id=chat_id, role=RoleEnum.ai, text=response)
     return response
 
-def get_chat_logs(db: Session, chat_id: int) -> list[ChatLogResponse]:
+# app/chat/service.py
+
+def get_chat_logs_by_report_id(db: Session, report_id: int) -> list[ChatLogResponse]:
+    chat = db.query(Chat).filter(Chat.report_id == report_id).first()
+    if not chat:
+        return []  # 채팅이 존재하지 않으면 빈 리스트 반환
+
     logs = (
         db.query(ChatLog)
-        .filter(ChatLog.chat_id == chat_id)
+        .filter(ChatLog.chat_id == chat.chat_id)
         .order_by(ChatLog.updated_at.asc())
         .all()
     )
