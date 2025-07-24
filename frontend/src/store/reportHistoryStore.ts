@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ReportResult } from "./reportStore";
+import type { ReportResponse } from "./reportStore";
 import type { MyReportSummary } from "../types/api";
 import { getMyReports } from "../api";
 
@@ -8,7 +8,7 @@ import { getMyReports } from "../api";
  */
 interface ReportHistoryState {
   /** 저장된 모든 검사 결과 목록 */
-  reports: ReportResult[];
+  reports: ReportResponse[];
   
   /** 마이페이지용 리포트 요약 목록 */
   myReports: MyReportSummary[];
@@ -20,10 +20,10 @@ interface ReportHistoryState {
   error: string | null;
   
   /** 검사 결과 목록을 한번에 설정 (예: API에서 데이터를 받아올 때 사용) */
-  setReports: (reports: ReportResult[]) => void;
+  setReports: (reports: ReportResponse[]) => void;
   
   /** 새로운 검사 결과를 목록에 추가 */
-  addReport: (report: ReportResult) => void;
+  addReport: (report: ReportResponse) => void;
   
   /** 모든 검사 기록을 초기화 */
   clearReports: () => void;
