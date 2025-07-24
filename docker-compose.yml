@@ -43,21 +43,21 @@ services:
       - CHROMA_DB_IMPL=duckdb+parquet
       - CHROMA_SERVER_DB_DIR=/data
 
-  pipeline:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command:
-      - python
-      - -u
-      - app/rag/pipeline.py
-    env_file:
-      - ./backend/.env
-    depends_on:
-      chroma-server:
-        condition: service_started
-    volumes:
-      - chroma-data:/data
+  # pipeline:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   command:
+  #     - python
+  #     - -u
+  #     - app/rag/pipeline.py
+  #   env_file:
+  #     - ./backend/.env
+  #   depends_on:
+  #     chroma-server:
+  #       condition: service_started
+  #   volumes:
+  #     - chroma-data:/data
 
   mysql:
     image: mysql:8.0
