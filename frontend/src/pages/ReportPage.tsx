@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import styled, { createGlobalStyle } from "styled-components";
 import Background from "../components/Background";
 import Header from "../components/Header";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useReportIdStore } from "../store/reportIdStore";
 import html2pdf from "html2pdf.js";
 import Highcharts from 'highcharts';
@@ -177,7 +177,7 @@ const ChatCard: React.FC<ExamCardProps> = ({ exam, status, chatLogs }) => {
               chatLines.map((line, i) => {
                 const isUser = line.startsWith("사용자:");
                 const message = line.substring(line.indexOf(":") + 1).trim();
-                
+
                 if (!message) return null;
 
                 return (
@@ -193,7 +193,7 @@ const ChatCard: React.FC<ExamCardProps> = ({ exam, status, chatLogs }) => {
         </ExamCol>
         <ExamCol>
           <Label>분석 및 제안</Label>
-          <Suggestion>{exam.suggestion}</Suggestion> 
+          <Suggestion>{exam.suggestion}</Suggestion>
         </ExamCol>
       </ExamContent>
     </ExamCard>
@@ -222,27 +222,23 @@ const DrawingCard: React.FC<ExamCardProps> = ({ exam, status }) => (
 
 const ReportPage: React.FC = () => {
   const navigate = useNavigate();
+  const { reportId: reportIdFromUrl } = useParams<{ reportId: string }>(); // URL에서 ID 추출
+  const reportIdFromStore = useReportIdStore((state) => state.reportId);
+  const reportId = Number(reportIdFromUrl) || reportIdFromStore;
   const pdfRef = useRef<HTMLDivElement>(null);
   const chartComponentRef = useRef<HighchartsReact.RefObject>(null);
-  
-  const reportId = useReportIdStore((state) => state.reportId);
   const resetReportId = useReportIdStore((state) => state.resetReportId);
-
-  
-  const { width: windowWidth } = useWindowSize();
-
-  const report = useReportStore((state) => state.report);
-  const setReport = useReportStore((state) => state.setReport);
-  const addReport = useReportHistoryStore((state) => state.addReport);
-
+  const { report, setReport } = useReportStore();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { width: windowWidth } = useWindowSize();
+  const addReport = useReportHistoryStore((state) => state.addReport);
   const [imgDimensions, setImgDimensions] = useState({ width: 0, height: 0 });
   const [offset, setOffset] = useState(0);
 
-  const chatId = useReportIdStore((state) => state.chatId);
+  const chatId = report?.chat_id;
   const [chatLogs, setChatLogs] = useState<ChatLog[]>([]);
-  
+
   useEffect(() => {
     console.log("ReportPage에서 불러온 chatId:", chatId);
   }, [chatId]);
@@ -261,8 +257,9 @@ const ReportPage: React.FC = () => {
     }
   }, [chatId]);
   // --- 데이터 로딩 및 상태 업데이트 useEffects ---
+  // 3. 데이터 로딩 useEffect를 최종 reportId 기준으로 수정합니다.
   useEffect(() => {
-    // reportId가 없으면 에러 처리
+    // ID가 URL과 스토어 어디에도 없으면 에러 처리
     if (!reportId) {
       setError("리포트 ID가 없습니다. 메인 페이지로 이동합니다.");
       setTimeout(() => navigate('/main'), 3000);
@@ -273,10 +270,8 @@ const ReportPage: React.FC = () => {
     const fetchReport = async () => {
       try {
         setIsLoading(true);
-        const reportData = await getReportResult(reportId);
-        setReport(reportData); // 스토어 업데이트
-        console.log("백엔드에서 받은 final_risk:", reportData.final_risk);
-        console.log("백엔드에서 받은 채팅 로그:", (reportData as any).chat_logs);
+        const reportData = await getReportResult(reportId); // 최종 ID로 데이터 조회
+        setReport(reportData);
       } catch (err) {
         setError("리포트를 불러오는 데 실패했습니다.");
         console.error(err);
@@ -286,7 +281,7 @@ const ReportPage: React.FC = () => {
     };
 
     fetchReport();
-  }, [reportId, setReport, navigate]);
+  }, [reportId, setReport, navigate]); // 의존성 배열에 최종 reportId를 넣음
 
   // 히스토리 추가 useEffect
   useEffect(() => {
@@ -300,7 +295,7 @@ const ReportPage: React.FC = () => {
       addReport(reportWithId);
     }
   }, [report, reportId, addReport]);
-  
+
   const selectedLightbulbIcon = React.useMemo(() => {
     if (!report) return lightbulbIcon; // 기본 아이콘
     const finalRisk = report.final_risk || '경계';
@@ -346,12 +341,14 @@ const ReportPage: React.FC = () => {
   const surveyStatus = report.ad8_risk || '경계';
   const ad8Score = report.ad8_score;
   const maxAD8Score = 8;
-  
+
   const getStatusColor = (status: '양호' | '경계' | '위험') => {
     if (status === '양호') return '#18A092';
     if (status === '경계') return '#F7D46E';
     return '#EE0000';
   };
+
+  const finalRiskText = report.final_risk || '경계'; // 기본값 설정
 
   const chartOptions: Highcharts.Options = {
     chart: {
@@ -365,13 +362,14 @@ const ReportPage: React.FC = () => {
       },
       events: {
         render: function (this: Highcharts.Chart) {
-          if (imgDimensions.width === 0 || imgDimensions.height === 0) {
-            return; // Don't render image until dimensions are loaded
+          if (!this.renderer || imgDimensions.width === 0 || imgDimensions.height === 0) {
+            return;
           }
 
+          const { renderer } = this;
           const maxSize = 200;
           const { width: originalWidth, height: originalHeight } = imgDimensions;
-          
+
           let newWidth, newHeight;
           if (originalWidth > originalHeight) {
             newWidth = maxSize;
@@ -383,75 +381,76 @@ const ReportPage: React.FC = () => {
 
           const centerX = this.plotLeft + this.plotWidth * 0.5;
           const centerY = this.plotTop + this.plotHeight * 0.5;
-          const yOffset = 80; // 이미지를 위로 올릴 값
-          
+          const yOffset = 80;
           const imageX = centerX - newWidth / 2;
           const imageY = centerY - newHeight / 2 - yOffset;
 
-          if ((this as any).customImage) {
-            (this as any).customImage.attr({
-              x: imageX,
-              y: imageY,
-              width: newWidth,
-              height: newHeight,
-            }).toFront();
-          } else {
-            (this as any).customImage = this.renderer.image(
-              selectedLightbulbIcon,
-              imageX,
-              imageY,
-              newWidth,
-              newHeight
-            )
-            .attr({ opacity: 0 })
-            .add()
-            .toFront();
-
-            (this as any).customImage.animate(
-              {
-                opacity: 1,
-              },
-              {
-                duration: 800,
-              }
-            );
+          // Image
+          if (!(this as any).customImage) {
+            (this as any).customImage = renderer.image(selectedLightbulbIcon, imageX, imageY, newWidth, newHeight)
+              .attr({ opacity: 0 })
+              .add()
+              .animate({ opacity: 1 }, { duration: 800 });
           }
+          (this as any).customImage.attr({ x: imageX, y: imageY, width: newWidth, height: newHeight });
 
-          const textX = centerX + newWidth / 2 + 15;
+          // Text
+          const mainTextContent = '종합 인지 결과';
+          const riskTextContent = `${finalRiskText}`;
+          const riskColor = getStatusColor(finalRiskText);
           const textY = centerY - yOffset - 30;
+          const baseX = centerX + newWidth / 2 + 15;
 
-          const textStyle = {
-            color: '#E2E8F0',
-            fontSize: '25px',
-            fontWeight: '600',
-          };
+          const mainTextStyle = { color: '#E2E8F0', fontSize: '25px', fontWeight: '600' };
+          const riskTextStyle = { color: riskColor, fontSize: '25px', fontWeight: '600' };
 
-          // 텍스트 렌더링: 매번 css를 적용하여 스타일 변경이 확실히 반영되도록 함
-          if ((this as any).customText) {
-            (this as any).customText.attr({
-              x: textX,
-              y: textY,
-            }).css(textStyle).toFront();
-          } else {
-            (this as any).customText = this.renderer.text(
-              '종합 인지 결과',
-              textX,
-              textY,
-            )
-            .css(textStyle)
-            .attr({
-              align: 'left',
-              opacity: 0,
-            })
-            .add()
-            .toFront();
-
-            (this as any).customText.animate({
-              opacity: 1,
-            }, {
-              duration: 800,
-            });
+          // Main Text
+          if (!(this as any).customMainText) {
+            (this as any).customMainText = renderer.text(mainTextContent, baseX, textY)
+              .css(mainTextStyle)
+              .attr({ align: 'left', opacity: 0 })
+              .add()
+              .animate({ opacity: 1 }, { duration: 800 });
           }
+          (this as any).customMainText.attr({ x: baseX, y: textY }).css(mainTextStyle);
+
+          const mainTextWidth = (this as any).customMainText.getBBox().width;
+          // --- 1. 원(Circle) 위치 계산 및 렌더링 ---
+          const circleX = baseX + mainTextWidth + 30; // 원의 중심 x좌표 (간격 조절)
+          const circleY = textY - 10; // 텍스트와 세로 중앙 정렬
+
+          // Risk Circle 렌더링
+          if (!(this as any).customRiskCircle) {
+            (this as any).customRiskCircle = renderer.circle(circleX, circleY, 8)
+              .attr({ fill: riskColor, opacity: 0 })
+              .add()
+              .animate({ opacity: 1 }, { duration: 800 });
+          }
+          (this as any).customRiskCircle.attr({ cx: circleX, cy: circleY, fill: riskColor });
+
+
+          // --- 2. 텍스트(Risk Text) 위치 계산 및 렌더링 ---
+          const circleRadius = 6;
+          const riskTextX = circleX + circleRadius + 5; // 원 바로 오른쪽에 오도록 x좌표 계산
+
+          // Risk Text 렌더링
+          if (!(this as any).customRiskText) {
+            (this as any).customRiskText = renderer.text(riskTextContent, riskTextX, textY)
+              .css(riskTextStyle)
+              .attr({ align: 'left', opacity: 0 })
+              .add()
+              .animate({ opacity: 1 }, { duration: 800 });
+          }
+          (this as any).customRiskText.attr({ text: riskTextContent, x: riskTextX, y: textY }).css(riskTextStyle);
+
+
+          // --- 3. z-index 순서 조정 (Bring to front) ---
+          // (이미지, 메인 텍스트, 원, 위험도 텍스트 순으로 앞에 보이게 함)
+          (this as any).customImage.toFront();
+          (this as any).customMainText.toFront();
+          (this as any).customRiskCircle.toFront();
+          (this as any).customRiskText.toFront();
+
         }
       }
     },
@@ -475,7 +474,7 @@ const ReportPage: React.FC = () => {
         startAngle: 45,
         size: windowWidth > 900 ? '75%' : '100%',
         events: {
-          afterAnimate: function(this: Highcharts.Series) {
+          afterAnimate: function (this: Highcharts.Series) {
             this.points.forEach(point => {
               if (point.graphic) {
                 point.graphic.attr({
@@ -499,7 +498,7 @@ const ReportPage: React.FC = () => {
             let statusClass = '';
             let statusColor = '';
             let description = '';
-            
+
             switch (statusText) {
               case '위험':
                 statusClass = 'status-danger';
@@ -521,7 +520,7 @@ const ReportPage: React.FC = () => {
             const nameColor = getStatusColor(statusText);
             const isDialog = this.name === '대화 검사';
             const isDrawing = this.name === '그림 검사';
-            
+
             let labelClass = 'custom-datalabel';
             if (isDialog) {
               labelClass += ' dialog-label';
@@ -534,11 +533,11 @@ const ReportPage: React.FC = () => {
             return `<div class="${labelClass}">
                         <b style="color: ${nameColor}">
                           <span>${this.name}</span>
-                          <span class="status ${statusClass}" style="font-size: 16px;">
-                            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; margin-right: 5px; vertical-align: middle;"></span><span style="vertical-align: middle;">${statusText}</span>
+                          <span class="status ${statusClass}" style="font-size: 20px;">
+                            <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: ${statusColor}; margin-right: 5px; vertical-align: middle;"></span><span style="vertical-align: middle; ">${statusText}</span>
                           </span>
                         </b>
-                        <span class="description">${description}</span>
+                        <span class="description" style="font-size: 15px;">${description}</span>
                     </div>`;
           },
           useHTML: true,
@@ -874,7 +873,7 @@ const ProgressBackground = styled(ProgressCircleBase)`
   stroke: rgba(255, 255, 255, 0.1);
 `;
 
-const ProgressCircle = styled(ProgressCircleBase)<{ $offset: number }>`
+const ProgressCircle = styled(ProgressCircleBase) <{ $offset: number }>`
   stroke: #A78BFA;
   stroke-dasharray: ${2 * Math.PI * 62};
   stroke-dashoffset: ${({ $offset }) => $offset};
