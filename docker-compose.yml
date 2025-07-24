@@ -1,20 +1,20 @@
 version: "3.8"
 
 services:
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - ./frontend:/app
-  #     - /app/node_modules
-  #   environment:
-  #     - NODE_ENV=development
-  #     - CHOKIDAR_USEPOLLING=true
-  #   working_dir: /app
-  #   command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+  #   frontend:
+  #     build:
+  #       context: ./frontend
+  #       dockerfile: Dockerfile
+  #     ports:
+  #       - "3000:3000"
+  #     volumes:
+  #       - ./frontend:/app
+  #       - /app/node_modules
+  #     environment:
+  #       - NODE_ENV=development
+  #       - CHOKIDAR_USEPOLLING=true
+  #     working_dir: /app
+  #     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
   backend:
     build:
@@ -27,10 +27,12 @@ services:
     volumes:
       - ./backend:/app
     working_dir: /app
-    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    #command: ["newrelic-admin", "run-program", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     depends_on:
       mysql:
         condition: service_healthy
+      chroma-server:
+        condition: service_started
 
   chroma-server:
     image: ghcr.io/chroma-core/chroma:latest
@@ -43,21 +45,25 @@ services:
       - CHROMA_DB_IMPL=duckdb+parquet
       - CHROMA_SERVER_DB_DIR=/data
 
-  # pipeline:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   command:
-  #     - python
-  #     - -u
-  #     - app/rag/pipeline.py
-  #   env_file:
-  #     - ./backend/.env
-  #   depends_on:
-  #     chroma-server:
-  #       condition: service_started
-  #   volumes:
-  #     - chroma-data:/data
+#처음에 크로마 db에 데이터 없을때만 실행
+
+#  pipeline:
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile
+#    command:
+#      - python
+#      - -u
+#      - app/rag/pipeline.py
+#    env_file:
+#      - ./backend/.env
+#    depends_on:
+#      chroma-server:
+#        condition: service_started
+#    volumes:
+#      - chroma-data:/data
+
+
 
   mysql:
     image: mysql:8.0
@@ -78,35 +84,138 @@ services:
       timeout: 5s
       retries: 5
 
+  # 🔒 모니터링 구성 일시 비활성화 (Prometheus, Grafana, cAdvisor)
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/provisioning/grafana.ini:/etc/grafana/grafana.ini
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/fastapi-monitoring.json
+      - GF_DASHBOARDS_MIN_REFRESH_INTERVAL=1s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8085:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
   redis:
     image: redis:latest
     container_name: redis
     restart: always
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     restart: always
     ports:
-      - "5673:5672"
-      - "15673:15672"
+      - "5672:5672"     # AMQP 프로토콜 포트
+      - "15672:15672"   # 웹 관리 UI 포트
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   celery-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: celery-worker
-    command: celery -A app.worker worker --loglevel=info
+    command: sh -c "celery -A app.worker.celery_app worker --loglevel=info & uvicorn app.worker:app --host 0.0.0.0 --port 8000"
     depends_on:
-      - redis
-      - rabbitmq
-    env_file:
-      - ./backend/.env
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=mysql+pymysql://iteam:itampass@mysql:3306/iteamdb
     volumes:
       - ./backend:/app
     working_dir: /app
+    ports:
+      - "8001:8000"  # 메트릭 엔드포인트용 포트
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Exporter
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-exporter
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    depends_on:
+      - redis
+
+  # RabbitMQ Exporter
+  rabbitmq-exporter:
+    image: kbudde/rabbitmq-exporter:latest
+    container_name: rabbitmq-exporter
+    ports:
+      - "9419:9419"
+    environment:
+      RABBIT_URL: http://rabbitmq:15672
+      RABBIT_USER: guest
+      RABBIT_PASSWORD: guest
+    depends_on:
+      - rabbitmq
+
+  # MySQL Exporter
+  mysqld-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysqld-exporter
+    ports:
+      - "9104:9104"
+    environment:
+      DATA_SOURCE_NAME: "root:root@mysql:3306/iteamdb"
+    depends_on:
+      mysql:
+        condition: service_healthy
 
 volumes:
   mysql-data:
