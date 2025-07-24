@@ -44,7 +44,7 @@ async def generate_tts(data: TTSRequest):
 
     payload = {
         "text": data.text,
-        "model_id": "eleven_flash_v2_5",
+        "model_id": os.getenv("ELEVENLABS_MODEL_ID", "eleven_flash_v2_5"), 
         "voice_settings": {
             "stability": 0.7,
             "similarity_boost": 0.7,
@@ -61,12 +61,9 @@ async def generate_tts(data: TTSRequest):
             res = await client.post(url, headers=headers, json=payload)
             res.raise_for_status()
 
-        logger.info("✅ ElevenLabs TTS API 호출 성공")
+        logger.info("ElevenLabs TTS API 호출 성공")
         logger.info(f"🎧 응답 오디오 크기: {len(res.content)} bytes")
         logger.info(f"📎 응답 Content-Type: {res.headers.get('Content-Type')}")
-
-        # 파일 저장 로직 제거됨 (아까 High Priority 이슈 해결!)
-        # 이제 응답을 바로 클라이언트에게 반환할 거야.
 
     except httpx.HTTPStatusError as e:
         status_code = e.response.status_code
