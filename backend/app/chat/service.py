@@ -35,12 +35,19 @@ openai_api_key = os.environ.get("OPENAI_API_KEY")
 if not openai_api_key:
     raise RuntimeError("OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다.")
 
-client = chromadb.HttpClient(host="chroma-server", port=8000)
-vectordb = Chroma(
-    client=client,
-    collection_name="dementia_chunks",
-    embedding_function=OpenAIEmbeddings(openai_api_key=openai_api_key)
-)
+# ChromaDB 연결 설정
+vectordb = None
+try:
+    client = chromadb.HttpClient(host="chroma-server", port=8000)
+    vectordb = Chroma(
+        client=client,
+        collection_name="dementia_chunks",
+        embedding_function=OpenAIEmbeddings(openai_api_key=openai_api_key)
+    )
+    print("ChromaDB 연결 성공")
+except Exception as e:
+    print(f"ChromaDB 연결 실패: {e}")
+    print("ChromaDB 없이 서비스가 시작됩니다.")
 
 def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str:
     # 1. 사용자 메시지 저장 및 턴 수 계산
@@ -112,18 +119,27 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
             )
         ])
 
-        # 🔍 디버깅용: Chroma에서 context 직접 검색
-        retriever = vectordb.as_retriever()
-        docs = retriever.get_relevant_documents(message)
-
-        print("\n===== 검색된 논문 Context 일부 =====")
-        for i, doc in enumerate(docs[:3]):
-            print(f"[{i+1}] {doc.page_content[:300]}...\n")
-        print("====================================\n")
+        # 🔍 ChromaDB에서 context 검색 (예외처리 포함)
+        docs = []
+        if vectordb is not None:
+            try:
+                retriever = vectordb.as_retriever()
+                docs = retriever.get_relevant_documents(message)
+                
+                print("\n===== 검색된 논문 Context 일부 =====")
+                for i, doc in enumerate(docs[:3]):
+                    print(f"[{i+1}] {doc.page_content[:300]}...\n")
+                print("====================================\n")
+            except Exception as e:
+                print(f"ChromaDB 검색 실패: {e}")
+                docs = []
+        else:
+            print("ChromaDB가 연결되지 않아 검색을 건너뜁니다.")
 
         # 🔍 실제 프롬프트 주입 확인
+        context_content = "\n\n".join([d.page_content for d in docs]) if docs else "참고할 수 있는 논문 데이터가 없습니다."
         formatted = prompt.format(
-            context="\n\n".join([d.page_content for d in docs]),
+            context=context_content,
             chat_history="(예시 대화)",
             question=message
         )
@@ -131,13 +147,33 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
         print(formatted[:1000])
         print("==================================================\n")
 
-        chain = ConversationalRetrievalChain.from_llm(
-            llm=llm,
-            retriever=vectordb.as_retriever(),
-            memory=memory,
-            combine_docs_chain_kwargs={"prompt": prompt}
-        )
-        ai_response = chain.run(message)
+        # ChromaDB가 없으면 일반 LLM 체인 사용
+        if vectordb is not None:
+            try:
+                chain = ConversationalRetrievalChain.from_llm(
+                    llm=llm,
+                    retriever=vectordb.as_retriever(),
+                    memory=memory,
+                    combine_docs_chain_kwargs={"prompt": prompt}
+                )
+                ai_response = chain.run(message)
+            except Exception as e:
+                print(f"ChromaDB 체인 실행 실패: {e}")
+                # 일반 LLM으로 대체
+                chain = prompt | llm
+                ai_response = chain.invoke({
+                    "context": context_content,
+                    "chat_history": "(예시 대화)",
+                    "question": message
+                }).content
+        else:
+            # ChromaDB가 없으면 일반 LLM 체인 사용
+            chain = prompt | llm
+            ai_response = chain.invoke({
+                "context": context_content,
+                "chat_history": "(예시 대화)",
+                "question": message
+            }).content
 
         if turn_count == 1:
             intro = "안녕하세요. 지금부터 대화를 시작하겠습니다. 보다 정확한 이해를 위해, 단답형보다는 완전한 문장으로 답변해주시면 감사하겠습니다.\n\n"
