@@ -16,12 +16,18 @@ if not openai_api_key:
     raise RuntimeError("OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다.")
 
 # ✅ Chroma 벡터 DB 클라이언트 생성
-client = chromadb.HttpClient(host="chroma-server", port=8000)
-vectordb = Chroma(
-    client=client,
-    collection_name="dementia_chunks",
-    embedding_function=OpenAIEmbeddings(openai_api_key=openai_api_key)
-)
+vectordb = None
+try:
+    client = chromadb.HttpClient(host="chroma-server", port=8000)
+    vectordb = Chroma(
+        client=client,
+        collection_name="dementia_chunks",
+        embedding_function=OpenAIEmbeddings(openai_api_key=openai_api_key)
+    )
+    print("Stream Handler: ChromaDB 연결 성공")
+except Exception as e:
+    print(f"Stream Handler: ChromaDB 연결 실패: {e}")
+    print("Stream Handler: ChromaDB 없이 서비스가 시작됩니다.")
 
 # ✅ 대화용 system prompt (인삿말 제외)
 system_prompt = """
@@ -115,11 +121,33 @@ def get_streaming_chain(report_id: int, question: str):
         callbacks=[handler],
         openai_api_key=openai_api_key
     )
-    chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=vectordb.as_retriever(),
-        memory=memory,
-        combine_docs_chain_kwargs={"prompt": prompt}
-    )
+    # ChromaDB에서 context 검색
+    context_content = "참고할 수 있는 논문 데이터가 없습니다."
+    if vectordb is not None:
+        try:
+            retriever = vectordb.as_retriever()
+            docs = retriever.get_relevant_documents(question)
+            context_content = "\n\n".join([d.page_content for d in docs]) if docs else "참고할 수 있는 논문 데이터가 없습니다."
+        except Exception as e:
+            print(f"ChromaDB 검색 실패: {e}")
+            context_content = "참고할 수 있는 논문 데이터가 없습니다."
+    else:
+        print("ChromaDB가 연결되지 않아 검색을 건너뜁니다.")
+
+    if vectordb is not None:
+        try:
+            chain = ConversationalRetrievalChain.from_llm(
+                llm=llm,
+                retriever=vectordb.as_retriever(),
+                memory=memory,
+                combine_docs_chain_kwargs={"prompt": prompt}
+            )
+        except Exception as e:
+            print(f"ChromaDB 체인 생성 실패: {e}")
+            # 일반 LLM 체인으로 대체
+            chain = prompt | llm
+    else:
+        # ChromaDB가 없을 때는 일반 LLM 체인 사용
+        chain = prompt | llm
 
     return chain, memory, handler, turn_count  # turn_count도 같이 리턴
