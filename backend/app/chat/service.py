@@ -203,6 +203,15 @@ def get_chat_logs_by_report_id(db: Session, report_id: int) -> list[ChatLogRespo
     )
     return [ChatLogResponse.from_orm(log) for log in logs]
 
+def get_chat_logs(db: Session, chat_id: int) -> list[ChatLogResponse]:
+    logs = (
+        db.query(ChatLog)
+        .filter(ChatLog.chat_id == chat_id)
+        .order_by(ChatLog.updated_at.asc())  # updated_at 기준 오름차순
+        .all()
+    )
+    return [ChatLogResponse.from_orm(log) for log in logs]
+
 def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
     logs = (
         db.query(ChatLog)
