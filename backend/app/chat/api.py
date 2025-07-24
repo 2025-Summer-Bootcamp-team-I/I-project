@@ -15,7 +15,7 @@ from app.chat.schemas import (
 from app.chat.models import RoleEnum, Chat
 from app.chat.service import (
     chat_with_ai, evaluate_and_save_chat_result,
-    get_chat_logs_by_report_id
+    get_chat_logs_by_report_id, get_chat_logs
 )
 from app.chat.crud import save_chat_log
 from app.chat.stream_handler import get_streaming_chain
@@ -120,9 +120,22 @@ def create_chat(
     )
 
 
-@router.get("/chat/logs/by-report/{report_id}", response_model=list[ChatLogResponse])
+@router.get("/logs/{report_id}", response_model=list[ChatLogResponse])
 def get_logs_by_report_id(report_id: int, db: Session = Depends(get_db)):
     return get_chat_logs_by_report_id(db, report_id)
+
+@router.get(
+    "/logs/{chat_id}",
+    response_model=list[ChatLogResponse],
+    summary="채팅 로그 조회",
+    description="특정 chat_id에 대한 모든 채팅 로그를 반환합니다."
+)
+def read_chat_logs(
+        chat_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    return get_chat_logs(db, chat_id)
 
 @router.post(
     "/chats/{chat_id}/evaluate",
