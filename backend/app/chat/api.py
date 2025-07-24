@@ -61,6 +61,10 @@ async def stream_chat(
         import json
         response_text = ""
         chain, memory, handler = get_streaming_chain(request.report_id)
+
+        # 메모리 내용 확인을 위한 로그 추가
+        print("Initial memory content:", memory.chat_memory.messages)
+
         task = asyncio.create_task(chain.acall(request.message))
 
         async for token in handler.aiter():
@@ -107,7 +111,7 @@ def create_chat(
     db.refresh(chat)
 
     # 2. AI의 첫 인사말 생성 및 저장
-    initial_greeting = "안녕하세요. 지금부터 대화를 시작하겠습니다. 보다 정확한 검사를 위해, 단답형보다는 완전한 문장으로 답변해주시면 감사하겠습니다."
+    initial_greeting = "지금부터 대화를 시작하겠습니다. 인사를 걸어주세요!"
     save_chat_log(db, chat_id=chat.chat_id, role=RoleEnum.ai, text=initial_greeting)
     
     # 3. 생성된 chat_id와 인사말 반환
