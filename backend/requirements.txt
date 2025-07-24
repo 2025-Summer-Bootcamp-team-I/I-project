@@ -33,3 +33,4 @@ tenacity
 python-dotenv
 requests
 celery==5.3.6
+google-generativeai
