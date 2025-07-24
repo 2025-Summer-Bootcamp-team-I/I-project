@@ -46,9 +46,9 @@ def embed_pdf_to_chroma(pdf_path: str, title: str = "제목 없음", chroma_host
             ids=ids
         )
 
-        return f"{len(split_docs)} chunks embedded for '{title}'"
+        return True, f"{len(split_docs)} chunks embedded for '{title}'"
     except Exception as e:
         print(f"RAG Service: ChromaDB 연결 실패: {e}")
-        return f"ChromaDB 연결 실패로 임베딩을 건너뜁니다: {e}"
+        return False, f"ChromaDB 연결 실패로 임베딩을 건너뜁니다: {e}"
 
     #return f"{len(split_docs)} chunks embedded to Chroma REST ({chroma_host}:{chroma_port})"
