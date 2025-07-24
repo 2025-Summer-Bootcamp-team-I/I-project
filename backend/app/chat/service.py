@@ -43,7 +43,6 @@ vectordb = Chroma(
 )
 
 def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str:
-    # 1. 사용자 메시지 저장 및 턴 수 계산
     save_chat_log(db, chat_id=chat_id, role=RoleEnum.user, text=message)
     db.flush()
     turn_count = db.query(ChatLog).filter(ChatLog.chat_id == chat_id, ChatLog.role == RoleEnum.user).count()
@@ -51,16 +50,15 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
     response = ""
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.1, google_api_key=google_api_key, convert_system_message_to_human=True)
 
-    # ✅ 작별 인사
     if turn_count == 7:
         farewell_prompt_text = """
 당신은 따뜻한 작별인사 전문가입니다. 당신의 임무는 사용자와의 대화를 자연스럽게 마무리하는 것입니다.
 
 # 규칙
 1. 사용자의 마지막 말에 간단히 공감하며 반응해주세요.
-3. 따뜻한 작별 인사를 건네며 대화를 마무리해주세요.
-4. 응답의 맨 마지막에는, 다른 말 없이 정확히 '아래에 종료 버튼을 눌러주세요.' 라는 문구를 추가해야 합니다.
-5. 답변은 한두 문장으로 매우 간결하게 유지하세요.
+2. 따뜻한 작별 인사를 건네며 대화를 마무리해주세요.
+3. 응답의 맨 마지막에는, 다른 말 없이 정확히 '아래에 종료 버튼을 눌러주세요.' 라는 문구를 추가해야 합니다.
+4. 답변은 한두 문장으로 매우 간결하게 유지하세요.
 
 사용자의 마지막 말: {question}
 """
@@ -69,13 +67,11 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
         ai_response = farewell_chain.invoke({"question": message})
         response = ai_response.content
 
-    # ✅ 일반 대화
     elif turn_count <= 6:
         memory = get_memory(report_id)
         system_prompt_template = """
 당신은 사용자와 친근하게 대화하며, 당신은 당신의 이야기를 해서는 안되고, 사용자의 이야기를 경청하고 자연스럽게 대화를 이끌어 나가는 대화 파트너입니다.
 사용자의 답변 마지막에 '?'가 있을 경우에만 자신의 생각,경험,취향을 말하세요, 그외에는 리액션과 질문만 가능합니다.
-
 
 # [대화의 3대 절대 원칙]
 1. **중복 질문 금지**: 대화 기록을 항상 확인하여 이미 했던 질문이나 비슷한 질문을 절대 반복하지 마세요.
@@ -93,13 +89,12 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
 4. **주도적인 대화 시작**: 사용자가 "아무 얘기나 해줘"라고 명시적으로 말하는 경우에만 먼저 적절한 일상 주제로 대화를 시작하세요. 일반적인 인사에는 간단하게 답하고 사용자가 대화를 이끌어가도록 하세요.
 5. **기억력 활용**: 사용자가 이전에 제공한 정보(예: 장소, 이름)를 기억하고, 동일한 내용을 다시 질문하지 마세요.
 6. **간결함 유지**: 항상 한두 문장 이내로 매우 짧고 자연스럽게 말하세요.
-7. **즉각적인 주제 전환**: 사용자가 "없어", "모르겠어", "관심 없어", "글쎄" 등 대화를 이어가기 어려워하는 표현을 사용하면, 바로 대화를 끝내지 말고 다른 주제로 자연스럽게 전환하세요. - **나쁜 예시**: (사용자: "과일 글쎄") → "그렇군요. 오늘 대화 나눠서 즐거웠습니다." (X) - **좋은 예시 1**: (사용자: "과일 글쎄") → "아, 그렇군요. 그럼 음식 말고, 평소에 즐겨 가시는 장소는 있으신가요?" (장소 전환) - **좋은 예시 2**: (사용자: "몰라") → "그럴 수 있죠. 혹시 요즘 듣는 노래 중에 좋아하시는 거 있으세요?" (음악 전환) - **좋은 예시 3**: (사용자: "관심 없어") → "괜찮아요. 그럼 혹시 최근에 있었던 인상 깊은 일이 있으셨나요?" (일상/감정 전환)
+7. **즉각적인 주제 전환**: 사용자가 "없어", "모르겠어", "관심 없어", "글쎄" 등 대화를 이어가기 어려워하는 표현을 사용하면, 바로 대화를 끝내지 말고 다른 주제로 자연스럽게 전환하세요.
 8. **부정적 감정 대응**: 사용자가 짜증, 불쾌감, 거부 반응을 보이면, "아, 제가 실수가 있었네요. 죄송합니다." 와 같이 간결하게 사과하고 즉시 다른 주제로 전환하세요.
 9. **특정 계절일때만 할 수 있는 질문은 하지마세요. 예시:더위를 피하시는 방법을 알려주세요.
 10. **전문 용어 금지**: '검사', '진단', '문진', '점수', '소견' 같은 단어는 쓰지 마세요.
 11. **어조**: 따뜻하고 존중하는 어조를 사용하세요.
 
-# 기타 정보
 - 참고 논문(Context)을 참고해 자연스럽게 유도형 질문을 하세요.
 - 현재 {turn_count}번째 대화입니다. 총 7턴 후에는 대화를 종료해야 합니다.
 """
@@ -122,7 +117,6 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
     else:
         response = "이미 대화가 종료되었습니다. 아래 종료 버튼을 눌러 평가를 완료해주세요."
 
-    # 2. AI 응답 저장
     save_chat_log(db, chat_id=chat_id, role=RoleEnum.ai, text=response)
     return response
 
