@@ -6,7 +6,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import ConversationalRetrievalChain
 from langchain_community.vectorstores import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain.callbacks.streaming_aiter import AsyncIteratorCallbackHandler
+# from langchain.callbacks.streaming_aiter import AsyncIteratorCallbackHandler # <--- 삭제
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from app.chat.memory_store import get_memory
 
@@ -89,7 +89,7 @@ prompt = ChatPromptTemplate.from_messages([
 # ✅ 스트리밍 체인 생성 함수
 def get_streaming_chain(report_id: int, question: str):
     memory = get_memory(report_id)
-    handler = AsyncIteratorCallbackHandler()
+    # handler = AsyncIteratorCallbackHandler() # <--- 삭제
 
     # 현재 턴 수 계산 (사용자 발화 수 기준)
     turn_count = len([m for m in memory.chat_memory.messages if m.type == "human"])
@@ -99,23 +99,21 @@ def get_streaming_chain(report_id: int, question: str):
         llm = ChatGoogleGenerativeAI(
             model="gemini-1.5-pro-latest",
             temperature=0.1,
-            streaming=True,
-            callbacks=[handler],
-            google_api_key=google_api_key,
-            convert_system_message_to_human=True
+            # streaming=True, # <--- 삭제
+            # callbacks=[handler], # <--- 삭제
+            google_api_key=google_api_key
         )
         chain = farewell_prompt | llm
         chain = chain.bind(question=question)
-        return chain, memory, handler
+        return chain, memory # <--- 핸들러 반환 안함
 
     # 일반 대화 체인
     llm = ChatGoogleGenerativeAI(
         model="gemini-1.5-pro-latest",
         temperature=0,
-        streaming=True,
-        callbacks=[handler],
-        google_api_key=google_api_key,
-        convert_system_message_to_human=True
+        # streaming=True, # <--- 삭제
+        # callbacks=[handler], # <--- 삭제
+        google_api_key=google_api_key
     )
     chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
@@ -124,4 +122,4 @@ def get_streaming_chain(report_id: int, question: str):
         combine_docs_chain_kwargs={"prompt": prompt}
     )
 
-    return chain, memory, handler, turn_count  # turn_count도 같이 리턴
+    return chain, memory, turn_count  # <--- 핸들러 반환 안함

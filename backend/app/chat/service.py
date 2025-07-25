@@ -49,7 +49,7 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
     turn_count = db.query(ChatLog).filter(ChatLog.chat_id == chat_id, ChatLog.role == RoleEnum.user).count()
 
     response = ""
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.1, google_api_key=google_api_key, convert_system_message_to_human=True)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.1, google_api_key=google_api_key)
 
     #  작별 인사
     if turn_count == 7:
@@ -210,7 +210,7 @@ def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
         )
     )
 
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0, google_api_key=google_api_key, convert_system_message_to_human=True)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0, google_api_key=google_api_key)
     eval_chain = eval_prompt | llm
     eval_response = eval_chain.invoke({"conversation": conversation})
     response_text = eval_response.content
