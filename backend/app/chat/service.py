@@ -4,9 +4,10 @@ import os
 import re
 import chromadb
 from sqlalchemy.orm import Session
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import ConversationalRetrievalChain
 from langchain_community.vectorstores import Chroma
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, PromptTemplate
 from app.chat.models import Chat
 from app.chat.memory_store import get_memory
@@ -37,32 +38,29 @@ if not google_api_key:
 client = chromadb.HttpClient(host="chroma-server", port=8000)
 vectordb = Chroma(
     client=client,
-    collection_name="dementia_chunks",
-    embedding_function=GoogleGenerativeAIEmbeddings(google_api_key=google_api_key)
+    collection_name="dementia_gemini_v1",
+    embedding_function=GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=google_api_key)
 )
 
 def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str:
+    # 1. 사용자 메시지 저장 및 턴 수 계산
     save_chat_log(db, chat_id=chat_id, role=RoleEnum.user, text=message)
     db.flush()
     turn_count = db.query(ChatLog).filter(ChatLog.chat_id == chat_id, ChatLog.role == RoleEnum.user).count()
 
     response = ""
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-pro-latest",
-        temperature=0.1,
-        google_api_key=google_api_key,
-        convert_system_message_to_human=True
-    )
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.1, google_api_key=google_api_key, convert_system_message_to_human=True)
 
+    #  작별 인사
     if turn_count == 7:
         farewell_prompt_text = """
 당신은 따뜻한 작별인사 전문가입니다. 당신의 임무는 사용자와의 대화를 자연스럽게 마무리하는 것입니다.
 
 # 규칙
-1. 사용자의 마지막 말에 간단히 공감하며 반응해주세요.
+1. 사용자의 마지막 말에 간단히 공감하며 반응해주세요. (예: "그렇군요.", "알겠습니다.")
 2. 새로운 질문은 절대 하지 마세요.
 3. 따뜻한 작별 인사를 건네며 대화를 마무리해주세요.
-4. 응답의 맨 마지막에는, 다른 말 없이 정확히 '아래에 종료 버튼을 눌러주세요.' 라는 문구를 추가해야 합니다.
+4. 응답의 맨 마지막에는, 다른 말 없이 정확히 ' 아래에 종료 버튼을 눌러주세요 . ' 라는 문구를 추가해야 합니다.
 5. 답변은 한두 문장으로 매우 간결하게 유지하세요.
 
 사용자의 마지막 말: {question}
@@ -72,11 +70,12 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
         ai_response = farewell_chain.invoke({"question": message})
         response = ai_response.content
 
+    # 일반 대화
     elif turn_count <= 6:
         memory = get_memory(report_id)
         system_prompt_template = """
-당신은 사용자와 친근하게 대화하며, 당신은 당신의 이야기를 해서는 안되고, 사용자의 이야기를 경청하고 자연스럽게 대화를 이끌어 나가는 대화 파트너입니다.
-사용자의 답변 마지막에 '?'가 있을 경우에만 자신의 생각,경험,취향을 말하세요, 그외에는 리액션과 질문만 가능합니다.
+당신은 사용자의 이야기를 들어주는 친근한 대화 파트너입니다. 당신의 유일한 역할은 사용자의 말을 듣고 다양한 리액션과 질문만 하세요. 자신에 대한 생각을 말하지마세요. 제발
+
 # 페르소나 및 대화 규칙
 1. **자신을 드러내지 않기**: 절대로 당신 자신에 대한 이야기(의견, 감정, 취향 등)를 하지 마세요. "저는", "제 생각에는" 같은 문장도 금지입니다. AI라는 말도 하지 마세요.
     - 사용자의 발화를 오해하거나 왜곡하지 마세요. ("안 했어요" → "하셨군요" ❌)
@@ -93,32 +92,48 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
 
 6. **전문 용어 금지**: '검사', '진단', '문진', '점수', '소견' 같은 단어는 쓰지 마세요.
 
-6. **간결함 유지**: 항상 한두 문장 이내로 매우 짧고 자연스럽게 말하세요.
-7. **즉각적인 주제 전환**: 사용자가 "없어", "모르겠어", "관심 없어", "글쎄" 등 대화를 이어가기 어려워하는 표현을 사용하면, 바로 대화를 끝내지 말고 다른 주제로 자연스럽게 전환하세요. 
-8. **부정적 감정 대응**: 사용자가 짜증, 불쾌감, 거부 반응을 보이면, "아, 제가 실수가 있었네요. 죄송합니다." 와 같이 간결하게 사과하고 즉시 다른 주제로 전환하세요.
-9. **특정 계절일때만 할 수 있는 질문은 하지마세요. 예시:더위를 피하시는 방법을 알려주세요.
-10. **한 주제에 얽매이지 않기**: 한 가지 주제(예: 음식, 날씨)에 대해 2회 이상 연속으로 질문했다면, 사용자의 답변을 받은 후 자연스럽게 다른 주제로 전환하세요.
+7. **어조**: 따뜻하고 존중하는 어조를 사용하세요.
+
+8. **종료 조건**: '그만', '끝', '이제 됐어' 등의 표현이 나오면 대화를 마무리하세요.
 
 9. **직전 발화 반영**: 항상 직전 사용자 말에 반응하세요. 이전 질문을 무시하고 다음 질문을 하지 마세요.
 
+10. **초기 인사 멘트는 turn 1에서만 출력됩니다.**
 
+# 기타 정보
 - 참고 논문(Context)을 참고해 자연스럽게 유도형 질문을 하세요.
 - 현재 {turn_count}번째 대화입니다. 총 7턴 후에는 대화를 종료해야 합니다.
-""".format(turn_count=turn_count)
-
+"""
+        system_prompt = system_prompt_template.format(turn_count=turn_count)
         prompt = ChatPromptTemplate.from_messages([
-            SystemMessagePromptTemplate.from_template(system_prompt_template + "\n\n참고 논문(Context): {context}"),
+            SystemMessagePromptTemplate.from_template(system_prompt + "\n\n참고 논문(Context): {context}"),
             HumanMessagePromptTemplate.from_template(
                 "이전 대화 요약(chat_history):\n{chat_history}\n\n사용자 발화: {question}"
             )
         ])
 
+        # 🔍 디버깅용: Chroma에서 context 직접 검색
         retriever = vectordb.as_retriever()
         docs = retriever.get_relevant_documents(message)
 
+        print("\n===== 검색된 논문 Context 일부 =====")
+        for i, doc in enumerate(docs[:3]):
+            print(f"[{i+1}] {doc.page_content[:300]}...\n")
+        print("====================================\n")
+
+        # 🔍 실제 프롬프트 주입 확인
+        formatted = prompt.format(
+            context="\n\n".join([d.page_content for d in docs]),
+            chat_history="(예시 대화)",
+            question=message
+        )
+        print("\n===== 실제 GPT에 전달될 프롬프트 (앞 1000자) =====")
+        print(formatted[:1000])
+        print("==================================================\n")
+
         chain = ConversationalRetrievalChain.from_llm(
             llm=llm,
-            retriever=retriever,
+            retriever=vectordb.as_retriever(),
             memory=memory,
             combine_docs_chain_kwargs={"prompt": prompt}
         )
@@ -133,22 +148,41 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
     else:
         response = "이미 대화가 종료되었습니다. 아래 종료 버튼을 눌러 평가를 완료해주세요."
 
+    # 2. AI 응답 저장
     save_chat_log(db, chat_id=chat_id, role=RoleEnum.ai, text=response)
     return response
+
+# app/chat/service.py
 
 def get_chat_logs_by_report_id(db: Session, report_id: int) -> list[ChatLogResponse]:
     chat = db.query(Chat).filter(Chat.report_id == report_id).first()
     if not chat:
-        return []
-    logs = db.query(ChatLog).filter(ChatLog.chat_id == chat.chat_id).order_by(ChatLog.updated_at.asc()).all()
+        return []  # 채팅이 존재하지 않으면 빈 리스트 반환
+
+    logs = (
+        db.query(ChatLog)
+        .filter(ChatLog.chat_id == chat.chat_id)
+        .order_by(ChatLog.updated_at.asc())
+        .all()
+    )
     return [ChatLogResponse.from_orm(log) for log in logs]
 
 def get_chat_logs(db: Session, chat_id: int) -> list[ChatLogResponse]:
-    logs = db.query(ChatLog).filter(ChatLog.chat_id == chat_id).order_by(ChatLog.updated_at.asc()).all()
+    logs = (
+        db.query(ChatLog)
+        .filter(ChatLog.chat_id == chat_id)
+        .order_by(ChatLog.updated_at.asc())  # updated_at 기준 오름차순
+        .all()
+    )
     return [ChatLogResponse.from_orm(log) for log in logs]
 
 def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
-    logs = db.query(ChatLog).filter(ChatLog.chat_id == chat_id).order_by(ChatLog.log_id.asc()).all()
+    logs = (
+        db.query(ChatLog)
+        .filter(ChatLog.chat_id == chat_id)
+        .order_by(ChatLog.log_id.asc())
+        .all()
+    )
     conversation = ""
     for log in logs:
         if log.role.value == "user":
@@ -159,17 +193,24 @@ def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
     eval_prompt = PromptTemplate(
         input_variables=["conversation"],
         template=(
-            "(평가 프롬프트 내용 그대로 유지)"
+            "아래는 사용자와 AI의 전체 대화 내용입니다.\n"
+            "{conversation}\n\n"
+            "참고 논문(치매 관련 연구 데이터)도 함께 참고하세요.\n"
+            "\n"
+            "1. 대화 중 사용자가 보인 '치매가 있는 사람이 자주 보이는 특징적인 응답'이 몇 번 나왔는지 논문을 참고해 판단하세요.\n"
+            "2. 그 횟수가 2개 이상이면 '경계', 4개 이상이면 '위험', 그 미만이면 '양호'로 정하세요.\n"
+            "3. 아래 예시 형식을 따라 주세요:\n\n"
+            "<양호>\n"
+            "소견: 대화 검사 결과, 특별한 이상 징후가 관찰되지 않았습니다. 사용자는 일상적인 질문에 일관되게 답변하였으며, 기억력이나 인지에 뚜렷한 혼동은 보이지 않았습니다.\n\n"
+            "<경계>\n"
+            "소견: 대화 검사 결과, 사용자는 [문제되는 패턴]을 반복적으로 보였습니다. 예: [예시1], [예시2]\n\n"
+            "<위험>\n"
+            "소견: 대화 검사 결과, 사용자는 [문제되는 패턴]을 여러 차례 반복했습니다. 예: [예시1], [예시2]\n\n"
+            "위험도: <양호/경계/위험>\n"
         )
     )
 
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-pro-latest",
-        temperature=0,
-        google_api_key=google_api_key,
-        convert_system_message_to_human=True
-    )
-
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0, google_api_key=google_api_key, convert_system_message_to_human=True)
     eval_chain = eval_prompt | llm
     eval_response = eval_chain.invoke({"conversation": conversation})
     response_text = eval_response.content
