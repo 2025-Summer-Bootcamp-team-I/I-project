@@ -29,10 +29,10 @@ celery_app.conf.update(
 async def health_check():
     return {"status": "healthy"}
 
-# Prometheus 메트릭 설정
+# Prometheus 메트릭 설정.
 Instrumentator().instrument(app).expose(app)
 
-# 예시 Celery 태스크
+# 예시 Celery 태스크.
 @celery_app.task
 def example_task():
     return "Task completed successfully" 
