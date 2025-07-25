@@ -2,25 +2,25 @@
 
 import os
 import chromadb
-from langchain_community.chat_models import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import ConversationalRetrievalChain
 from langchain_community.vectorstores import Chroma
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.callbacks.streaming_aiter import AsyncIteratorCallbackHandler
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from app.chat.memory_store import get_memory
 
-# ✅ 환경변수에서 OpenAI 키 로드
-openai_api_key = os.environ.get("OPENAI_API_KEY")
-if not openai_api_key:
-    raise RuntimeError("OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다.")
+# ✅ 환경변수에서 Google API 키 로드
+google_api_key = os.environ.get("GOOGLE_API_KEY")
+if not google_api_key:
+    raise RuntimeError("GOOGLE_API_KEY 환경변수가 설정되어 있지 않습니다.")
 
 # ✅ Chroma 벡터 DB 클라이언트 생성
 client = chromadb.HttpClient(host="chroma-server", port=8000)
 vectordb = Chroma(
     client=client,
-    collection_name="dementia_chunks",
-    embedding_function=OpenAIEmbeddings(openai_api_key=openai_api_key)
+    collection_name="dementia_gemini_v1",
+    embedding_function=GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=google_api_key)
 )
 
 # ✅ 대화용 system prompt (인삿말 제외)
@@ -96,24 +96,26 @@ def get_streaming_chain(report_id: int, question: str):
 
     # 7턴째면 작별 인사 체인
     if turn_count == 6:
-        llm = ChatOpenAI(
-            model="gpt-4",
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-1.5-pro-latest",
             temperature=0.1,
             streaming=True,
             callbacks=[handler],
-            openai_api_key=openai_api_key
+            google_api_key=google_api_key,
+            convert_system_message_to_human=True
         )
         chain = farewell_prompt | llm
         chain = chain.bind(question=question)
         return chain, memory, handler
 
     # 일반 대화 체인
-    llm = ChatOpenAI(
-        model="gpt-4",
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-1.5-pro-latest",
         temperature=0,
         streaming=True,
         callbacks=[handler],
-        openai_api_key=openai_api_key
+        google_api_key=google_api_key,
+        convert_system_message_to_human=True
     )
     chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
