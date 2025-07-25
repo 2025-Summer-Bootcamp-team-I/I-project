@@ -4,10 +4,10 @@ import os
 import re
 import chromadb
 from sqlalchemy.orm import Session
-from langchain_community.chat_models import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import ConversationalRetrievalChain
 from langchain_community.vectorstores import Chroma
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, PromptTemplate
 from app.chat.models import Chat
 from app.chat.memory_store import get_memory
@@ -31,15 +31,15 @@ def save_report_text_score_and_result(db, report_id, text_score, chat_result):
         report.chat_result = chat_result
         db.commit()
 
-openai_api_key = os.environ.get("OPENAI_API_KEY")
-if not openai_api_key:
-    raise RuntimeError("OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다.")
+google_api_key = os.environ.get("GOOGLE_API_KEY")
+if not google_api_key:
+    raise RuntimeError("GOOGLE_API_KEY 환경변수가 설정되어 있지 않습니다.")
 
 client = chromadb.HttpClient(host="chroma-server", port=8000)
 vectordb = Chroma(
     client=client,
-    collection_name="dementia_chunks",
-    embedding_function=OpenAIEmbeddings(openai_api_key=openai_api_key)
+    collection_name="dementia_gemini_v1",
+    embedding_function=GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=google_api_key)
 )
 
 def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str:
@@ -49,7 +49,7 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
     turn_count = db.query(ChatLog).filter(ChatLog.chat_id == chat_id, ChatLog.role == RoleEnum.user).count()
 
     response = ""
-    llm = ChatOpenAI(model="gpt-4", temperature=0.1, openai_api_key=openai_api_key)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.1, google_api_key=google_api_key, convert_system_message_to_human=True)
 
     #  작별 인사
     if turn_count == 7:
@@ -210,7 +210,7 @@ def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
         )
     )
 
-    llm = ChatOpenAI(model="gpt-4", temperature=0, openai_api_key=openai_api_key)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0, google_api_key=google_api_key, convert_system_message_to_human=True)
     eval_chain = eval_prompt | llm
     eval_response = eval_chain.invoke({"conversation": conversation})
     response_text = eval_response.content
