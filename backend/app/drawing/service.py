@@ -1,9 +1,10 @@
 import os
 import base64
 import json
+import requests
 from dotenv import load_dotenv
 from openai import OpenAI
-from . import utils, crud
+from . import crud, utils
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException
 import re
@@ -50,11 +51,13 @@ PROMPT = (
 
 
 
-def call_gpt_vision(image_path: str):
+def call_gpt_vision(image_url: str):
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    abs_path = os.path.join("/app", image_path.lstrip("/"))
-    with open(abs_path, "rb") as image_file:
-        image_data = base64.b64encode(image_file.read()).decode('utf-8')
+    
+    # S3 URL에서 이미지 다운로드
+    response = requests.get(image_url)
+    response.raise_for_status()
+    image_data = base64.b64encode(response.content).decode('utf-8')
 
     response = client.chat.completions.create(
         model="gpt-4o",
@@ -120,38 +123,66 @@ async def handle_upload(
     report_id: 연결할 리포트 ID
     db: DB 세션
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     # 리포트 존재 여부 확인
     db_report = db.query(Report).filter(Report.report_id == report_id).first()
     if not db_report:
         raise HTTPException(status_code=404, detail="Report not found")
 
-    image_path = await utils.save_file_locally(file)
-    risk_score, drawing_score, drawingtest_result = call_gpt_vision(image_path)
-    risk_level = get_drawing_risk_level(drawing_score)
+    try:
+        logger.info(f"드로잉 업로드 시작 - report_id: {report_id}")
+        
+        # S3에 파일 업로드
+        logger.info("S3 업로드 시작")
+        image_url = await utils.save_file_to_s3(file)
+        logger.info(f"S3 업로드 완료 - URL: {image_url}")
+        
+        # GPT Vision 분석
+        logger.info("GPT Vision 분석 시작")
+        risk_score, drawing_score, drawingtest_result = call_gpt_vision(image_url)
+        logger.info(f"GPT Vision 분석 완료 - 점수: {drawing_score}")
+        
+        risk_level = get_drawing_risk_level(drawing_score)
 
-    # drawing_test 테이블에는 이미지 URL과 risk_score만 저장
-    db_obj = crud.create_drawing_test(
-        db=db,
-        report_id=report_id,
-        image_url=image_path,
-        risk_score=risk_score,
-    )
+        # drawing_test 테이블에는 이미지 URL과 risk_score만 저장
+        logger.info("DB에 drawing_test 저장 시작")
+        db_obj = crud.create_drawing_test(
+            db=db,
+            report_id=report_id,
+            image_url=image_url,
+            risk_score=risk_score,
+        )
+        logger.info("DB에 drawing_test 저장 완료")
 
-    # Report 테이블 업데이트 - ORM 사용으로 변경
-    report = db.query(Report).filter(Report.report_id == report_id).first()
-    if report:
-        report.drawing_score = drawing_score
-        report.drawingtest_result = drawingtest_result
-        report.drawing_risk = risk_level
-        db.commit()
+        # Report 테이블 업데이트 - ORM 사용으로 변경
+        logger.info("Report 테이블 업데이트 시작")
+        report = db.query(Report).filter(Report.report_id == report_id).first()
+        if report:
+            report.drawing_score = drawing_score
+            report.drawingtest_result = drawingtest_result
+            report.drawing_risk = risk_level
+            db.commit()
+            logger.info("Report 테이블 업데이트 완료")
 
-    # API 응답은 기존과 동일하게 모든 정보를 포함
-    return {
-        "drawing_id": db_obj.drawing_id,
-        "report_id": db_obj.report_id,
-        "image_url": db_obj.image_url,
-        "risk_score": risk_score,
-        "drawing_score": drawing_score,
-        "drawingtest_result": drawingtest_result,
-        "risk_level": risk_level
-    }
+        # API 응답은 기존과 동일하게 모든 정보를 포함
+        return {
+            "drawing_id": db_obj.drawing_id,
+            "report_id": db_obj.report_id,
+            "image_url": db_obj.image_url,
+            "risk_score": risk_score,
+            "drawing_score": drawing_score,
+            "drawingtest_result": drawingtest_result,
+            "risk_level": risk_level
+        }
+    except Exception as e:
+        logger.error(f"드로잉 업로드 중 에러 발생: {str(e)}", exc_info=True)
+        # 에러 발생 시 S3에 업로드된 파일 삭제 시도
+        if 'image_url' in locals():
+            try:
+                utils.delete_file_from_s3(image_url)
+                logger.info("S3 파일 삭제 완료")
+            except Exception as delete_error:
+                logger.error(f"S3 파일 삭제 실패: {str(delete_error)}")
+        raise HTTPException(status_code=500, detail=f"파일 업로드 실패: {str(e)}")
