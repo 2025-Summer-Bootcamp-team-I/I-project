@@ -22,7 +22,6 @@ from app.chat.stream_handler import get_streaming_chain
 from app.report.models import Report
 
 
-
 router = APIRouter(tags=["Chat"])
 
 
@@ -63,22 +62,22 @@ async def stream_chat(
     async def event_generator():
         import json
         response_text = ""
-        chain, memory, handler = get_streaming_chain(request.report_id)
-        task = asyncio.create_task(chain.acall(request.message))
-
-        async for token in handler.aiter():
-
-            response_text += token
-
-            clean_token = token
-
-            # JSON 포맷 감싸기
-            json_data = json.dumps({"token": clean_token})
-
-            yield json_data
+        # 핸들러 없이 체인과 메모리만 받도록 수정
+        chain, memory, turn_count = get_streaming_chain(request.report_id, request.message)
+        
+        # 새로운 astream 방식으로 호출하고, 답변(answer)만 사용
+        async for chunk in chain.astream(request.message):
+            # astream은 보통 딕셔너리 형태로 여러 정보를 반환하므로, 'answer' 키만 추출
+            if "answer" in chunk:
+                token = chunk["answer"]
+                
+                response_text += token
+                json_data = json.dumps({"token": token})
+                yield json_data
 
         yield "[DONE]"
 
+        # 대화가 끝난 후 전체 대화 내용을 DB에 한 번에 저장
         save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
         save_chat_log(db, request.chat_id, RoleEnum.ai, response_text)
 
