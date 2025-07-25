@@ -178,6 +178,7 @@ async def handle_upload(
         }
     except Exception as e:
         logger.error(f"드로잉 업로드 중 에러 발생: {str(e)}", exc_info=True)
+
                 # 에러 발생 시 S3에 업로드된 파일 삭제 시도
         if 'image_url' in locals():
             try:
@@ -186,3 +187,5 @@ async def handle_upload(
             except Exception as delete_error:
                 logger.error(f"S3 파일 삭제 실패: {str(delete_error)}")
         raise HTTPException(status_code=500, detail="파일 업로드 중 오류가 발생했습니다.")
+
+     
