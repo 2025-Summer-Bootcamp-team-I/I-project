@@ -279,10 +279,10 @@ const TextChattingPage: React.FC = () => {
     isLoading,
     isStreaming,
     error,
-    createChat,
     sendMessage,
     evaluateChat,
     clearMessages,
+    initializeChatForReport, // 추가
   } = useChatStore();
   const { reportId, setChatCompleted } = useReportIdStore();
   const [inputMessage, setInputMessage] = useState('');
@@ -292,12 +292,12 @@ const TextChattingPage: React.FC = () => {
 
   useEffect(() => {
     if (reportId) {
-      createChat(reportId);
+      initializeChatForReport(reportId);
     }
     return () => {
       clearMessages();
     };
-  }, [reportId, createChat, clearMessages]);
+  }, [reportId, initializeChatForReport, clearMessages]);
 
   useEffect(() => {
     if (chatLogRef.current) {
@@ -329,7 +329,7 @@ const TextChattingPage: React.FC = () => {
       await evaluateChat(chatId, reportId);
       alert("채팅 평가가 완료되었습니다.");
       setChatCompleted(true);
-      navigate('/main');
+      navigate('/main', { state: { cardIndex: 1 } });
     } catch (err) {
       console.error("Failed to evaluate chat:", err);
       alert("채팅 평가 중 오류가 발생했습니다.");
