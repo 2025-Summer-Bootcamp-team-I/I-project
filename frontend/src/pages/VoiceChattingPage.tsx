@@ -7,7 +7,9 @@ import { useVoiceChatStore } from '../store/voiceChatStore';
 import { useReportIdStore } from '../store/reportIdStore';
 import { speechToText, textToSpeech } from '../api';
 import type { ChatLogResponse } from '../types/api';
-import voiceChatRobot from '../assets/imgs/voiceChat-Robot.png';
+import voiceChatRobot1 from '../assets/imgs/robot1.png';
+import voiceChatRobot3 from '../assets/imgs/robot3.png';
+import voiceChatRobot9 from '../assets/imgs/robot9.png';
 
 const pulse = keyframes`
   0%, 100% { transform: scale(1); opacity: 1; }
@@ -80,32 +82,32 @@ const ContentWrapper = styled.div`
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  gap: 1.5rem;
+  gap: 0.5rem; /* 기존 1rem에서 0.5rem으로 줄임 */
   margin-top: 10vh;
 
   @media (max-width: 768px) {
     max-width: 95%;
-    gap: 1rem;
+    gap: 0.25rem; /* 기존 0.5rem에서 0.25rem으로 줄임 */
     margin-top: 6vh;
   }
 `;
 
 const QuestionText = styled.p`
   color: #67e8f9;
-  font-size: 1.5rem;
+  font-size: 1.5rem; /* 기존 1.2rem에서 1.5rem으로 원상 복구 */
   font-weight: 600;
   text-align: center;
   line-height: 1.5;
   padding-bottom: -1rem;
 
   @media (max-width: 768px) {
-    font-size: 1rem;
+    font-size: 1rem; /* 기존 0.9rem에서 1rem으로 원상 복구 */
   }
 `;
 
 const VoiceAICharacter = styled.div<{ $isListening: boolean }>`
-  width: 30vh;
-  height: 30vh;
+  width: 40vh; /* 기존 35vh에서 40vh로 키움 */
+  height: 40vh; /* 기존 35vh에서 40vh로 키움 */
   margin-left: auto;
   margin-right: auto;
   border-radius: 9999px;
@@ -120,8 +122,8 @@ const VoiceAICharacter = styled.div<{ $isListening: boolean }>`
   }
 
   @media (max-width: 768px) {
-    width: 25vh;
-    height: 25vh;
+    width: 35vh; /* 기존 30vh에서 35vh로 키움 */
+    height: 35vh; /* 기존 30vh에서 35vh로 키움 */
   }
 `;
 
@@ -190,6 +192,47 @@ const VoiceStatus = styled.p`
   }
 `;
 
+const BottomButtonBar = styled.div`
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  gap: 1.3rem;
+  background: transparent;
+  padding: 2rem 0 1.5rem 0;
+  z-index: 99;
+`;
+
+const ActionBtn = styled.button<{ $pdf?: boolean }>`
+  background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 1rem;
+  border: none; /* 그라데이션 배경을 위해 border 제거 */
+  font-size: 1.1rem;
+  padding: 0.8rem 2rem;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  &:hover {
+    background: linear-gradient(135deg, #6D28D9 0%, #5B21B6 100%);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
+    transform: translateY(-2px);
+  }
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+  }
+  &:disabled {
+    background: #4B5563;
+    color: #9CA3AF;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+`;
+
 const VoiceChattingPage: React.FC = () => {
   const {
     chatId,
@@ -199,12 +242,21 @@ const VoiceChattingPage: React.FC = () => {
     sendMessage,
     clearMessages,
     addMessage,
+    evaluateChat,
   } = useVoiceChatStore();
-  const { reportId } = useReportIdStore();
+  const { reportId, setChatCompleted } = useReportIdStore();
   const [isListening, setIsListening] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [currentRobotImage, setCurrentRobotImage] = useState(voiceChatRobot1);
+  const [displayedAiMessage, setDisplayedAiMessage] = useState(''); // 새로 추가된 상태
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
+  const intervalIdRef = useRef<number | null>(null); // 새로 추가된 useRef
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -213,29 +265,131 @@ const VoiceChattingPage: React.FC = () => {
     }
     return () => {
       clearMessages();
+      // 컴포넌트 언마운트 시 AudioContext 정리
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+      }
+      if (intervalIdRef.current) { // intervalIdRef.current 클리어 로직 추가
+        clearInterval(intervalIdRef.current);
+      }
     };
   }, [reportId, createChat, clearMessages]);
 
+  const startVolumeMonitoring = () => {
+    if (!audioPlayerRef.current) {
+      return;
+    }
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+
+    if (!analyserRef.current) {
+      const source = audioContextRef.current.createMediaElementSource(audioPlayerRef.current);
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      source.connect(analyserRef.current);
+      analyserRef.current.connect(audioContextRef.current.destination);
+      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
+    }
+
+    const monitorVolume = () => {
+      if (!analyserRef.current || !dataArrayRef.current) {
+        return;
+      }
+
+      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+      let sum = 0;
+      for (let i = 0; i < dataArrayRef.current.length; i++) {
+        sum += dataArrayRef.current[i];
+      }
+      let average = sum / dataArrayRef.current.length;
+
+      // 볼륨 임계값에 따라 이미지 변경
+      if (average > 25) { // 이 임계값은 조정이 필요할 수 있습니다.
+        setCurrentRobotImage(voiceChatRobot9);
+      } else {
+        setCurrentRobotImage(voiceChatRobot3);
+      }
+
+      animationFrameIdRef.current = requestAnimationFrame(monitorVolume);
+    };
+
+    monitorVolume();
+  };
+
+  const stopVolumeMonitoring = () => {
+    if (animationFrameIdRef.current) {
+      cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
+    }
+    setCurrentRobotImage(voiceChatRobot1); // 재생 종료 시 robot1으로 복귀
+  };
+
   const handleTextToSpeech = async (text: string) => {
     try {
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
+        intervalIdRef.current = null;
+      }
+      setCurrentRobotImage(voiceChatRobot3); // TTS 재생 시작 시 robot3으로 변경
+      setDisplayedAiMessage(''); // 새로운 TTS 시작 시 기존 메시지 초기화
       const audioBlob = await textToSpeech(text);
       const audioUrl = URL.createObjectURL(audioBlob);
       if (audioPlayerRef.current) {
         audioPlayerRef.current.src = audioUrl;
         audioPlayerRef.current.play();
-        // 음성 재생이 시작된 후에 AI 메시지를 화면에 추가
-        const aiMessage: ChatLogResponse = {
-          id: Math.floor(Math.random() * 1_000_000_000) + 1,
-          chat_id: chatId!,
-          role: 'ai',
-          message: text,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+
+        let charIndex = 0;
+        let intervalId: number | null = null;
+
+        audioPlayerRef.current.onloadedmetadata = () => {
+          const audioDuration = audioPlayerRef.current?.duration || 0;
+          const charDelay = text.length > 0 ? (audioDuration * 1000) / text.length : 0; // text.length가 0인 경우 처리
+
+          intervalId = setInterval(() => {
+            if (charIndex < text.length) {
+              const charToAdd = text[charIndex];
+              setDisplayedAiMessage((prev) => prev + charToAdd);
+              charIndex++;
+            } else {
+              if (intervalId) clearInterval(intervalId);
+            }
+          }, charDelay);
+          intervalIdRef.current = intervalId; // intervalIdRef에 저장
         };
-        addMessage(aiMessage);
+
+        audioPlayerRef.current.onplay = () => {
+          startVolumeMonitoring();
+        };
+
+        audioPlayerRef.current.onended = () => {
+          stopVolumeMonitoring();
+          if (intervalIdRef.current) clearInterval(intervalIdRef.current); // intervalIdRef.current 클리어
+          setDisplayedAiMessage(text); // 음성 재생이 끝나면 전체 텍스트 표시
+          // 음성 재생이 시작된 후에 AI 메시지를 화면에 추가
+          const aiMessage: ChatLogResponse = {
+            id: Math.floor(Math.random() * 1_000_000_000) + 1,
+            chat_id: chatId!,
+            role: 'ai',
+            message: text,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          addMessage(aiMessage);
+        };
+      } else {
+        console.warn("Audio player ref is null."); // 오디오 플레이어 ref가 null인 경우 경고
       }
     } catch (error) {
       console.error("Error with TTS:", error);
+      stopVolumeMonitoring(); // 오류 발생 시에도 모니터링 중지
+      if (intervalIdRef.current) clearInterval(intervalIdRef.current); // 오류 발생 시에도 intervalIdRef.current 클리어
+      setDisplayedAiMessage(text); // 오류 발생 시에도 전체 텍스트 표시
     }
   };
 
@@ -275,13 +429,14 @@ const VoiceChattingPage: React.FC = () => {
               chat_id: chatId,
               message: sttResponse.text,
             };
+            console.log("Sending message to AI:", chatRequest); // AI 메시지 전송 전 로그
             const aiResponseText = await sendMessage(chatRequest);
             if (aiResponseText) {
               handleTextToSpeech(aiResponseText);
             }
           }
         } catch (error) {
-          console.error("Error with STT:", error);
+          console.error("Error with STT or sending message:", error); // 에러 로그 수정
         }
 
         audioChunksRef.current = [];
@@ -310,6 +465,23 @@ const VoiceChattingPage: React.FC = () => {
     navigate(-1);
   };
 
+  const handleTerminateChat = async () => {
+    if (!chatId || !reportId || isEvaluating) return;
+
+    setIsEvaluating(true);
+    try {
+      await evaluateChat(chatId, reportId);
+      alert("채팅 평가가 완료되었습니다.");
+      setChatCompleted(true);
+      navigate('/main');
+    } catch (err) {
+      console.error("Failed to evaluate chat:", err);
+      alert("채팅 평가 중 오류가 발생했습니다.");
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
   return (
     <Background isSurveyActive={true}>
       <Header showLogoText={true} />
@@ -321,10 +493,10 @@ const VoiceChattingPage: React.FC = () => {
         </BackButton>
         <ContentWrapper>
           <QuestionText>
-            {messages.length > 0 ? messages[messages.length - 1].message : "안녕하세요! 대화 검사를 시작하겠습니다. 오늘 기분은 어떠신가요?"}
+            {displayedAiMessage || (messages.length > 0 ? messages[messages.length - 1].message : "안녕하세요! 대화 검사를 시작하겠습니다. 오늘 기분은 어떠신가요?")}
           </QuestionText>
           <VoiceAICharacter $isListening={isListening}>
-            <img src={voiceChatRobot} alt="Voice Chat Robot" />
+            <img src={currentRobotImage} alt="Voice Chat Robot" />
           </VoiceAICharacter>
           <MicButton $isListening={isListening} onClick={handleToggleListening} disabled={isLoading}>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -336,6 +508,11 @@ const VoiceChattingPage: React.FC = () => {
           </VoiceStatus>
         </ContentWrapper>
         <audio ref={audioPlayerRef} hidden />
+        <BottomButtonBar>
+          <ActionBtn onClick={handleTerminateChat} disabled={isEvaluating}>
+            {isEvaluating ? "제출 중..." : "채팅 종료"}
+          </ActionBtn>
+        </BottomButtonBar>
       </PageContainer>
     </Background>
   );

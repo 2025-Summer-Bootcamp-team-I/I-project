@@ -1,4 +1,3 @@
-#app/report/api.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -6,6 +5,9 @@ from . import schemas, service, crud
 from app.auth.utils import get_current_user
 from app.auth.models import User
 import logging
+from .models import RiskLevel
+from .service import determine_final_risk, generate_final_report_with_gpt
+from .crud import update_final_result_and_risk
 
 router = APIRouter()
 
@@ -18,7 +20,6 @@ def create_empty_report(
     """현재 로그인한 유저를 위한 빈 리포트를 생성합니다."""
     report_data = report.dict()
     
-    # Report 객체 생성 - risk 필드들을 기본값으로 설정
     from . import models
     new_report = models.Report(
         user_id=current_user.id,
@@ -35,7 +36,6 @@ def create_empty_report(
         judgment_score=report_data.get("judgment_score", 0),
         visual_score=report_data.get("visual_score", 0),
         language_score=report_data.get("language_score", 0),
-        # 빈 리포트이므로 NULL로 설정 (아직 테스트하지 않음)
         ad8_risk=None,
         drawing_risk=None,
         chat_risk=None,
@@ -44,12 +44,9 @@ def create_empty_report(
     db.add(new_report)
     db.commit()
     db.refresh(new_report)
-    
-    # 로그 추가
-    print(f"✅ 새 리포트 생성됨: ID={new_report.report_id}, User={current_user.id}")
-    logging.info(f"New report created: ID={new_report.report_id}, User={current_user.id}")
-    
-    # 명시적으로 SimpleReportResponse 형태로 반환
+
+    logging.info(f"✅ 새 리포트 생성됨: ID={new_report.report_id}, User={current_user.id}")
+
     return schemas.SimpleReportResponse(
         report_id=new_report.report_id,
         user_id=new_report.user_id
@@ -61,18 +58,41 @@ def get_report_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    리포트의 상세 정보를 조회합니다.
-    - 기본 리포트 정보 (점수, 소견, 위험도 등)
-    - Drawing 테스트 이미지 URL
-    - AD8 테스트 응답 상세 내역
-    """
     report = crud.get_report(db, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
     
-    # 자신의 리포트만 조회 가능
     if report.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Permission denied")
     
     return report
+
+@router.put("/reports/{report_id}/finalize", response_model=schemas.DetailedReportResponse)
+def finalize_report(
+    report_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    report = crud.get_report(db, report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    if report.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+    if not all([report.ad8_risk, report.drawing_risk, report.chat_risk]):
+        raise HTTPException(status_code=400, detail="모든 위험도 정보가 있어야 최종 판단이 가능합니다.")
+
+    final_risk = determine_final_risk(report.ad8_risk, report.drawing_risk, report.chat_risk)
+
+    final_result = generate_final_report_with_gpt(
+        ad8_score=report.ad8_score,
+        drawing_score=report.drawing_score,
+        chat_risk=report.chat_risk,
+        drawing_risk=report.drawing_risk,
+        ad8_risk=report.ad8_risk,
+        total_score=report.total_score
+    )
+
+    updated = update_final_result_and_risk(db, report_id, final_risk, final_result)
+    return updated

@@ -316,6 +316,11 @@ const MainPage = () => {
       }
       navigate('/ad8');
     } else if (testId === 'conversation') {
+      const { isChatCompleted } = useReportIdStore.getState();
+      if (isChatCompleted) {
+        alert("이미 대화 검사를 완료하셨습니다.");
+        return;
+      }
       navigate('/chatting-select');
     } else if (testId === 'drawing') {
       if (isDrawingCompleted) {

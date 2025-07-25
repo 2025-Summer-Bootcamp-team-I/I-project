@@ -1,6 +1,7 @@
 langchain==0.2.1
 langchain-community==0.2.1
 langchain-openai==0.1.11
+langchain-google-genai
 openai
 chromadb==0.4.24
 chromadb[duckdb]==0.4.24
@@ -10,6 +11,8 @@ sse-starlette
 python-multipart
 fastapi==0.116.0
 uvicorn==0.35.0
+uvloop
+httptools
 sqlalchemy==2.0.30
 pymysql==1.1.1
 prometheus-fastapi-instrumentator==7.1.0
@@ -33,3 +36,4 @@ tenacity
 python-dotenv
 requests
 celery==5.3.6
+google-generativeai

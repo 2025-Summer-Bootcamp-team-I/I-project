@@ -25,7 +25,7 @@ services:
     volumes:
       - ./backend:/app
     working_dir: /app
-    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--loop", "uvloop"]
     depends_on:
       mysql:
         condition: service_healthy
@@ -41,27 +41,27 @@ services:
       - CHROMA_DB_IMPL=duckdb+parquet
       - CHROMA_SERVER_DB_DIR=/data
 
-#처음에 크로마 db에 데이터 없을때만 실행
+  #처음에 크로마 db에 데이터 없을때만 실행
 
-#  pipeline:
-#    build:
-#      context: ./backend
-#      dockerfile: Dockerfile
-#    command:
-#      - python
-#      - -u
-#      - app/rag/pipeline.py
-#    env_file:
-#      - ./backend/.env
-#    environment:
-#      - OPENAI_API_KEY=${OPENAI_API_KEY}
-#      - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
-#      # - SCITE_API_KEY=${SCITE_API_KEY}   # 필요시 활성화
-#    depends_on:
-#      chroma-server:
-#        condition: service_started
-#    volumes:
-#      - chroma-data:/data
+  pipeline:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command:
+      - python
+      - -u
+      - app/rag/pipeline.py
+    env_file:
+      - ./backend/.env
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
+      # - SCITE_API_KEY=${SCITE_API_KEY}   # 필요시 활성화
+    depends_on:
+      chroma-server:
+        condition: service_started
+    volumes:
+      - chroma-data:/data
 
 
 
@@ -83,6 +83,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   # 🔒 모니터링 구성 일시 비활성화 (Prometheus, Grafana, cAdvisor)
   # prometheus:
