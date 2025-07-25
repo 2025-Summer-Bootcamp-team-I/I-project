@@ -473,7 +473,7 @@ const VoiceChattingPage: React.FC = () => {
       await evaluateChat(chatId, reportId);
       alert("채팅 평가가 완료되었습니다.");
       setChatCompleted(true);
-      navigate('/main');
+      navigate('/main', { state: { cardIndex: 1 } });
     } catch (err) {
       console.error("Failed to evaluate chat:", err);
       alert("채팅 평가 중 오류가 발생했습니다.");
