@@ -18,7 +18,7 @@ scrape_configs:
   # FastAPI 백엔드 메트릭
   - job_name: "fastapi"
     static_configs:
-      - targets: ["project-backend-1:8000"]
+      - targets: ["backend:8000"]
     metrics_path: "/metrics"
     scrape_interval: 10s
 
