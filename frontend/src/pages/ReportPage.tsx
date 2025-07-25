@@ -577,7 +577,6 @@ const ReportPage: React.FC = () => {
     chat_logs?: ChatLogResponse[];
   }
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const examResults: ExamResult[] = [
     {
       name: "설문 검사 (AD-8)",
@@ -596,7 +595,7 @@ const ReportPage: React.FC = () => {
       name: "그림 검사",
       summary: report.drawingtest_result,
       suggestion: report.drawingtest_result,
-      image: report.drawing_image_url ? `${API_BASE_URL}${report.drawing_image_url}` : undefined,
+      image: report.drawing_image_url || undefined,
       status: drawingStatus as '양호' | '경계' | '위험',
     },
   ];
