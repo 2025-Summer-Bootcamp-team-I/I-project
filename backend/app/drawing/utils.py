@@ -83,7 +83,7 @@ def delete_file_from_s3(s3_url: str) -> bool:
         # URL에서 버킷명과 키 추출
         # https://bucket-name.s3.region.amazonaws.com/path/to/file
         url_parts = s3_url.replace("https://", "").split("/")
-        bucket_name = url_parts[0].split(".")[0]
+        bucket_name = url_parts[0].split('.s3.')[0]
         s3_key = "/".join(url_parts[1:])
         
         # 파일 삭제
