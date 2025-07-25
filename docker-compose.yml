@@ -1,25 +1,149 @@
-version: "3.9"
-
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    working_dir: /app
-    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+  #   frontend:
+  #     build:
+  #       context: ./frontend
+  #       dockerfile: Dockerfile
+  #     ports:
+  #       - "3000:3000"
+  #     volumes:
+  #       - ./frontend:/app
+  #       - /app/node_modules
+  #     environment:
+  #       - NODE_ENV=development
+  #       - CHOKIDAR_USEPOLLING=true
+  #     working_dir: /app
+  #     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app
     working_dir: /app
-    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--loop", "uvloop"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  chroma-server:
+    image: ghcr.io/chroma-core/chroma:latest
+    container_name: chroma-server
+    ports:
+      - "8002:8000"
+    volumes:
+      - chroma-data:/data
+    environment:
+      - CHROMA_DB_IMPL=duckdb+parquet
+      - CHROMA_SERVER_DB_DIR=/data
+
+  #처음에 크로마 db에 데이터 없을때만 실행
+
+  pipeline:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command:
+      - python
+      - -u
+      - app/rag/pipeline.py
+    env_file:
+      - ./backend/.env
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - SEMANTIC_SCHOLAR_API_KEY=${SEMANTIC_SCHOLAR_API_KEY}
+      # - SCITE_API_KEY=${SCITE_API_KEY}   # 필요시 활성화
+    depends_on:
+      chroma-server:
+        condition: service_started
+    volumes:
+      - chroma-data:/data
+
+
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: iteam
+      MYSQL_PASSWORD: iteampass
+      MYSQL_DATABASE: iteamdb
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # 🔒 모니터링 구성 일시 비활성화 (Prometheus, Grafana, cAdvisor)
+  # prometheus:
+  #   image: prom/prometheus
+  #   container_name: prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  # grafana:
+  #   image: grafana/grafana
+  #   container_name: grafana
+  #   ports:
+  #     - "3001:3000"
+  #   volumes:
+  #     - grafana-storage:/var/lib/grafana
+
+  # cadvisor:
+  #   image: gcr.io/cadvisor/cadvisor:latest
+  #   container_name: cadvisor
+  #   ports:
+  #     - "8085:8080"
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:ro
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+
+#  redis:
+#    image: redis:latest
+#    container_name: redis
+#    restart: always
+#    ports:
+#      - "6379:6379"
+#
+#  rabbitmq:
+#    image: rabbitmq:3-management
+#    container_name: rabbitmq
+#    restart: always
+#    ports:
+#      - "5672:5672"     # AMQP 프로토콜 포트
+#      - "15672:15672"   # 웹 관리 UI 포트
+#
+#  celery-worker:
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile
+#    container_name: celery-worker
+#    command: celery -A app.worker worker --loglevel=info
+#    depends_on:
+#      - redis
+#      - rabbitmq
+#    env_file:
+#      - ./backend/.env
+#    volumes:
+#      - ./backend:/app
+#    working_dir: /app
+
+volumes:
+  mysql-data:
+  chroma-data:
+  grafana-storage:

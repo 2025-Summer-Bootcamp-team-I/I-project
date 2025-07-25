@@ -10,10 +10,23 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sentry/react": "7.120.3",
+    "@sentry/types": "7.120.3",
+    "@sentry/utils": "7.120.3",
+    "@tsparticles/engine": "^3.8.1",
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.8.1",
+    "@types/three": "^0.178.1",
     "axios": "^1.6.7",
+    "highcharts": "^12.3.0",
+    "highcharts-react-official": "^3.2.2",
+    "html2pdf.js": "^0.10.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "styled-components": "^6.1.8",
+    "react-router-dom": "^7.6.3",
+    "recharts": "^3.1.0",
+    "styled-components": "^6.1.19",
+    "three": "^0.178.0",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
