@@ -113,6 +113,15 @@ export const getChatLogs = async (reportId: number) => {
   return response.data;
 };
 
+/**
+ * chat_id로 해당 채팅의 모든 채팅 로그를 조회합니다.
+ * 백엔드에서 /chat/logs/{chat_id} 엔드포인트를 사용합니다.
+ */
+export const getChatLogsByChatId = async (chatId: number) => {
+  const response = await axiosInstance.get<ChatLogResponse[]>(`/chat/logs/${chatId}`);
+  return response.data;
+};
+
 // 채팅 스트리밍 API
 export const streamChat = async (chatRequest: ChatRequest, onData: (data: any) => void) => {
   const response = await fetch(`${axiosInstance.defaults.baseURL}/chat/stream`, {
@@ -152,6 +161,7 @@ export const streamChat = async (chatRequest: ChatRequest, onData: (data: any) =
           if (dataString) {
             try {
               const json = JSON.parse(dataString);
+              console.log('Received data:', json);
               onData(json);
             } catch (e) {
               console.error('Error parsing JSON:', e, 'Data:', dataString);
