@@ -16,7 +16,8 @@ import lightbulbBlueIcon from '../assets/imgs/lightbulb-blue.png'; // 양호
 import lightbulbRedIcon from '../assets/imgs/lightbulb-red.png'; // 주의
 import type { ChatLogResponse } from "../types/api";
 
-// Highcharts Point 타입 확장 
+import LoadingPage from "./LoadingPage"; // LoadingPage 임포트
+
 declare module 'highcharts' {
   interface PointOptionsObject {
     status?: '양호' | '경계' | '위험';
@@ -220,6 +221,7 @@ const ReportPage: React.FC = () => {
   const navigate = useNavigate();
   const { reportId: reportIdFromUrl } = useParams<{ reportId: string }>(); // URL에서 ID 추출
   const reportIdFromStore = useReportIdStore((state) => state.reportId);
+  const chatIdFromStore = useReportIdStore((state) => state.chatId);
   const reportId = Number(reportIdFromUrl) || reportIdFromStore;
   const pdfRef = useRef<HTMLDivElement>(null);
   const chartComponentRef = useRef<HighchartsReact.RefObject>(null);
@@ -232,8 +234,6 @@ const ReportPage: React.FC = () => {
   const [imgDimensions, setImgDimensions] = useState({ width: 0, height: 0 });
   const [offset, setOffset] = useState(0);
   const [chatLogs, setChatLogs] = useState<ChatLogResponse[] | null>(null);
-
-
 
 
   useEffect(() => {
@@ -253,8 +253,11 @@ const ReportPage: React.FC = () => {
         // 2. 최신 리포트 데이터 받아오기
         const reportData = await getReportResult(reportId);
         setReport(reportData);
-        // 3. chatLogs도 불러오기
+        console.log("ReportPage: report.drawing_image_url =", reportData.drawing_image_url);
+
+        // 3. chatLogs도 불러오기 (reportId 사용)
         const chatLogsData = await getChatLogs(reportId);
+        
         setChatLogs(chatLogsData || []);
       } catch (err) {
         setError("리포트를 불러오는 데 실패했습니다.");
@@ -265,7 +268,7 @@ const ReportPage: React.FC = () => {
     };
 
     fetchReport();
-  }, [reportId, setReport, navigate]); // 의존성 배열에 최종 reportId를 넣음
+  }, [reportId, setReport, navigate, chatIdFromStore]);
 
   // 히스토리 추가 useEffect
   useEffect(() => {
@@ -285,7 +288,7 @@ const ReportPage: React.FC = () => {
   useEffect(() => {
     if (report) {
       // ⭐️ 콘솔 로그 추가: report.final_risk 값을 확인합니다.
-      console.log("useEffect에서 확인한 report.final_risk 값:", report.final_risk);
+      
 
       const finalRisk = report.final_risk || '경계';
       
@@ -326,7 +329,7 @@ const ReportPage: React.FC = () => {
 
 
   // --- Early returns ---
-  if (isLoading) return <Container>리포트를 불러오는 중입니다...</Container>;
+  if (isLoading) return <LoadingPage />;
   if (error) return <Container>{error}</Container>;
   if (!report) return <Container>표시할 리포트 데이터가 없습니다.</Container>;
 

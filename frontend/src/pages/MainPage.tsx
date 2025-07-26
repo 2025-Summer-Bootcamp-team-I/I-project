@@ -327,10 +327,6 @@ const MainPage = () => {
         alert("이미 그림 검사를 완료하셨습니다.");
         return;
       }
-      if (!reportId) {
-        alert("리포트 ID를 찾을 수 없습니다. 설문 검사를 먼저 진행해주세요.");
-        return;
-      }
       navigate('/drawing');
     } else {
       navigate('/report');
