@@ -14,4 +14,6 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# 뉴렐릭으로 애플리케이션 실행 (공식 권장 방법)
+CMD ["newrelic-admin", "run-program", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+

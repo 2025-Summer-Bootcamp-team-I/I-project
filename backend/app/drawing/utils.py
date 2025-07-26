@@ -1,6 +1,7 @@
 import os
 import uuid
 import boto3
+import asyncio
 from botocore.exceptions import ClientError
 from fastapi import UploadFile
 from dotenv import load_dotenv
@@ -49,8 +50,10 @@ async def save_file_to_s3(file: UploadFile, subdir: str = "drawings") -> str:
     s3_key = f"{subdir}/{file_name}"
     
     try:
-        # 파일을 S3에 업로드
-        s3_client.upload_fileobj(
+
+        # 파일을 S3에 업로드 (비동기 처리)
+        await asyncio.to_thread(
+            s3_client.upload_fileobj,
             file.file,
             S3_BUCKET_NAME,
             s3_key,
@@ -69,7 +72,8 @@ async def save_file_to_s3(file: UploadFile, subdir: str = "drawings") -> str:
     except Exception as e:
         raise Exception(f"파일 업로드 중 오류 발생: {str(e)}")
 
-def delete_file_from_s3(s3_url: str) -> bool:
+
+async def delete_file_from_s3(s3_url: str) -> bool:
     """
     S3에서 파일을 삭제합니다.
     
@@ -86,8 +90,13 @@ def delete_file_from_s3(s3_url: str) -> bool:
         bucket_name = url_parts[0].split('.s3.')[0]
         s3_key = "/".join(url_parts[1:])
         
-        # 파일 삭제
-        s3_client.delete_object(Bucket=bucket_name, Key=s3_key)
+
+        # 파일 삭제 (비동기 처리)
+        await asyncio.to_thread(
+            s3_client.delete_object,
+            Bucket=bucket_name,
+            Key=s3_key
+        )
         return True
         
     except ClientError as e:

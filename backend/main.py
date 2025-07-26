@@ -6,6 +6,7 @@ import logging
 import traceback
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # .env 파일 로드
 load_dotenv()
@@ -62,6 +63,9 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Prometheus 메트릭 설정
+Instrumentator().instrument(app).expose(app)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
