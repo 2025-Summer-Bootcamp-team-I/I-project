@@ -1,0 +1,227 @@
+import axios from 'axios';
+import type {
+  LoginData,
+  RegisterData,
+  Message,
+  AD8Request,
+  AD8Result,
+  ReportResponse,
+  DrawingTestResult,
+  EmptyReportCreate,
+  SimpleReportResponse,
+  MyReportSummary,
+  CreateChatRequest,
+  CreateChatResponse,
+  ChatRequest,
+  ChatLogResponse,
+  EvaluateChatResponse,
+  ChatResponse,
+} from '@shared/types/api';
+
+// React Native용 메모리 스토리지 (임시)
+const memoryStorage: { [key: string]: string } = {};
+
+const storage = {
+  getItem: (key: string) => memoryStorage[key] || null,
+  setItem: (key: string, value: string) => { memoryStorage[key] = value; },
+  removeItem: (key: string) => { delete memoryStorage[key]; },
+};
+
+// axios 인스턴스 생성
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost:8000',
+});
+
+// 요청 인터셉터: 모든 요청에 access_token을 헤더에 추가
+axiosInstance.interceptors.request.use(
+  (config: any) => {
+    const token = storage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error: any) => {
+    return Promise.reject(error);
+  }
+);
+
+// 회원가입 API
+export const registerUser = async (userData: RegisterData) => {
+  const response = await axiosInstance.post<Message>('/user/signup', userData);
+  return response.data;
+};
+
+// 로그인 API: 로그인 성공 시 access_token을 스토리지에 저장
+export const loginUser = async (userData: LoginData) => {
+  const response = await axiosInstance.post('/user/login', userData);
+  if (response.data.access_token) {
+    storage.setItem('access_token', response.data.access_token);
+  }
+  return response.data;
+};
+
+// 로그아웃 API: 로그아웃 시 스토리지에서 access_token 제거
+export const logoutUser = async () => {
+  const response = await axiosInstance.post<Message>('/user/logout');
+  storage.removeItem('access_token');
+  return response.data;
+};
+
+// 사용자 계정 삭제 API
+export const deleteUser = async () => {
+  const response = await axiosInstance.delete<Message>('/user/delete');
+  storage.removeItem('access_token');
+  return response.data;
+};
+
+// AD8 설문 결과 제출 API
+export const submitAD8 = async (ad8Data: AD8Request) => {
+  const response = await axiosInstance.post<AD8Result>('/ad8', ad8Data);
+  return response.data;
+};
+
+// 빈 리포트 생성 API
+export const createEmptyReport = async (reportData: EmptyReportCreate) => {
+  const response = await axiosInstance.post<SimpleReportResponse>('/reports/empty', reportData);
+  return response.data;
+};
+
+// 드로잉 테스트 업로드 API (React Native에서는 파일 업로드 방식이 다를 수 있음)
+export const uploadDrawingTest = async (reportId: number, file: any) => {
+  const formData = new FormData();
+  formData.append('reportId', reportId.toString());
+  formData.append('file', file);
+
+  const response = await axiosInstance.post<DrawingTestResult>('/drawing', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+// 리포트 결과 조회 API
+export const getReportResult = async (reportId: number) => {
+  const response = await axiosInstance.get<ReportResponse>(`/reports/${reportId}`);
+  return response.data;
+};
+
+// 채팅 생성 API
+export const createChat = async (chatData: CreateChatRequest) => {
+  const response = await axiosInstance.post<CreateChatResponse>('/chat', chatData);
+  return response.data;
+};
+
+// 채팅 로그 조회 API
+export const getChatLogs = async (reportId: number) => {
+  const response = await axiosInstance.get<ChatLogResponse[]>(`/chat/${reportId}/logs`);
+  return response.data;
+};
+
+// 채팅 ID로 로그 조회 API
+export const getChatLogsByChatId = async (chatId: number) => {
+  const response = await axiosInstance.get<ChatLogResponse[]>(`/chat/logs/${chatId}`);
+  return response.data;
+};
+
+// 스트림 채팅 API (React Native에서는 다르게 구현될 수 있음)
+export const streamChat = async (chatRequest: ChatRequest, onData: (data: any) => void) => {
+  try {
+    const response = await fetch('http://localhost:8000/chat/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${storage.getItem('access_token')}`,
+      },
+      body: JSON.stringify(chatRequest),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Response body is null');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') {
+            return;
+          }
+          try {
+            const parsed = JSON.parse(data);
+            onData(parsed);
+          } catch (e) {
+            console.error('Failed to parse SSE data:', e);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Stream chat error:', error);
+    throw error;
+  }
+};
+
+// 채팅 평가 API
+export const evaluateChat = async (chatId: number, reportId: number) => {
+  const response = await axiosInstance.post<EvaluateChatResponse>('/chat/evaluate', {
+    chat_id: chatId,
+    report_id: reportId,
+  });
+  return response.data;
+};
+
+// 리포트 최종화 API
+export const finalizeReport = async (reportId: number) => {
+  const response = await axiosInstance.post<ReportResponse>(`/reports/${reportId}/finalize`);
+  return response.data;
+};
+
+// 음성-텍스트 변환 API (React Native에서는 파일 처리 방식이 다를 수 있음)
+export const speechToText = async (file: any) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await axiosInstance.post('/trans/stt', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+// 텍스트-음성 변환 API
+export const textToSpeech = async (text: string): Promise<Blob> => {
+  const response = await axiosInstance.post('/trans/tts', { text }, {
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+// 채팅 요청 전송 API
+export const sendChatRequest = async (chatRequest: ChatRequest) => {
+  const response = await axiosInstance.post<ChatResponse>('/chat/send', chatRequest);
+  return response.data;
+};
+
+// 내 리포트 목록 조회 API
+export const getMyReports = async () => {
+  const response = await axiosInstance.get<MyReportSummary[]>('/reports/my');
+  return response.data;
+}; 
