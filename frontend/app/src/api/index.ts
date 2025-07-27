@@ -17,15 +17,7 @@ import type {
   EvaluateChatResponse,
   ChatResponse,
 } from '@shared/types/api';
-
-// React Native용 메모리 스토리지 (임시)
-const memoryStorage: { [key: string]: string } = {};
-
-const storage = {
-  getItem: (key: string) => memoryStorage[key] || null,
-  setItem: (key: string, value: string) => { memoryStorage[key] = value; },
-  removeItem: (key: string) => { delete memoryStorage[key]; },
-};
+import { storage } from '../store/reportHistoryStore';
 
 // axios 인스턴스 생성
 const axiosInstance = axios.create({
@@ -52,26 +44,21 @@ export const registerUser = async (userData: RegisterData) => {
   return response.data;
 };
 
-// 로그인 API: 로그인 성공 시 access_token을 스토리지에 저장
+// 로그인 API: 로그인 성공 시 access_token을 반환 (상태 관리는 호출하는 쪽에서 처리)
 export const loginUser = async (userData: LoginData) => {
   const response = await axiosInstance.post('/user/login', userData);
-  if (response.data.access_token) {
-    storage.setItem('access_token', response.data.access_token);
-  }
   return response.data;
 };
 
-// 로그아웃 API: 로그아웃 시 스토리지에서 access_token 제거
+// 로그아웃 API: 로그아웃 요청만 처리 (상태 관리는 호출하는 쪽에서 처리)
 export const logoutUser = async () => {
   const response = await axiosInstance.post<Message>('/user/logout');
-  storage.removeItem('access_token');
   return response.data;
 };
 
-// 사용자 계정 삭제 API
+// 사용자 계정 삭제 API: 삭제 요청만 처리 (상태 관리는 호출하는 쪽에서 처리)
 export const deleteUser = async () => {
   const response = await axiosInstance.delete<Message>('/user/delete');
-  storage.removeItem('access_token');
   return response.data;
 };
 
@@ -220,8 +207,13 @@ export const sendChatRequest = async (chatRequest: ChatRequest) => {
   return response.data;
 };
 
-// 내 리포트 목록 조회 API
+// 마이페이지 - 사용자의 모든 리포트 목록 조회 API
 export const getMyReports = async () => {
-  const response = await axiosInstance.get<MyReportSummary[]>('/reports/my');
-  return response.data;
+  try {
+    const response = await axiosInstance.get<MyReportSummary[]>('/mypage/reports');
+    return response.data;
+  } catch (error) {
+    console.error('Error getting my reports:', error);
+    throw error;
+  }
 }; 
