@@ -1,27 +1,45 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Animated,
   Dimensions,
+  Alert,
+  PanResponder,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
-import { colors, spacing, fontSize, borderRadius, commonStyles } from '../AppStyle';
+import { colors, spacing, fontSize, borderRadius, shadows } from '../AppStyle';
+import { useReportIdStore } from '../store/reportIdStore';
+import Svg, { Path, Circle } from 'react-native-svg';
 
 type DrawingPageNavigationProp = StackNavigationProp<RootStackParamList, 'Drawing'>;
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface DrawingLine {
+  points: Point[];
+  color: string;
+  width: number;
+}
 
 export default function DrawingPage() {
   const navigation = useNavigation<DrawingPageNavigationProp>();
-  const [currentStep, setCurrentStep] = useState(0);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [isDrawing, setIsDrawing] = useState(false);
-  const [drawingCompleted, setDrawingCompleted] = useState(false);
+  const [lastPos, setLastPos] = useState<Point | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [drawingLines, setDrawingLines] = useState<DrawingLine[]>([]);
+  const [currentLine, setCurrentLine] = useState<DrawingLine | null>(null);
+  
+  const { reportId, setDrawingCompleted } = useReportIdStore();
   
   // 애니메이션 값들
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -43,83 +61,120 @@ export default function DrawingPage() {
     ]).start();
   }, []);
 
-  const drawingTasks = [
-    {
-      id: 1,
-      title: '시계 그리기',
-      description: '3시 40분을 가리키는 시계를 그려주세요',
-      instruction: '원을 그리고, 숫자들을 배치한 후, 시침과 분침을 그려주세요.',
-    },
-    {
-      id: 2,
-      title: '집 그리기',
-      description: '간단한 집을 그려주세요',
-      instruction: '지붕, 벽, 문, 창문이 있는 집을 그려주세요.',
-    },
-    {
-      id: 3,
-      title: '나무 그리기',
-      description: '나무를 그려주세요',
-      instruction: '줄기와 잎이 있는 나무를 그려주세요.',
-    },
-  ];
+  const canvasSize = Math.min(screenWidth * 0.8, screenHeight * 0.5);
+  const centerX = canvasSize / 2;
+  const centerY = canvasSize / 2;
+  const clockRadius = canvasSize * 0.35;
 
-  const handleStartDrawing = () => {
+  // 시계판 그리기 (초기화)
+  const drawClockFace = () => {
+    setDrawingLines([]);
+    setCurrentLine(null);
+  };
+
+  useEffect(() => {
+    drawClockFace();
+  }, []);
+
+  const handleStart = (x: number, y: number) => {
     setIsDrawing(true);
+    setLastPos({ x, y });
+    const newLine: DrawingLine = {
+      points: [{ x, y }],
+      color: "#FFFFFF",
+      width: 3,
+    };
+    setCurrentLine(newLine);
   };
 
-  const handleCompleteDrawing = () => {
-    setIsDrawing(false);
-    setDrawingCompleted(true);
+  const handleMove = (x: number, y: number) => {
+    if (!isDrawing || !lastPos || !currentLine) return;
     
-    Alert.alert(
-      '그리기 완료',
-      '그리기가 완료되었습니다. 다음 단계로 진행하시겠습니까?',
-      [
-        {
-          text: '다시 그리기',
-          onPress: () => {
-            setDrawingCompleted(false);
-          },
-        },
-        {
-          text: '다음',
-          onPress: () => {
-            if (currentStep < drawingTasks.length - 1) {
-              setCurrentStep(currentStep + 1);
-              setDrawingCompleted(false);
-            } else {
-              handleFinishAllDrawings();
-            }
-          },
-        },
-      ]
-    );
+    const updatedLine = {
+      ...currentLine,
+      points: [...currentLine.points, { x, y }],
+    };
+    setCurrentLine(updatedLine);
+    setLastPos({ x, y });
   };
 
-  const handleFinishAllDrawings = () => {
-    Alert.alert(
-      '검사 완료',
-      '모든 그리기 검사가 완료되었습니다.',
-      [
-        {
-          text: '확인',
-          onPress: () => navigation.navigate('Main'),
-        },
-      ]
-    );
+  const handleEnd = () => {
+    if (currentLine) {
+      setDrawingLines([...drawingLines, currentLine]);
+      setCurrentLine(null);
+    }
+    setIsDrawing(false);
+    setLastPos(null);
   };
 
-  const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-      setDrawingCompleted(false);
-    } else {
-      navigation.goBack();
+  const handleClear = () => {
+    drawClockFace();
+  };
+
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+
+    if (!reportId) {
+      Alert.alert("오류", "리포트 ID를 찾을 수 없습니다. AD8 검사를 먼저 진행해주세요.");
+      navigation.navigate('Main' as any);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // 여기서 실제로는 그림 데이터를 서버로 전송해야 합니다
+      // 현재는 시뮬레이션으로 처리
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setDrawingCompleted(true);
+      Alert.alert("성공", "그림이 성공적으로 제출되었습니다.");
+      navigation.navigate('Main' as any);
+    } catch (error) {
+      console.error("Error uploading drawing:", error);
+      Alert.alert("오류", "그림 제출 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const currentTask = drawingTasks[currentStep];
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      handleStart(locationX, locationY);
+    },
+    onPanResponderMove: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      handleMove(locationX, locationY);
+    },
+    onPanResponderRelease: () => {
+      handleEnd();
+    },
+  });
+
+  const renderDrawingLines = () => {
+    const allLines = [...drawingLines];
+    if (currentLine) {
+      allLines.push(currentLine);
+    }
+
+    return allLines.map((line, lineIndex) => (
+      <Svg key={lineIndex} width={canvasSize} height={canvasSize} style={StyleSheet.absoluteFill}>
+        <Path
+          d={line.points.map((point, index) => 
+            index === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`
+          ).join(' ')}
+          stroke={line.color}
+          strokeWidth={line.width}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    ));
+  };
 
   return (
     <View style={styles.container}>
@@ -138,83 +193,76 @@ export default function DrawingPage() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={handleBack}
+            onPress={() => navigation.navigate('Main' as any)}
             activeOpacity={0.8}
           >
-            <Text style={styles.backButtonText}>‹</Text>
+            <Svg width={24} height={24} fill="none" stroke="#fff" viewBox="0 0 24 24">
+              <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </Svg>
           </TouchableOpacity>
           
           <Text style={styles.title}>그림 검사</Text>
           <Text style={styles.subtitle}>
-            시각적 인지 기능을 평가합니다
+            주어진 시계판 위에 <Text style={styles.highlight}>11시 10분</Text>을 그려주세요.
           </Text>
         </View>
 
-        {/* 진행률 */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <Animated.View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${((currentStep + 1) / drawingTasks.length) * 100}%`,
-                },
-              ]}
-            />
+        {/* 캔버스 */}
+        <View style={styles.canvasWrapper}>
+          <View
+            style={[
+              styles.canvas,
+              {
+                width: canvasSize,
+                height: canvasSize,
+              },
+            ]}
+            {...panResponder.panHandlers}
+          >
+            {/* 시계 외곽선 */}
+            <Svg width={canvasSize} height={canvasSize} style={StyleSheet.absoluteFill}>
+              <Circle
+                cx={centerX}
+                cy={centerY}
+                r={clockRadius}
+                stroke="rgba(255,255,255,0.3)"
+                strokeWidth={2}
+                fill="none"
+              />
+              <Circle
+                cx={centerX}
+                cy={centerY}
+                r={6}
+                fill="rgba(255,255,255,0.5)"
+              />
+            </Svg>
+            
+            {/* 그려진 선들 */}
+            {renderDrawingLines()}
           </View>
-          <Text style={styles.progressText}>
-            {currentStep + 1} / {drawingTasks.length}
-          </Text>
         </View>
 
-        {/* 현재 작업 */}
-        <View style={styles.taskContainer}>
-          <Text style={styles.taskTitle}>{currentTask.title}</Text>
-          <Text style={styles.taskDescription}>{currentTask.description}</Text>
-          <Text style={styles.taskInstruction}>{currentTask.instruction}</Text>
-        </View>
-
-        {/* 그리기 영역 */}
-        <View style={styles.drawingArea}>
-          {!isDrawing ? (
-            <TouchableOpacity
-              style={styles.startButton}
-              onPress={handleStartDrawing}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.startButtonText}>그리기 시작</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.drawingCanvas}>
-              <Text style={styles.drawingPlaceholder}>
-                그리기 영역
-              </Text>
-              <Text style={styles.drawingHint}>
-                여기에 {currentTask.title}을 그려주세요
-              </Text>
-              
-              <TouchableOpacity
-                style={styles.completeButton}
-                onPress={handleCompleteDrawing}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.completeButtonText}>완료</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* 안내 */}
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>
-            • 정확성보다는 전체적인 구조를 그려주세요
-          </Text>
-          <Text style={styles.infoText}>
-            • 시간 제한은 없으니 천천히 그려주세요
-          </Text>
-          <Text style={styles.infoText}>
-            • 완료 후 다음 단계로 진행할 수 있습니다
-          </Text>
+        {/* 컨트롤 버튼들 */}
+        <View style={styles.controls}>
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={handleClear}
+            disabled={isSubmitting}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.clearButtonText}>모두 지우기</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.submitButton}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.submitButtonText}>
+              {isSubmitting ? "제출 중..." : "제출하기"}
+            </Text>
+          </TouchableOpacity>
         </View>
       </Animated.View>
     </View>
@@ -240,195 +288,100 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.md,
     paddingTop: spacing.xxl,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   
   header: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   
   backButton: {
     position: 'absolute',
-    top: 0,
-    left: 0,
+    top: -spacing.xl,
+    left: -spacing.md,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(17, 24, 39, 0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  
-  backButtonText: {
-    fontSize: 24,
-    color: colors.text,
-    fontWeight: '600',
+    zIndex: 110,
   },
   
   title: {
     fontSize: fontSize.xxxl,
     fontWeight: '700',
-    color: colors.text,
+    color: '#7fcebb',
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   
   subtitle: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  
-  progressContainer: {
-    marginBottom: spacing.lg,
-  },
-  
-  progressBar: {
-    width: '100%',
-    height: 8,
-    backgroundColor: colors.card,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: spacing.sm,
-  },
-  
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 4,
-  },
-  
-  progressText: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  
-  taskContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  
-  taskTitle: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  
-  taskDescription: {
     fontSize: fontSize.lg,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  
-  taskInstruction: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
-  
-  drawingArea: {
-    flex: 1,
-    marginBottom: spacing.lg,
-  },
-  
-  startButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  
-  startButtonText: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  
-  drawingCanvas: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: borderRadius.lg,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
-  
-  drawingPlaceholder: {
-    fontSize: fontSize.xxl,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
-  
-  drawingHint: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
+    color: '#7fcebb',
     textAlign: 'center',
+  },
+  
+  highlight: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: fontSize.xl,
+  },
+  
+  canvasWrapper: {
+    width: '100%',
+    alignItems: 'center',
     marginBottom: spacing.xl,
   },
   
-  completeButton: {
-    backgroundColor: colors.success,
-    borderRadius: borderRadius.md,
+  canvas: {
+    backgroundColor: '#0f172a',
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    ...shadows.large,
+  },
+  
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.lg,
+    flexWrap: 'wrap',
+    marginTop: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  
+  clearButton: {
+    backgroundColor: '#334155',
+    borderRadius: borderRadius.round,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
-    shadowColor: colors.success,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    ...shadows.medium,
   },
   
-  completeButtonText: {
+  clearButtonText: {
     fontSize: fontSize.md,
-    fontWeight: '600',
-    color: colors.text,
+    fontWeight: '700',
+    color: '#fff',
   },
   
-  infoContainer: {
-    padding: spacing.md,
-    backgroundColor: 'rgba(106, 13, 173, 0.05)',
-    borderRadius: borderRadius.md,
+  submitButton: {
+    backgroundColor: '#7fcebb',
+    borderRadius: borderRadius.round,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    ...shadows.medium,
   },
   
-  infoText: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+  submitButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+    color: '#fff',
   },
 });
   
