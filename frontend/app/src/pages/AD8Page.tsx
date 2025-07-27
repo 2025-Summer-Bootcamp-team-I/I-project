@@ -15,6 +15,7 @@ import { RootStackParamList } from '../App';
 import { colors, spacing, fontSize, borderRadius } from '../AppStyle';
 import { submitAD8 } from '../api';
 import { useReportIdStore } from '../store/reportIdStore';
+import useAD8TestStore from '../../src/store/testStore';
 import Svg, { Path } from 'react-native-svg';
 
 type AD8PageNavigationProp = StackNavigationProp<RootStackParamList, 'AD8'>;
@@ -25,6 +26,7 @@ export default function AD8Page() {
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [showResult, setShowResult] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { setResponse, completeTest } = useAD8TestStore();
   const { reportId, setAD8Completed } = useReportIdStore();
 
   const questions = [
@@ -44,9 +46,12 @@ export default function AD8Page() {
     const newAnswers = [...answers, answer];
     setAnswers(newAnswers);
 
+    setResponse(currentQuestionIndex + 1, answer);
+
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
+      completeTest();
       setIsSubmitting(true);
       try {
         if (!reportId) {
@@ -55,12 +60,12 @@ export default function AD8Page() {
           return;
         }
 
+        // 최신 responses 상태를 직접 가져옴
+        const latestResponses = useAD8TestStore.getState().responses;
+
         const ad8Data = {
           report_id: reportId,
-          responses: newAnswers.map((answer, index) => ({
-            questionNo: index + 1,
-            isCorrect: answer
-          }))
+          responses: latestResponses.map((r: any) => ({ questionNo: r.question_no, isCorrect: r.is_correct }))
         };
 
         await submitAD8(ad8Data);
@@ -81,30 +86,15 @@ export default function AD8Page() {
       {/* 배경 */}
       <View style={styles.background} />
       
-      {/* 헤더 */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.navigate('Main' as any)}
-        >
-          <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
-            <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
-          </Svg>
-        </TouchableOpacity>
-        <View style={styles.logoContainer}>
-                          <Image
-          source={require('../../../shared/assets/imgs/logo.png')}
-          style={styles.logoImage}
-        />
-          <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.myPageButton}
-          onPress={() => navigation.navigate('MyPage' as any)}
-        >
-          <Text style={styles.myPageButtonText}>마이페이지</Text>
-        </TouchableOpacity>
-      </View>
+             {/* 뒤로가기 버튼만 */}
+       <TouchableOpacity
+         style={styles.backButton}
+         onPress={() => navigation.navigate('Main' as any)}
+       >
+         <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
+           <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
+         </Svg>
+       </TouchableOpacity>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <Text style={styles.title}>AD-8 설문 검사</Text>
@@ -191,13 +181,17 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   
-  backButton: {
-    backgroundColor: 'rgba(17, 24, 39, 0.82)',
-    borderRadius: 20,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
+     backButton: {
+     position: 'absolute',
+     top: spacing.xl,
+     left: spacing.xl,
+     backgroundColor: 'rgba(17, 24, 39, 0.82)',
+     borderRadius: 20,
+     padding: spacing.sm,
+     borderWidth: 1,
+     borderColor: 'rgba(255, 255, 255, 0.1)',
+     zIndex: 100,
+   },
   
   logoContainer: {
     flexDirection: 'row',
@@ -238,12 +232,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   
-  contentContainer: {
-    paddingTop: spacing.xxl,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xl,
-    alignItems: 'center',
-  },
+     contentContainer: {
+     paddingTop: spacing.xl,
+     paddingHorizontal: spacing.xl,
+     paddingBottom: spacing.xl,
+     alignItems: 'center',
+   },
   
   title: {
     fontSize: fontSize.xxxl,
