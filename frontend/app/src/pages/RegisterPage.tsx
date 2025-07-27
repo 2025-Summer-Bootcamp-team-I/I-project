@@ -72,22 +72,7 @@ export default function RegisterPage() {
       {/* 배경 */}
       <View style={styles.background} />
       
-      {/* 별 배경 효과 */}
-      <View style={styles.starsContainer}>
-        {[...Array(50)].map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.star,
-              {
-                left: Math.random() * 100,
-                top: Math.random() * 100,
-                opacity: Math.random() * 0.8 + 0.2,
-              },
-            ]}
-          />
-        ))}
-      </View>
+
 
       {/* 헤더 */}
       <View style={styles.topHeader}>
@@ -194,21 +179,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  starsContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  
-  star: {
-    position: 'absolute',
-    width: 2,
-    height: 2,
-    backgroundColor: '#ffffff',
-    borderRadius: 1,
-  },
+
   
   topHeader: {
     flexDirection: 'row',
@@ -256,14 +227,15 @@ const styles = StyleSheet.create({
   
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl * 3,
   },
   
   formContainer: {
     backgroundColor: 'rgba(17, 24, 39, 0.6)',
     borderRadius: borderRadius.xl,
-    padding: spacing.xxl,
+    padding: spacing.md,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
     shadowColor: '#000',
@@ -277,7 +249,7 @@ const styles = StyleSheet.create({
   },
   
   title: {
-    fontSize: fontSize.xxxl,
+    fontSize: fontSize.xl,
     fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
@@ -285,29 +257,29 @@ const styles = StyleSheet.create({
   },
   
   subtitle: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.md,
   },
   
   inputContainer: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
   
   label: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
     fontWeight: '600',
   },
   
   input: {
     backgroundColor: '#1e293b',
     borderRadius: borderRadius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    fontSize: fontSize.md,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    fontSize: fontSize.sm,
     color: colors.text,
     borderWidth: 1,
     borderColor: '#334155',
@@ -316,9 +288,9 @@ const styles = StyleSheet.create({
   registerButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.round,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    marginTop: spacing.lg,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.sm,
     shadowColor: colors.primary,
     shadowOffset: {
       width: 0,
@@ -331,7 +303,7 @@ const styles = StyleSheet.create({
   
   registerButtonText: {
     color: colors.text,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -343,16 +315,16 @@ const styles = StyleSheet.create({
   loginLink: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: spacing.xl,
+    marginTop: spacing.md,
   },
   
   loginText: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.textSecondary,
   },
   
   loginButtonText: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.primary,
     fontWeight: '600',
   },
