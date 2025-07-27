@@ -9,13 +9,16 @@ import {
   Alert,
   PanResponder,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
 import { colors, spacing, fontSize, borderRadius, shadows } from '../AppStyle';
 import { useReportIdStore } from '../store/reportIdStore';
+import { uploadDrawingTest } from '../api';
 import Svg, { Path, Circle } from 'react-native-svg';
+import ViewShot from 'react-native-view-shot';
 
 type DrawingPageNavigationProp = StackNavigationProp<RootStackParamList, 'Drawing'>;
 
@@ -111,6 +114,8 @@ export default function DrawingPage() {
     drawClockFace();
   };
 
+  const canvasRef = useRef<ViewShot>(null);
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
@@ -123,10 +128,82 @@ export default function DrawingPage() {
     setIsSubmitting(true);
 
     try {
-      // 여기서 실제로는 그림 데이터를 서버로 전송해야 합니다
-      // 현재는 시뮬레이션으로 처리
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      let imageUri: string;
+
+      if (Platform.OS === 'web') {
+        // 웹 환경에서는 SVG를 Canvas로 변환하여 이미지 생성
+        console.log("웹 환경에서 SVG를 이미지로 변환 중...");
+        
+        // SVG 요소 찾기
+        const svgElement = document.querySelector('svg');
+        if (!svgElement) {
+          throw new Error("SVG 요소를 찾을 수 없습니다.");
+        }
+
+        // SVG를 문자열로 변환
+        const svgString = new XMLSerializer().serializeToString(svgElement);
+        const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+
+        // Canvas 생성 및 이미지 그리기
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error("Canvas context를 생성할 수 없습니다.");
+        }
+
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
+
+        // 배경색 설정
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+        // SVG 이미지 로드 및 그리기
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = svgUrl;
+        });
+
+        ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
+        URL.revokeObjectURL(svgUrl);
+
+        // Canvas를 Blob으로 변환
+        const blob = await new Promise<Blob>((resolve) => {
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+          }, 'image/png');
+        });
+
+                 // Blob을 File로 변환
+         const file = new File([blob], 'drawing.png', { type: 'image/png' });
+         
+         // 기존 uploadDrawingTest 함수 사용 (인증 처리 포함)
+         await uploadDrawingTest(reportId, file);
+        imageUri = URL.createObjectURL(blob);
+      } else {
+        // 모바일 환경에서는 ViewShot 사용
+        console.log("모바일 환경에서 ViewShot 사용 중...");
+        
+        if (canvasRef.current?.capture) {
+          imageUri = await canvasRef.current.capture();
+          
+          const formData = new FormData();
+          formData.append('file', {
+            uri: imageUri,
+            type: 'image/png',
+            name: 'drawing.png',
+          } as any);
+          
+          await uploadDrawingTest(reportId, formData);
+        } else {
+          throw new Error("캔버스를 찾을 수 없습니다.");
+        }
+      }
       
+      console.log("그림 제출 성공!", imageUri);
       setDrawingCompleted(true);
       Alert.alert("성공", "그림이 성공적으로 제출되었습니다.");
       navigation.navigate('Main' as any);
@@ -209,37 +286,39 @@ export default function DrawingPage() {
 
         {/* 캔버스 */}
         <View style={styles.canvasWrapper}>
-          <View
-            style={[
-              styles.canvas,
-              {
-                width: canvasSize,
-                height: canvasSize,
-              },
-            ]}
-            {...panResponder.panHandlers}
-          >
-            {/* 시계 외곽선 */}
-            <Svg width={canvasSize} height={canvasSize} style={StyleSheet.absoluteFill}>
-              <Circle
-                cx={centerX}
-                cy={centerY}
-                r={clockRadius}
-                stroke="rgba(255,255,255,0.3)"
-                strokeWidth={2}
-                fill="none"
-              />
-              <Circle
-                cx={centerX}
-                cy={centerY}
-                r={6}
-                fill="rgba(255,255,255,0.5)"
-              />
-            </Svg>
-            
-            {/* 그려진 선들 */}
-            {renderDrawingLines()}
-          </View>
+          <ViewShot ref={canvasRef} options={{ format: 'png', quality: 0.9 }}>
+            <View
+              style={[
+                styles.canvas,
+                {
+                  width: canvasSize,
+                  height: canvasSize,
+                },
+              ]}
+              {...panResponder.panHandlers}
+            >
+              {/* 시계 외곽선 */}
+              <Svg width={canvasSize} height={canvasSize} style={StyleSheet.absoluteFill}>
+                <Circle
+                  cx={centerX}
+                  cy={centerY}
+                  r={clockRadius}
+                  stroke="rgba(255,255,255,0.3)"
+                  strokeWidth={2}
+                  fill="none"
+                />
+                <Circle
+                  cx={centerX}
+                  cy={centerY}
+                  r={6}
+                  fill="rgba(255,255,255,0.5)"
+                />
+              </Svg>
+              
+              {/* 그려진 선들 */}
+              {renderDrawingLines()}
+            </View>
+          </ViewShot>
         </View>
 
         {/* 컨트롤 버튼들 */}
