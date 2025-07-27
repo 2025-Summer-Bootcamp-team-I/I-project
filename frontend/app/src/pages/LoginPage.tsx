@@ -15,6 +15,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
 import { colors, spacing, fontSize, borderRadius } from '../AppStyle';
 import { loginUser } from '../api';
+import { setAuthToken } from '../store/reportHistoryStore';
 import Svg, { Path } from 'react-native-svg';
 
 type LoginPageNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
@@ -35,7 +36,13 @@ export default function LoginPage() {
     try {
       const response = await loginUser({ email, password });
       console.log('로그인 성공:', response);
-      navigation.navigate('Main' as any);
+      
+      // 로그인 성공 시 토큰 저장
+      if (response.access_token) {
+        setAuthToken(response.access_token);
+      }
+      
+      navigation.navigate('Main');
     } catch (error) {
       console.error('로그인 오류:', error);
       Alert.alert('로그인 실패', '이메일과 비밀번호를 확인해주세요.');
@@ -45,7 +52,7 @@ export default function LoginPage() {
   };
 
   const handleRegister = () => {
-    navigation.navigate('Register' as any);
+    navigation.navigate('Register');
   };
 
   return (

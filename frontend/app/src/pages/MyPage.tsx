@@ -96,7 +96,7 @@ export default function MyPage() {
   };
 
   const handleViewReport = (reportId: number) => {
-    navigation.navigate('Report' as any, { reportId: reportId.toString() });
+    navigation.navigate('Report', { reportId: reportId.toString() });
   };
 
   // 로딩 중일 때
@@ -165,11 +165,11 @@ export default function MyPage() {
             <TouchableOpacity style={styles.retryButton} onPress={fetchMyReports}>
               <Text style={styles.retryButtonText}>다시 시도</Text>
             </TouchableOpacity>
-            {error.includes('로그인') && (
-              <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login' as any)}>
-                <Text style={styles.loginButtonText}>로그인</Text>
-              </TouchableOpacity>
-            )}
+                         {error.includes('로그인') && (
+               <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login')}>
+                 <Text style={styles.loginButtonText}>로그인</Text>
+               </TouchableOpacity>
+             )}
           </View>
         </View>
       </View>
@@ -218,11 +218,11 @@ export default function MyPage() {
           {myReports.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>아직 검사 기록이 없습니다.</Text>
-              <TouchableOpacity
-                style={styles.startButton}
-                onPress={() => navigation.navigate('Main' as any)}
-                activeOpacity={0.8}
-              >
+                             <TouchableOpacity
+                 style={styles.startButton}
+                 onPress={() => navigation.navigate('Main')}
+                 activeOpacity={0.8}
+               >
                 <Text style={styles.startButtonText}>검사 시작하기</Text>
               </TouchableOpacity>
             </View>
