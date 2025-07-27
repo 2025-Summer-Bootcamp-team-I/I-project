@@ -8,26 +8,60 @@ import {
   Alert,
   Animated,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
-import { colors, spacing, fontSize, borderRadius } from '../AppStyle';
-import Svg, { Path } from 'react-native-svg';
+import { colors, spacing, fontSize, borderRadius, shadows } from '../AppStyle';
+import Svg, { Path, Circle } from 'react-native-svg';
+import { useReportHistoryStore } from '../store/reportHistoryStore';
+import type { MyReportSummary } from '@shared/types/api';
 
 type MyPageNavigationProp = StackNavigationProp<RootStackParamList, 'MyPage'>;
 
+// 위험도에 따라 상태를 반환하는 함수
+const getRiskStatus = (risk?: '양호' | '경계' | '위험' | null) => {
+  if (!risk) return "unknown";
+  if (risk === "위험") return "danger";
+  if (risk === "경계") return "warning";
+  if (risk === "양호") return "good";
+  return "unknown";
+};
+
+// 전구 아이콘 컴포넌트
+const LightbulbIcon = ({ color }: { color: string }) => (
+  <Svg width="60" height="60" viewBox="0 0 72 72" fill="none">
+    <Path d="M36 5C24.954 5 16 13.954 16 25C16 32.379 20.621 38.796 27 42.154V48C27 50.209 28.791 52 31 52H41C43.209 52 45 50.209 45 48V42.154C51.379 38.796 56 32.379 56 25C56 13.954 47.046 5 36 5Z" fill={color} fillOpacity="0.3"/>
+    <Path d="M36 5C24.954 5 16 13.954 16 25C16 32.379 20.621 38.796 27 42.154V48C27 50.209 28.791 52 31 52H41C43.209 52 45 50.209 45 48V42.154C51.379 38.796 56 32.379 56 25C56 13.954 47.046 5 36 5Z" stroke={color} strokeWidth="2"/>
+    <Path d="M31 58H41C42.1046 58 43 58.8954 43 60V61H29V60C29 58.8954 29.8954 58 31 58Z" fill="#4A5568"/>
+    <Path d="M32 52H40V58H32V52Z" fill="#4A5568"/>
+  </Svg>
+);
+
+// 각 검사 아이콘 컴포넌트
+const TestIcon = ({ label, risk }: { label: string, risk?: '양호' | '경계' | '위험' | null }) => {
+  const status = getRiskStatus(risk);
+  const colorMap = {
+    danger: '#F87171', // Red-400
+    warning: '#FBBF24', // Amber-400
+    good: '#6EE7B7', // Teal-300
+    unknown: '#94A3B8', // Gray-400
+  };
+  const color = colorMap[status];
+
+  return (
+    <View style={styles.testIconContainer}>
+      <LightbulbIcon color={color} />
+      <Text style={styles.testIconLabel}>{label}</Text>
+      {risk && <Text style={[styles.testIconRisk, { color }]}>{risk}</Text>}
+    </View>
+  );
+};
+
 export default function MyPage() {
   const navigation = useNavigation<MyPageNavigationProp>();
-  const [userInfo, setUserInfo] = useState({
-    name: '사용자',
-    email: 'user@example.com',
-  });
-  const [testHistory, setTestHistory] = useState([
-    { id: 1, date: '2024-01-15', type: 'AD8 검사', result: '정상' },
-    { id: 2, date: '2024-01-10', type: '대화 검사', result: '정상' },
-    { id: 3, date: '2024-01-05', type: '그림 검사', result: '정상' },
-  ]);
+  const { myReports, isLoading, error, fetchMyReports } = useReportHistoryStore();
   
   // 애니메이션 값들
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -47,47 +81,100 @@ export default function MyPage() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
 
-  const handleLogout = () => {
-    Alert.alert(
-      '로그아웃',
-      '정말 로그아웃하시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '로그아웃',
-          style: 'destructive',
-          onPress: () => {
-            // 로그아웃 로직
-            navigation.navigate('Login' as any);
-          },
-        },
-      ]
+    // 리포트 목록 가져오기
+    fetchMyReports();
+  }, [fetchMyReports]);
+
+  // 날짜 문자열을 포맷팅하는 함수
+  const getFormattedDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const handleViewReport = (reportId: number) => {
+    navigation.navigate('Report' as any, { reportId: reportId.toString() });
+  };
+
+  // 로딩 중일 때
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.background} />
+        
+        {/* 헤더 */}
+        <View style={styles.topHeader}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
+              <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
+            </Svg>
+          </TouchableOpacity>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../../shared/assets/imgs/logo.png')}
+              style={styles.logoImage}
+            />
+            <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
+          </View>
+          <View style={styles.placeholder} />
+        </View>
+        
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>검사 기록을 불러오는 중...</Text>
+        </View>
+      </View>
     );
-  };
+  }
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      '계정 삭제',
-      '정말 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: () => {
-            // 계정 삭제 로직
-            navigation.navigate('Login' as any);
-          },
-        },
-      ]
+  // 에러가 있을 때
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.background} />
+        
+        {/* 헤더 */}
+        <View style={styles.topHeader}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
+              <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
+            </Svg>
+          </TouchableOpacity>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../../shared/assets/imgs/logo.png')}
+              style={styles.logoImage}
+            />
+            <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
+          </View>
+          <View style={styles.placeholder} />
+        </View>
+        
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <View style={styles.errorButtonContainer}>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchMyReports}>
+              <Text style={styles.retryButtonText}>다시 시도</Text>
+            </TouchableOpacity>
+            {error.includes('로그인') && (
+              <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login' as any)}>
+                <Text style={styles.loginButtonText}>로그인</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </View>
     );
-  };
-
-  const handleViewReport = (testId: number) => {
-    navigation.navigate('Report' as any, { reportId: testId.toString() });
-  };
+  }
 
   return (
     <View style={styles.container}>
@@ -104,10 +191,10 @@ export default function MyPage() {
           </Svg>
         </TouchableOpacity>
         <View style={styles.logoContainer}>
-                          <Image
-          source={require('../../../shared/assets/imgs/logo.png')}
-          style={styles.logoImage}
-        />
+          <Image
+            source={require('../../../shared/assets/imgs/logo.png')}
+            style={styles.logoImage}
+          />
           <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
         </View>
         <View style={styles.placeholder} />
@@ -125,80 +212,69 @@ export default function MyPage() {
         >
           {/* 메인 헤더 */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>마이페이지</Text>
-            <Text style={styles.headerSubtitle}>내 정보와 검사 기록</Text>
+            <Text style={styles.headerTitle}>나의 검사 기록</Text>
           </View>
 
-          {/* 사용자 정보 */}
-          <View style={styles.userInfoCard}>
-            <View style={styles.avatarContainer}>
-              <Text style={styles.avatar}>👤</Text>
-            </View>
-            <View style={styles.userDetails}>
-              <Text style={styles.userName}>{userInfo.name}</Text>
-              <Text style={styles.userEmail}>{userInfo.email}</Text>
-            </View>
-          </View>
-
-          {/* 검사 기록 */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>검사 기록</Text>
-            {testHistory.map((test) => (
+          {myReports.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>아직 검사 기록이 없습니다.</Text>
               <TouchableOpacity
-                key={test.id}
-                style={styles.historyItem}
-                onPress={() => handleViewReport(test.id)}
-                activeOpacity={0.7}
+                style={styles.startButton}
+                onPress={() => navigation.navigate('Main' as any)}
+                activeOpacity={0.8}
               >
-                <View style={styles.historyContent}>
-                  <Text style={styles.historyType}>{test.type}</Text>
-                  <Text style={styles.historyDate}>{test.date}</Text>
-                </View>
-                <View style={styles.historyResult}>
-                  <Text style={styles.resultText}>{test.result}</Text>
-                </View>
+                <Text style={styles.startButtonText}>검사 시작하기</Text>
               </TouchableOpacity>
-            ))}
-          </View>
+            </View>
+          ) : (
+            <View style={styles.reportList}>
+              {myReports.map((report: MyReportSummary) => {
+                const finalStatus = getRiskStatus(report.final_risk);
+                const statusText = {
+                  danger: "위험",
+                  warning: "경계",
+                  good: "양호",
+                  unknown: "미정",
+                };
 
-          {/* 설정 */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>설정</Text>
-            
-            <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-              <Text style={styles.settingText}>알림 설정</Text>
-              <Text style={styles.settingArrow}>›</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-              <Text style={styles.settingText}>개인정보 수정</Text>
-              <Text style={styles.settingArrow}>›</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-              <Text style={styles.settingText}>비밀번호 변경</Text>
-              <Text style={styles.settingArrow}>›</Text>
-            </TouchableOpacity>
-          </View>
+                return (
+                  <TouchableOpacity
+                    key={report.report_id}
+                    style={[styles.reportCard, { borderColor: finalStatus === 'danger' ? '#F87171' : finalStatus === 'warning' ? '#FBBF24' : finalStatus === 'good' ? '#6EE7B7' : '#94A3B8' }]}
+                    onPress={() => handleViewReport(report.report_id)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.reportHeader}>
+                      <Text style={styles.reportDate}>{getFormattedDate(report.created_at)}</Text>
+                      <View style={styles.finalResult}>
+                        <Text style={styles.finalResultLabel}>최종 결과</Text>
+                        <Text style={[styles.finalResultText, { color: finalStatus === 'danger' ? '#F87171' : finalStatus === 'warning' ? '#FBBF24' : finalStatus === 'good' ? '#6EE7B7' : '#94A3B8' }]}>
+                          {statusText[finalStatus]}
+                        </Text>
+                        {report.final_risk && (
+                          <Text style={styles.finalResultDetail}>{report.final_risk}</Text>
+                        )}
+                      </View>
+                    </View>
 
-          {/* 로그아웃 및 계정 삭제 */}
-          <View style={styles.section}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.logoutButton]}
-              onPress={handleLogout}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.logoutButtonText}>로그아웃</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.actionButton, styles.deleteButton]}
-              onPress={handleDeleteAccount}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.deleteButtonText}>계정 삭제</Text>
-            </TouchableOpacity>
-          </View>
+                    <View style={styles.testIconsContainer}>
+                      <TestIcon label="AD-8 검사" risk={report.ad8_risk} />
+                      <TestIcon label="대화 검사" risk={report.chat_risk} />
+                      <TestIcon label="그림 검사" risk={report.drawing_risk} />
+                    </View>
+                    
+                    <TouchableOpacity
+                      style={styles.viewButton}
+                      onPress={() => handleViewReport(report.report_id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.viewButtonText}>보고서 보기</Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </Animated.View>
       </ScrollView>
     </View>
@@ -285,179 +361,179 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   
-  headerSubtitle: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-  },
-  
-  userInfoCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  
-  avatarContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primary,
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    padding: spacing.xl,
   },
   
-  avatar: {
-    fontSize: 30,
-  },
-  
-  userDetails: {
-    flex: 1,
-  },
-  
-  userName: {
-    fontSize: fontSize.xl,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  
-  userEmail: {
-    fontSize: fontSize.sm,
+  loadingText: {
+    fontSize: fontSize.lg,
     color: colors.textSecondary,
+    marginTop: spacing.md,
   },
   
-  section: {
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  
+  errorText: {
+    fontSize: fontSize.lg,
+    color: colors.error,
+    textAlign: 'center',
     marginBottom: spacing.lg,
   },
   
-  sectionTitle: {
-    fontSize: fontSize.lg,
+  errorButtonContainer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  
+  retryButtonText: {
+    fontSize: fontSize.md,
     fontWeight: '600',
     color: colors.text,
+  },
+  
+  loginButton: {
+    backgroundColor: '#4299E1',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  
+  loginButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  
+  emptyContainer: {
+    alignItems: 'center',
+    padding: spacing.xl,
+    backgroundColor: 'rgba(30, 30, 45, 0.5)',
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.lg,
+  },
+  
+  emptyText: {
+    fontSize: fontSize.lg,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  
+  startButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  
+  startButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  
+  reportList: {
+    gap: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  
+  reportCard: {
+    backgroundColor: 'rgba(30, 41, 59, 0.7)',
+    borderWidth: 1,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    ...shadows.medium,
+  },
+  
+  reportHeader: {
+    marginBottom: spacing.lg,
+  },
+  
+  reportDate: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
     marginBottom: spacing.md,
   },
   
-  historyItem: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  finalResult: {
+    marginBottom: spacing.md,
   },
   
-  historyContent: {
-    flex: 1,
-  },
-  
-  historyType: {
+  finalResultLabel: {
     fontSize: fontSize.md,
-    fontWeight: '500',
-    color: colors.text,
+    color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
   
-  historyDate: {
+  finalResultText: {
+    fontSize: fontSize.xxxl,
+    fontWeight: 'bold',
+    marginBottom: spacing.xs,
+  },
+  
+  finalResultDetail: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
   },
   
-  historyResult: {
-    backgroundColor: colors.success,
-    borderRadius: borderRadius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  
-  resultText: {
-    fontSize: fontSize.xs,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  
-  settingItem: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+  testIconsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingVertical: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    marginBottom: spacing.lg,
   },
   
-  settingText: {
-    fontSize: fontSize.md,
-    color: colors.text,
+  testIconContainer: {
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   
-  settingArrow: {
-    fontSize: fontSize.lg,
+  testIconLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: '500',
     color: colors.textSecondary,
+    textAlign: 'center',
   },
   
-  actionButton: {
+  testIconRisk: {
+    fontSize: fontSize.xs,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  
+  viewButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.primary,
     borderRadius: borderRadius.md,
     padding: spacing.md,
     alignItems: 'center',
-    marginBottom: spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   
-  logoutButton: {
-    backgroundColor: colors.warning,
-  },
-  
-  logoutButtonText: {
+  viewButtonText: {
     fontSize: fontSize.md,
     fontWeight: '600',
-    color: colors.text,
-  },
-  
-  deleteButton: {
-    backgroundColor: colors.error,
-  },
-  
-  deleteButtonText: {
-    fontSize: fontSize.md,
-    fontWeight: '600',
-    color: colors.text,
+    color: colors.primary,
   },
 });
   
