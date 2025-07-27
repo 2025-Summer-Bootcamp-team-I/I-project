@@ -39,6 +39,7 @@ export default function InitPage() {
   const [interactionCompleted, setInteractionCompleted] = useState(false);
   const [sphereParticles, setSphereParticles] = useState<SphereParticle[]>([]);
   const animations = useRef<Animated.CompositeAnimation[]>([]);
+  const waveIntervalRef = useRef<number | null>(null);
   
   // 애니메이션 값들
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -174,7 +175,15 @@ export default function InitPage() {
     };
   }, [sphereParticles]);
 
-
+  // 컴포넌트 언마운트 시 interval 정리
+  useEffect(() => {
+    return () => {
+      if (waveIntervalRef.current) {
+        clearInterval(waveIntervalRef.current);
+        waveIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // 초기 애니메이션
@@ -258,47 +267,52 @@ export default function InitPage() {
 
       // 반복적인 물결 효과 함수
       const createWaveEffect = () => {
-        sphereParticles.forEach((particle, index) => {
-          // 크기 확대 애니메이션
-          const scaleUpAnimation = Animated.parallel([
-            Animated.timing(particle.scale, {
-              toValue: 3.0,
-              duration: 600,
-              useNativeDriver: true,
-            }),
-            Animated.timing(particle.opacity, {
-              toValue: 1.0,
-              duration: 400,
-              useNativeDriver: true,
-            }),
+        // 각 파티클의 애니메이션 시퀀스를 생성
+        const particleAnimations = sphereParticles.map((particle) => {
+          return Animated.sequence([
+            // 크기 확대 및 투명도 증가
+            Animated.parallel([
+              Animated.timing(particle.scale, {
+                toValue: 3.0,
+                duration: 600,
+                useNativeDriver: true,
+              }),
+              Animated.timing(particle.opacity, {
+                toValue: 1.0,
+                duration: 400,
+                useNativeDriver: true,
+              }),
+            ]),
+            // 원래 크기로 복원
+            Animated.parallel([
+              Animated.timing(particle.scale, {
+                toValue: Math.random() * 0.5 + 0.5,
+                duration: 800,
+                useNativeDriver: true,
+              }),
+              Animated.timing(particle.opacity, {
+                toValue: Math.random() * 0.6 + 0.4,
+                duration: 800,
+                useNativeDriver: true,
+              }),
+            ]),
           ]);
-
-          // 지연 시간을 다르게 하여 물결 효과 생성
-          setTimeout(() => {
-            scaleUpAnimation.start(() => {
-              // 원래 크기로 복원
-              Animated.parallel([
-                Animated.timing(particle.scale, {
-                  toValue: Math.random() * 0.5 + 0.5,
-                  duration: 800,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(particle.opacity, {
-                  toValue: Math.random() * 0.6 + 0.4,
-                  duration: 800,
-                  useNativeDriver: true,
-                }),
-              ]).start();
-            });
-          }, index * 8); // 각 파티클마다 8ms씩 지연 (물결 효과)
         });
+
+        // Animated.stagger를 사용하여 각 파티클 애니메이션을 8ms 간격으로 실행
+        Animated.stagger(8, particleAnimations).start();
       };
 
       // 첫 번째 물결 효과 시작
       createWaveEffect();
 
+      // 기존 interval이 있다면 정리
+      if (waveIntervalRef.current) {
+        clearInterval(waveIntervalRef.current);
+      }
+
       // 2초마다 반복적으로 물결 효과 생성 (무한 반복)
-      const waveInterval = setInterval(() => {
+      waveIntervalRef.current = setInterval(() => {
         createWaveEffect();
       }, 4000);
 
@@ -407,7 +421,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1,
+    zIndex: 2,
   },
 
   sphereContainer: {
@@ -416,7 +430,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     height: '100%',
-    zIndex: 0.5,
+    zIndex: 1,
   },
 
   sphereParticle: {
