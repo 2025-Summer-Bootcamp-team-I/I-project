@@ -1,20 +1,20 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { GLView } from 'expo-gl';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, PixelRatio } from 'react-native';
+import { GLView, ExpoWebGLRenderingContext } from 'expo-gl';
 import { Renderer } from 'expo-three';
 import * as THREE from 'three';
 import styled from 'styled-components/native';
 
 export default function InitBackground() {
   // This will hold the animation frame request ID
-  let animationFrameId: number;
+  const animationFrameId = useRef<number | null>(null);
 
   // The useEffect hook is used here for cleanup when the component unmounts
   useEffect(() => {
     // The returned function will be called on component unmount
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
       }
     };
   }, []);
@@ -22,9 +22,9 @@ export default function InitBackground() {
   /**
    * This function is called once the GLView's context is created.
    * It's the entry point for all our three.js logic.
-   * @param {any} gl - The WebGL rendering context provided by expo-gl
+   * @param {ExpoWebGLRenderingContext} gl - The WebGL rendering context provided by expo-gl
    */
-  const onContextCreate = async (gl: any) => {
+  const onContextCreate = (gl: ExpoWebGLRenderingContext) => {
     // 1. Scene, Camera, and Renderer setup
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0c0a1a); // Set background color
@@ -40,7 +40,7 @@ export default function InitBackground() {
     // Use the Renderer from expo-three
     const renderer = new Renderer({ gl });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(PixelRatio.get()); // Use PixelRatio from React Native
 
     // 2. Particle creation (this logic is identical to your web version)
     const particleCount = 5000;
@@ -72,7 +72,7 @@ export default function InitBackground() {
     // 3. Animation loop
     const animate = () => {
       // Schedule the next frame
-      animationFrameId = requestAnimationFrame(animate);
+      animationFrameId.current = requestAnimationFrame(animate);
 
       // Animate particles
       particles.rotation.x += 0.0001;
