@@ -6,218 +6,198 @@ import {
   StyleSheet,
   Dimensions,
   Animated,
+  PanResponder,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../App";
-import { colors, spacing, fontSize, borderRadius, commonStyles } from "../AppStyle";
-import InitBackground from "../components/AppinitBackgrounds";
+import { colors, spacing, fontSize, borderRadius } from "../AppStyle";
+import InitBackground from "../components/AppinitBackground";
 
 type InitPageNavigationProp = StackNavigationProp<RootStackParamList, "Init">;
 
-interface SphereParticle {
+// 파티클의 3D 위치와 애니메이션 값을 관리하는 인터페이스
+interface BrainParticle {
   id: number;
-  x: Animated.Value;
-  y: Animated.Value;
-  opacity: Animated.Value;
-  scale: Animated.Value;
-  originalX: number;
-  originalY: number;
-  originalZ: number;
+  originalPos: { x: number; y: number; z: number };
+  originalRadius: number;
+  color: string;
+  // 애니메이션 값들
+  animTranslate: Animated.ValueXY; // 화면상 2D 위치
+  animScale: Animated.Value;       // 깊이감 및 크기 변화
+  animOpacity: Animated.Value;     // 투명도
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+// 3D -> 2D 투영을 위한 상수
+const PERSPECTIVE = screenWidth * 1.2; 
+const Z_SCALE = 15; // 파티클의 Z 위치에 따른 크기 조절
 
 /**
- * InitPage 컴포넌트 - 온보딩 페이지
- * 
- * React Native 스타일로 변환된 앱 시작 페이지입니다.
- * 사용자의 터치에 반응하고, 애니메이션 효과와 함께 시작 버튼을 보여줍니다.
+ * AppInitPage 컴포넌트 - 온보딩 페이지 (웹 버전 파티클 효과 적용)
+ * * 웹 버전의 Three.js 뇌 파티클 효과를 React Native Animated API로 구현합니다.
+ * 3D 회전, 깊이감, 터치 인터랙션, 파도 효과 등을 시뮬레이션합니다.
  */
-export default function InitPage() {
+export default function AppInitPage() {
   const navigation = useNavigation<InitPageNavigationProp>();
   const [interactionCompleted, setInteractionCompleted] = useState(false);
-  const [sphereParticles, setSphereParticles] = useState<SphereParticle[]>([]);
-  const animations = useRef<Animated.CompositeAnimation[]>([]);
-  const waveIntervalRef = useRef<number | null>(null);
-  
-  // 애니메이션 값들
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [particles, setParticles] = useState<BrainParticle[]>([]);
 
-  const { width, height } = Dimensions.get('window');
+  // 애니메이션 및 인터랙션 상태를 관리하는 Ref
+  const animationFrameId = useRef<number | null>(null);
+  const elapsedTime = useRef(0);
+  const touchPos = useRef({ x: -1000, y: -1000 }).current; // 터치 위치 (애니메이션 불필요)
 
-  // 구 표면에 균등하게 점을 배치하는 함수
-  const generateSpherePoints = (count: number, radius: number) => {
-    const points: { x: number; y: number; z: number }[] = [];
-    const phi = Math.PI * (3 - Math.sqrt(5)); // 황금각
+  // UI 등장 애니메이션
+  const uiFadeAnim = useRef(new Animated.Value(0)).current;
+  const uiSlideAnim = useRef(new Animated.Value(20)).current;
+  const promptPulseAnim = useRef(new Animated.Value(1)).current;
 
-    for (let i = 0; i < count; i++) {
-      const y = 1 - (i / (count - 1)) * 2; // y goes from 1 to -1
-      const radius_at_y = Math.sqrt(1 - y * y); // radius at y
-      const theta = phi * i; // golden angle increment
+  // 터치 입력을 감지하는 PanResponder
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (evt, gestureState) => {
+        if (!interactionCompleted) {
+          touchPos.x = gestureState.moveX;
+          touchPos.y = gestureState.moveY;
+        }
+      },
+      onPanResponderRelease: () => {
+        // 터치가 끝나면 터치 위치를 화면 밖으로 이동시켜 효과를 제거
+        touchPos.x = -1000;
+        touchPos.y = -1000;
+      },
+    })
+  ).current;
 
-      const x = Math.cos(theta) * radius_at_y;
-      const z = Math.sin(theta) * radius_at_y;
+  // 1. 파티클 생성 (웹 버전 로직 기반)
+  useEffect(() => {
+    const particleCount = 1800; // 파티클 개수 (모바일 환경에 맞게 조절)
+    const newParticles: BrainParticle[] = [];
+    
+    // 웹 버전과 동일한 색상 (보라색 -> 파란색)
+    const colorInside = { r: 106, g: 13, b: 173 };   // #6a0dad
+    const colorOutside = { r: 0, g: 119, b: 255 };  // #0077ff
 
-      points.push({
-        x: x * radius,
-        y: y * radius,
-        z: z * radius,
+    for (let i = 0; i < particleCount; i++) {
+      // 구면 좌표계를 사용하여 뇌 모양의 울퉁불퉁한 표면 생성 (웹 버전과 동일)
+      const theta = Math.random() * 2 * Math.PI;
+      const phi = Math.acos((Math.random() * 2) - 1);
+      let radius = 8 + (Math.random() - 0.5) * 4;
+      radius += Math.sin(theta * 6) * Math.cos(phi * 8) * 1.5;
+
+      const x = radius * Math.sin(phi) * Math.cos(theta);
+      const y = radius * Math.sin(phi) * Math.sin(theta);
+      const z = radius * Math.cos(phi);
+
+      // 반지름에 따라 색상을 선형 보간 (웹 버전과 동일)
+      const colorRatio = Math.max(0, Math.min(1, (radius - 6) / 6));
+      const r = colorInside.r + (colorOutside.r - colorInside.r) * colorRatio;
+      const g = colorInside.g + (colorOutside.g - colorInside.g) * colorRatio;
+      const b = colorInside.b + (colorOutside.b - colorInside.b) * colorRatio;
+
+      newParticles.push({
+        id: i,
+        originalPos: { x, y, z },
+        originalRadius: radius,
+        color: `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`,
+        animTranslate: new Animated.ValueXY({ x: screenWidth / 2, y: screenHeight / 2 }),
+        animScale: new Animated.Value(0),
+        animOpacity: new Animated.Value(0.8),
       });
     }
-
-    return points;
-  };
-
-  // 3D 회전 변환 함수
-  const rotatePoint = (x: number, y: number, z: number, rotX: number, rotY: number) => {
-    // Y축 회전
-    const cosY = Math.cos(rotY);
-    const sinY = Math.sin(rotY);
-    const x1 = x * cosY - z * sinY;
-    const z1 = x * sinY + z * cosY;
-    
-    // X축 회전
-    const cosX = Math.cos(rotX);
-    const sinX = Math.sin(rotX);
-    const y2 = y * cosX - z1 * sinX;
-    const z2 = y * sinX + z1 * cosX;
-    
-    return { x: x1, y: y2, z: z2 };
-  };
-
-  // 구 파티클 생성
-  useEffect(() => {
-    const createSphereParticles = () => {
-      const particleCount = 150;
-      const sphereRadius = Math.min(screenWidth, screenHeight) * 0.25;
-      const spherePoints = generateSpherePoints(particleCount, sphereRadius);
-      
-      const newParticles: SphereParticle[] = [];
-      
-      spherePoints.forEach((point, i) => {
-        const screenX = screenWidth / 2 + point.x;
-        const screenY = screenHeight / 2 + point.y;
-        
-        newParticles.push({
-          id: i,
-          x: new Animated.Value(screenX),
-          y: new Animated.Value(screenY),
-          opacity: new Animated.Value(Math.random() * 0.6 + 0.4),
-          scale: new Animated.Value(Math.random() * 0.5 + 0.5),
-          originalX: point.x,
-          originalY: point.y,
-          originalZ: point.z,
-        });
-      });
-      
-      setSphereParticles(newParticles);
-    };
-
-    createSphereParticles();
+    setParticles(newParticles);
   }, []);
 
-  // 구 파티클 애니메이션
+  // 2. 메인 애니메이션 루프
   useEffect(() => {
-    if (sphereParticles.length === 0) return;
+    if (particles.length === 0) return;
 
-    // 파티클 애니메이션
-    const newAnimations: Animated.CompositeAnimation[] = [];
-    
-    sphereParticles.forEach((particle, index) => {
-      // 반짝임 애니메이션
-      const twinkleAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(particle.opacity, {
-            toValue: 0.3,
-            duration: 1000 + Math.random() * 2000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(particle.opacity, {
-            toValue: 0.9,
-            duration: 1000 + Math.random() * 2000,
-            useNativeDriver: true,
-          }),
-        ])
-      );
+    let isRunning = true;
+    const lastTime = { current: performance.now() };
 
-      // 크기 변화 애니메이션
-      const scaleAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(particle.scale, {
-            toValue: 0.6,
-            duration: 1500 + Math.random() * 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(particle.scale, {
-            toValue: 1.4,
-            duration: 1500 + Math.random() * 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      );
+    const animate = () => {
+      if (!isRunning) return;
 
-      newAnimations.push(twinkleAnimation, scaleAnimation);
-      
-      twinkleAnimation.start();
-      scaleAnimation.start();
-    });
-    
-    animations.current = newAnimations;
+      const now = performance.now();
+      const delta = (now - lastTime.current) / 1000;
+      elapsedTime.current += delta;
+      lastTime.current = now;
 
-    return () => {
-      animations.current.forEach(animation => {
-        animation.stop();
+      // 상호작용 상태에 따라 회전 속도 변경
+      const rotationY = elapsedTime.current * (interactionCompleted ? 0.25 : 0.1);
+      const cosY = Math.cos(rotationY);
+      const sinY = Math.sin(rotationY);
+
+      particles.forEach(p => {
+        // --- 3D 변환 ---
+
+        // 1. Y축 회전
+        const rotatedX = p.originalPos.x * cosY + p.originalPos.z * sinY;
+        const rotatedY = p.originalPos.y;
+        const rotatedZ = -p.originalPos.x * sinY + p.originalPos.z * cosY;
+
+        let currentRadius = p.originalRadius;
+        
+        // 2. 상호작용 전 효과 (파도 & 터치)
+        if (!interactionCompleted) {
+          // 파도 효과
+          const waveFactor = Math.sin(p.originalRadius * 0.5 - elapsedTime.current * 2);
+          currentRadius += waveFactor * 0.2;
+
+          // 터치 반응 효과 (2D 거리 기반으로 근사)
+          const dx = (screenWidth / 2 + rotatedX * Z_SCALE) - touchPos.x;
+          const dy = (screenHeight / 2 + rotatedY * Z_SCALE) - touchPos.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const mouseFactor = Math.max(0, 1 - dist / 200); // 터치 지점과의 거리에 따른 영향
+          currentRadius += mouseFactor * 2.0;
+        }
+
+        const radiusScaledX = rotatedX * (currentRadius / p.originalRadius);
+        const radiusScaledY = rotatedY * (currentRadius / p.originalRadius);
+        const radiusScaledZ = rotatedZ * (currentRadius / p.originalRadius);
+
+        // --- 2D 투영 ---
+        const projectionScale = PERSPECTIVE / (PERSPECTIVE + radiusScaledZ * Z_SCALE);
+        const screenX = screenWidth / 2 + radiusScaledX * Z_SCALE * projectionScale;
+        const screenY = screenHeight / 2 + radiusScaledY * Z_SCALE * projectionScale;
+        
+        // --- 애니메이션 값 업데이트 ---
+        // 루프 내에서는 setValue를 사용하여 성능 최적화
+        p.animTranslate.setValue({ x: screenX, y: screenY });
+        p.animScale.setValue(projectionScale * 1.8); // Z 위치에 따라 크기 조절
+        p.animOpacity.setValue(projectionScale * 0.9); // Z 위치에 따라 투명도 조절
       });
-    };
-  }, [sphereParticles]);
 
-  // 컴포넌트 언마운트 시 interval 정리
-  useEffect(() => {
+      animationFrameId.current = requestAnimationFrame(animate);
+    };
+
+    // 애니메이션 시작
+    animate();
+
+    // 컴포넌트 언마운트 시 정리
     return () => {
-      if (waveIntervalRef.current) {
-        clearInterval(waveIntervalRef.current);
-        waveIntervalRef.current = null;
+      isRunning = false;
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, []);
+  }, [particles, interactionCompleted]);
 
+  // 3. UI 애니메이션 및 상호작용 처리
   useEffect(() => {
-    // 초기 애니메이션
+    // UI 요소 페이드인
     Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
+      Animated.timing(uiFadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+      Animated.timing(uiSlideAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
     ]).start();
 
-    // 펄스 애니메이션
+    // 상호작용 전 안내 문구 깜빡임 효과
     const pulseAnimation = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
+        Animated.timing(promptPulseAnim, { toValue: 1.05, duration: 1500, useNativeDriver: true }),
+        Animated.timing(promptPulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
       ])
     );
 
@@ -225,253 +205,123 @@ export default function InitPage() {
       pulseAnimation.start();
     }
 
-    return () => {
-      pulseAnimation.stop();
-    };
+    return () => pulseAnimation.stop();
   }, [interactionCompleted]);
 
-  /**
-   * 화면 터치 시 처리 함수
-   * 상호작용 완료 상태로 전환하고 구가 커지는 효과 추가
-   */
+  // 화면 터치 시 상호작용 완료 처리
   const handleInteraction = () => {
     if (!interactionCompleted) {
       setInteractionCompleted(true);
       
-      // 상호작용 완료 애니메이션
+      // 버튼 표시를 위한 애니메이션
+      uiFadeAnim.setValue(0);
+      uiSlideAnim.setValue(20);
       Animated.parallel([
-        Animated.timing(scaleAnim, {
-          toValue: 1.2,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0.8,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        Animated.parallel([
-          Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
-
-      // 반복적인 물결 효과 함수
-      const createWaveEffect = () => {
-        // 각 파티클의 애니메이션 시퀀스를 생성
-        const particleAnimations = sphereParticles.map((particle) => {
-          return Animated.sequence([
-            // 크기 확대 및 투명도 증가
-            Animated.parallel([
-              Animated.timing(particle.scale, {
-                toValue: 3.0,
-                duration: 600,
-                useNativeDriver: true,
-              }),
-              Animated.timing(particle.opacity, {
-                toValue: 1.0,
-                duration: 400,
-                useNativeDriver: true,
-              }),
-            ]),
-            // 원래 크기로 복원
-            Animated.parallel([
-              Animated.timing(particle.scale, {
-                toValue: Math.random() * 0.5 + 0.5,
-                duration: 800,
-                useNativeDriver: true,
-              }),
-              Animated.timing(particle.opacity, {
-                toValue: Math.random() * 0.6 + 0.4,
-                duration: 800,
-                useNativeDriver: true,
-              }),
-            ]),
-          ]);
-        });
-
-        // Animated.stagger를 사용하여 각 파티클 애니메이션을 8ms 간격으로 실행
-        Animated.stagger(8, particleAnimations).start();
-      };
-
-      // 첫 번째 물결 효과 시작
-      createWaveEffect();
-
-      // 기존 interval이 있다면 정리
-      if (waveIntervalRef.current) {
-        clearInterval(waveIntervalRef.current);
-      }
-
-      // 2초마다 반복적으로 물결 효과 생성 (무한 반복)
-      waveIntervalRef.current = setInterval(() => {
-        createWaveEffect();
-      }, 4000);
-
+        Animated.timing(uiFadeAnim, { toValue: 1, duration: 1000, delay: 300, useNativeDriver: true }),
+        Animated.timing(uiSlideAnim, { toValue: 0, duration: 1000, delay: 300, useNativeDriver: true }),
+      ]).start();
     }
   };
 
-  /**
-   * 시작 버튼 클릭 시 처리 함수
-   * 로그인 페이지로 이동
-   */
   const handleStart = () => {
     navigation.navigate("Login");
   };
 
+
+
   return (
     <View style={styles.container}>
-      {/* 별이 반짝이는 배경 */}
       <InitBackground />
-      
-      {/* 구 모양 파티클 */}
-      <View style={styles.sphereContainer}>
-        {sphereParticles.map((particle) => (
+
+      {/* 파티클 컨테이너 */}
+      <View style={StyleSheet.absoluteFill}>
+        {particles.map(p => (
           <Animated.View
-            key={particle.id}
+            key={p.id}
             style={[
-              styles.sphereParticle,
+              styles.particle,
               {
-                left: particle.x,
-                top: particle.y,
-                opacity: particle.opacity,
-                transform: [{ scale: particle.scale }],
+                backgroundColor: p.color,
+                opacity: p.animOpacity,
+                transform: [
+                  // translateX/Y는 left/top보다 성능이 우수
+                  { translateX: p.animTranslate.x },
+                  { translateY: p.animTranslate.y },
+                  { scale: p.animScale },
+                ],
               },
             ]}
           />
         ))}
       </View>
-      
-      <TouchableOpacity
-        style={styles.touchableContainer}
-        activeOpacity={1}
-        onPress={handleInteraction}
-      >
-        {/* 메인 콘텐츠 */}
-        <View style={styles.contentContainer}>
-          <Animated.View
-            style={[
-              styles.titleContainer,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <Text style={styles.title}>당신의 두뇌 건강</Text>
-            <Text style={styles.subtitle}>그 소중한 여정을 함께합니다</Text>
-          </Animated.View>
 
-          {/* 상호작용 프롬프트 */}
-          {!interactionCompleted && (
-            <Animated.View
-              style={[
-                styles.promptContainer,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ scale: pulseAnim }],
-                },
-              ]}
-            >
-              <Text style={styles.promptText}>뇌를 터치하여 활성화하세요</Text>
+      {/* 터치 및 UI 컨테이너 */}
+      <View style={StyleSheet.absoluteFill} {...panResponder.panHandlers}>
+        <TouchableOpacity
+          style={styles.touchableContainer}
+          activeOpacity={1}
+          onPress={handleInteraction}
+        >
+          <View style={styles.contentContainer}>
+            <Animated.View style={{ opacity: uiFadeAnim, transform: [{ translateY: uiSlideAnim }] }}>
+              <Text style={styles.title}>당신의 두뇌 건강</Text>
+              <Text style={styles.subtitle}>그 소중한 여정을 함께합니다</Text>
             </Animated.View>
-          )}
 
-          {/* 시작 버튼 */}
-          {interactionCompleted && (
-            <Animated.View
-              style={[
-                styles.buttonContainer,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ translateY: slideAnim }],
-                },
-              ]}
-            >
-              <TouchableOpacity
-                style={styles.startButton}
-                onPress={handleStart}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.buttonText}>검사 시작</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-        </View>
-      </TouchableOpacity>
+            {!interactionCompleted && (
+              <Animated.View style={[styles.promptContainer, { opacity: uiFadeAnim, transform: [{ scale: promptPulseAnim }] }]}>
+                <Text style={styles.promptText}>뇌를 터치하여 활성화하세요</Text>
+              </Animated.View>
+            )}
+
+            {interactionCompleted && (
+              <Animated.View style={[styles.buttonContainer, { opacity: uiFadeAnim, transform: [{ translateY: uiSlideAnim }] }]}>
+                <TouchableOpacity style={styles.startButton} onPress={handleStart} activeOpacity={0.8}>
+                  <Text style={styles.buttonText}>검사 시작</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
+// 스타일 (웹 버전과 유사한 느낌으로 일부 수정)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
   },
-  
+  particle: {
+    position: 'absolute',
+    // left/top 대신 transform으로 위치를 제어
+    left: -0.75,
+    top: -0.75,
+    width: 1.5,
+    height: 1.5,
+    borderRadius: 0.75,
+  },
   touchableContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2,
   },
-
-  sphereContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    zIndex: 1,
-  },
-
-  sphereParticle: {
-    position: 'absolute',
-    width: 6,
-    height: 6,
-    backgroundColor: '#8b5cf6',
-    borderRadius: 3,
-  },
-  
-  backgroundGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.background,
-    // 실제 그라데이션은 LinearGradient 컴포넌트를 사용해야 하지만,
-    // 여기서는 단순한 배경색으로 대체
-  },
-  
   contentContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: spacing.xxl,
+    paddingBottom: '10%',
   },
-  
-  titleContainer: {
-    alignItems: 'center',
-    marginTop: -spacing.xxl,
-  },
-  
   title: {
     fontSize: fontSize.title,
     fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
     marginBottom: spacing.sm,
+    marginTop: '-15%',
   },
-  
   subtitle: {
     fontSize: fontSize.subtitle,
     fontWeight: '300',
@@ -479,45 +329,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.xl,
   },
-  
   promptContainer: {
     position: 'absolute',
-    bottom: '35%',
-    alignItems: 'center',
+    bottom: '30%',
   },
-  
   promptText: {
     fontSize: fontSize.lg,
     fontWeight: '300',
     color: colors.textSecondary,
-    textAlign: 'center',
   },
-  
   buttonContainer: {
     position: 'absolute',
-    bottom: '30%',
-    alignItems: 'center',
+    bottom: '25%',
   },
-  
   startButton: {
-    backgroundColor: colors.text,
-    borderRadius: borderRadius.round,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    shadowColor: colors.text,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    backgroundColor: 'white',
+    borderRadius: 999,
+    paddingVertical: 14,
+    paddingHorizontal: 52,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
     elevation: 8,
   },
-  
   buttonText: {
-    color: colors.background,
+    color: '#0c0a1a',
     fontSize: fontSize.lg,
     fontWeight: '700',
-    textAlign: 'center',
   },
+
 });
