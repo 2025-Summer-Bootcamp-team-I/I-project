@@ -15,11 +15,9 @@ const { width, height } = Dimensions.get('window');
 const PageContainer = styled.View`
   flex: 1;
   align-items: center;
-  justify-content: center;
-  padding: ${width > 768 ? 16 : 8}px; /* 1rem = 16px, 0.5rem = 8px */
+  justify-content: flex-start; /* Align content to the top */
+  padding-top: ${width > 768 ? 80 : 64}px; /* Add padding to the top */
   background-color: transparent;
-  /* box-sizing is default in RN */
-  /* overflow-y is not directly applicable to View */
 `;
 
 const BackButton = styled.TouchableOpacity`
@@ -31,7 +29,7 @@ const BackButton = styled.TouchableOpacity`
   align-items: center;
   justify-content: center;
   position: absolute;
-  top: ${width > 768 ? 64 : 48}px; /* Adjusted top */
+  top: ${width > 768 ? 32 : 24}px; /* Adjusted top */
   left: ${width > 768 ? 24 : 12}px; /* Adjusted left */
   z-index: 30;
 `;
@@ -42,7 +40,6 @@ const ContentWrapper = styled.View`
   align-items: center;
   flex-direction: column;
   box-sizing: border-box;
-  margin-top: 0;
 `;
 
 const QuestionText = styled.Text`
@@ -52,14 +49,14 @@ const QuestionText = styled.Text`
   text-align: center;
   line-height: ${1.5 * 16}px;
   padding-bottom: 0;
-  margin-top: 24px; /* Adjusted margin-top */
+  margin-top: 8px; /* Adjusted margin-top */
   min-height: ${width > 768 ? 7 * 16 : 5 * 16}px; /* Adjusted min-height */
 `;
 
 const VoiceAICharacter = styled(Animated.View)<{ $isListening: boolean }>`
   width: ${width > 768 ? height * 0.25 : height * 0.2}px; /* Adjusted width */
   height: ${width > 768 ? height * 0.25 : height * 0.2}px; /* Adjusted height */
-  margin-top: 60px;
+  margin-top: 20px;
   margin-left: auto;
   margin-right: auto;
   border-radius: 9999px;
@@ -97,11 +94,6 @@ const BottomButtonBar = styled.View`
   gap: 20.8px;
   background-color: transparent;
   padding-bottom: 16px;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
 `;
 
 const ActionBtn = styled.TouchableOpacity<{ $pdf?: boolean }>`
@@ -110,6 +102,18 @@ const ActionBtn = styled.TouchableOpacity<{ $pdf?: boolean }>`
   /* font-weight is for Text component, not TouchableOpacity */
   padding: ${width > 768 ? 8 : 6.4}px ${width > 768 ? 16 : 12.8}px; /* 0.5rem 1rem vs 0.4rem 0.8rem */
   border-radius: 8px; /* 0.5rem = 8px */
+`;
+
+const BottomSectionWrapper = styled.View`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  align-items: center;
+  padding-bottom: 16px;
+  background-color: transparent;
+  gap: ${width > 768 ? 16 : 12}px; /* Added gap between children */
 `;
 
 const VoiceChattingPage: React.FC = () => {
@@ -383,6 +387,8 @@ const VoiceChattingPage: React.FC = () => {
         <QuestionText>
           {displayedAiMessage || (messages.length > 0 ? messages[messages.length - 1].message : "안녕하세요! 대화 검사를 시작하겠습니다. 오늘 기분은 어떠신가요?")}
         </QuestionText>
+      </ContentWrapper>
+      <BottomSectionWrapper>
         <MicButton $isListening={isListening} onPress={handleToggleListening} disabled={isLoading} style={{
           transform: [{
             scale: micPulseAnim.interpolate({
@@ -398,12 +404,12 @@ const VoiceChattingPage: React.FC = () => {
         <VoiceStatus>
           {isListening ? '듣고 있어요...' : (isLoading ? '응답을 생성 중입니다...' : '버튼을 누르고 말씀해주세요')}
         </VoiceStatus>
-      </ContentWrapper>
-      <BottomButtonBar>
-        <ActionBtn onPress={handleTerminateChat} disabled={isEvaluating}>
-          <Text style={{ color: 'white', fontWeight: '700' }}>{isEvaluating ? "제출 중..." : "채팅 종료"}</Text>
-        </ActionBtn>
-      </BottomButtonBar>
+        <BottomButtonBar>
+          <ActionBtn onPress={handleTerminateChat} disabled={isEvaluating}>
+            <Text style={{ color: 'white', fontWeight: '700' }}>{isEvaluating ? "제출 중..." : "채팅 종료"}</Text>
+          </ActionBtn>
+        </BottomButtonBar>
+      </BottomSectionWrapper>
     </PageContainer>
   );
 };
