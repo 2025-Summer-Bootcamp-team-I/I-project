@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -30,17 +30,20 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [animationFrameId, setAnimationFrameId] = useState<number | null>(null);
+  
+  // Use useRef to store the animation frame ID without causing re-renders.
+  const animationFrameId = useRef<number | null>(null);
 
-  // 컴포넌트가 언마운트될 때 애니메이션 프레임을 정리하기 위한 useEffect
+  // This useEffect handles the cleanup of the animation frame when the component unmounts.
+  // The empty dependency array [] ensures this effect runs only once on mount and the cleanup function runs on unmount.
   useEffect(() => {
     return () => {
-      if (animationFrameId) {
+      if (animationFrameId.current) {
         console.log("Cancelling animation frame.");
-        cancelAnimationFrame(animationFrameId);
+        cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, [animationFrameId]);
+  }, []);
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
@@ -80,19 +83,19 @@ export default function RegisterPage() {
     navigation.navigate('Login' as any);
   };
 
-  // Three.js 배경 애니메이션 설정
+  // Three.js background animation setup
   const onContextCreate = async (gl: ExpoWebGLRenderingContext) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
 
-    // Three.js scene 생성
+    // Create a Three.js scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0c0a1a);
 
-    // 원근 카메라 생성
+    // Create a perspective camera
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     camera.position.z = 8;
 
-    // Three.js 렌더러 생성
+    // Create a Three.js renderer
     const renderer = new THREE.WebGLRenderer({
       canvas: {
         width,
@@ -108,7 +111,7 @@ export default function RegisterPage() {
     renderer.setPixelRatio(1);
     renderer.setSize(width, height);
 
-    // 파티클 시스템 생성
+    // Create a particle system
     const particleCount = 1000;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
@@ -131,10 +134,10 @@ export default function RegisterPage() {
     const particles = new THREE.Points(geometry, material);
     scene.add(particles);
 
-    // 애니메이션 루프
+    // Animation loop
     const animate = () => {
-      const frameId = requestAnimationFrame(animate);
-      setAnimationFrameId(frameId);
+      // Store the frame ID in the ref's .current property
+      animationFrameId.current = requestAnimationFrame(animate);
 
       if (particles) {
         particles.rotation.x += 0.0005;
@@ -154,7 +157,7 @@ export default function RegisterPage() {
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Three.js 배경 */}
+      {/* Three.js Background */}
       <View style={styles.backgroundContainer}>
         <GLView
           style={{ flex: 1 }}
@@ -162,7 +165,7 @@ export default function RegisterPage() {
         />
       </View>
 
-      {/* 헤더 */}
+      {/* Header */}
       <View style={styles.topHeader}>
         <TouchableOpacity
           style={styles.backButton}
@@ -182,7 +185,7 @@ export default function RegisterPage() {
         <View style={styles.placeholder} />
       </View>
 
-      {/* 메인 컨텐츠 */}
+      {/* Main Content */}
       <View style={styles.content}>
         <View style={styles.formContainer}>
           <Text style={styles.title}>회원가입</Text>
