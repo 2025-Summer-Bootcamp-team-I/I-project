@@ -38,7 +38,7 @@ const Z_SCALE = 15; // 파티클의 Z 위치에 따른 크기 조절
  * * 웹 버전의 Three.js 뇌 파티클 효과를 React Native Animated API로 구현합니다.
  * 3D 회전, 깊이감, 터치 인터랙션, 파도 효과 등을 시뮬레이션합니다.
  */
-export default function AppInitPage() {
+export default function InitPage() {
   const navigation = useNavigation<InitPageNavigationProp>();
   const [interactionCompleted, setInteractionCompleted] = useState(false);
   const [particles, setParticles] = useState<BrainParticle[]>([]);
