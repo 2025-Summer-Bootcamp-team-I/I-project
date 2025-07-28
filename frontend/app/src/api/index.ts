@@ -184,7 +184,25 @@ export const finalizeReport = async (reportId: number) => {
 // 음성-텍스트 변환 API (React Native에서는 파일 처리 방식이 다를 수 있음)
 export const speechToText = async (file: any) => {
   const formData = new FormData();
-  formData.append('file', file);
+
+  let fileToUpload: Blob | File;
+  let fileName: string;
+  let fileType: string;
+
+  // Check if it's a React Native file object { uri, name, type }
+  if (file && typeof file === 'object' && file.uri && file.name && file.type) {
+    const response = await fetch(file.uri);
+    fileToUpload = await response.blob();
+    fileName = file.name;
+    fileType = file.type;
+  } else {
+    // Assume it's already a Blob or File object (e.g., from web)
+    fileToUpload = file;
+    fileName = file.name || 'audio.m4a'; // Fallback name
+    fileType = file.type || 'audio/m4a'; // Fallback type
+  }
+
+  formData.append('file', fileToUpload, fileName); // Append Blob with filename
 
   const response = await axiosInstance.post<{ text: string }>('/stt', formData, {
     headers: {
