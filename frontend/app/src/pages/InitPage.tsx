@@ -46,6 +46,7 @@ export default function AppInitPage() {
   // 애니메이션 및 인터랙션 상태를 관리하는 Ref
   const animationFrameId = useRef<number | null>(null);
   const elapsedTime = useRef(0);
+  const lastTime = useRef(performance.now()); // lastTime을 useRef로 선언
   const touchPos = useRef({ x: -1000, y: -1000 }).current; // 터치 위치 (애니메이션 불필요)
 
   // UI 등장 애니메이션
@@ -115,15 +116,15 @@ export default function AppInitPage() {
     if (particles.length === 0) return;
 
     let isRunning = true;
-    const lastTime = { current: performance.now() };
+    // const lastTime = { current: performance.now() }; // 기존 선언 제거
 
     const animate = () => {
       if (!isRunning) return;
 
       const now = performance.now();
-      const delta = (now - lastTime.current) / 1000;
+      const delta = (now - lastTime.current) / 1000; // lastTime.current 사용
       elapsedTime.current += delta;
-      lastTime.current = now;
+      lastTime.current = now; // lastTime.current 업데이트
 
       // 상호작용 상태에 따라 회전 속도 변경
       const rotationY = elapsedTime.current * (interactionCompleted ? 0.25 : 0.1);
