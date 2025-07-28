@@ -98,7 +98,6 @@ export default function RegisterPage() {
       <View style={styles.content}>
         <View style={styles.formContainer}>
           <Text style={styles.title}>회원가입</Text>
-          <Text style={styles.subtitle}>새로운 계정을 만들어 서비스를 이용하세요</Text>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>이메일</Text>
@@ -277,20 +276,24 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#1e293b',
     borderRadius: borderRadius.md,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     fontSize: fontSize.sm,
     color: colors.text,
     borderWidth: 1,
     borderColor: '#334155',
+    height: 40,
   },
   
   registerButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.round,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    marginTop: spacing.sm,
+    marginTop: spacing.lg,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: colors.primary,
     shadowOffset: {
       width: 0,
