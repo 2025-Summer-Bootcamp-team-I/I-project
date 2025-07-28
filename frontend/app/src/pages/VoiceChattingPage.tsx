@@ -293,16 +293,11 @@ const VoiceChattingPage: React.FC = () => {
       setCurrentRobotImage(require('@shared/assets/imgs/robot-character1.png'));
 
       if (uri) {
-        const response = await fetch(uri);
-        const audioBlob = await response.blob();
-
-        // React Native does not have `File` constructor directly from Blob for `fetch` or `speechToText`
-        // `speechToText` likely expects a Blob or a URI. Assuming it can handle Blob directly.
-        // If `speechToText` truly needs a `File` object, a polyfill or alternative approach might be needed.
-        // For now, we'll pass the Blob directly, or convert to base64 if the API expects that.
-        // Given the `speechToText` is in `@shared/api`, it should be designed to handle RN's Blob or URI.
-        // Let's assume `speechToText` can take a Blob directly.
-        const audioFile = new File([audioBlob], "recording.m4a", { type: 'audio/m4a' });
+        const audioFile = {
+          uri: uri,
+          name: 'recording.m4a',
+          type: 'audio/m4a',
+        };
 
         try {
           const sttResponse = await speechToText(audioFile);
