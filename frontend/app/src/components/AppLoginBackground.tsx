@@ -1,23 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { StyleSheet, View, PixelRatio } from 'react-native';
 import { GLView, ExpoWebGLRenderingContext } from 'expo-gl';
 import * as THREE from 'three';
 
 // This is the main React Native component
 export default function App() {
-  // State to hold the animation frame ID
-  const [animationFrameId, setAnimationFrameId] = useState<number | null>(null);
+  // Use useRef to store the animation frame ID without causing re-renders
+  const animationFrameId = useRef<number | null>(null);
 
   // useEffect for cleanup when the component unmounts
   useEffect(() => {
     // This function will be called when the component is removed from the screen
     return () => {
-      if (animationFrameId) {
-        console.log("Cancelling animation frame.");
-        cancelAnimationFrame(animationFrameId);
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, [animationFrameId]);
+  }, []); // Empty dependency array ensures this runs only on mount and unmount
 
   /**
    * This function is called once the GL context is created.
@@ -51,8 +50,9 @@ export default function App() {
       context: gl,
       antialias: true,
     });
-    // In React Native, window.devicePixelRatio is not available, so we default to 1
-    renderer.setPixelRatio(1);
+
+    // Use the device's pixel ratio for sharper rendering on high-density screens
+    renderer.setPixelRatio(PixelRatio.get());
     renderer.setSize(width, height);
 
     // --- 2. Particle System Creation ---
@@ -88,7 +88,8 @@ export default function App() {
     const animate = () => {
       // Schedule the next frame
       const frameId = requestAnimationFrame(animate);
-      setAnimationFrameId(frameId);
+      // Set the .current property of the ref to the new frame ID
+      animationFrameId.current = frameId;
 
       // Rotate the particle system
       if (particles) {
