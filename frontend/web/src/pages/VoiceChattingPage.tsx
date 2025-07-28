@@ -7,9 +7,9 @@ import { useVoiceChatStore } from '@shared/store/voiceChatStore';
 import { useReportIdStore } from '@shared/store/reportIdStore';
 import { speechToText, textToSpeech } from '@shared/api';
 import type { ChatLogResponse } from '@shared/types/api';
-import voiceChatRobot1 from '@shared/assets/imgs/robot1.png';
-import voiceChatRobot3 from '@shared/assets/imgs/robot3.png';
-import voiceChatRobot9 from '@shared/assets/imgs/robot9.png';
+import voiceChatRobot1 from '@shared/assets/imgs/robot-character1.png';
+import voiceChatRobot2 from '@shared/assets/imgs/robot-character2.png';
+import voiceChatRobot3 from '@shared/assets/imgs/robot-character3.png';
 
 const pulse = keyframes`
   0%, 100% { transform: scale(1); opacity: 1; }
@@ -33,6 +33,7 @@ const PageContainer = styled.div`
   padding: 1rem;
   color: white;
   box-sizing: border-box;
+  overflow-y: auto;
 
   @media (max-width: 768px) {
     padding: 0.5rem;
@@ -82,32 +83,36 @@ const ContentWrapper = styled.div`
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  gap: 0.5rem; /* 기존 1rem에서 0.5rem으로 줄임 */
-  margin-top: 10vh;
+  gap: 0; /* 간격 제거 */
+  margin-top: 0; /* 간격 제거 */
 
   @media (max-width: 768px) {
     max-width: 95%;
-    gap: 0.25rem; /* 기존 0.5rem에서 0.25rem으로 줄임 */
-    margin-top: 6vh;
+    gap: 0; /* 간격 제거 */
+    margin-top: 0; /* 간격 제거 */
   }
 `;
 
 const QuestionText = styled.p`
   color: #67e8f9;
-  font-size: 1.5rem; /* 기존 1.2rem에서 1.5rem으로 원상 복구 */
+  font-size: 1.5rem;
   font-weight: 600;
   text-align: center;
   line-height: 1.5;
-  padding-bottom: -1rem;
+  padding-bottom: 0;
+  margin-top: 2rem; 
+  min-height: 9rem; /* 1.5rem * 1.5 * 4줄 = 9rem */
 
   @media (max-width: 768px) {
-    font-size: 1rem; /* 기존 0.9rem에서 1rem으로 원상 복구 */
+    font-size: 1rem;
+    min-height: 6rem; /* 1rem * 1.5 * 4줄 = 6rem */
   }
 `;
 
 const VoiceAICharacter = styled.div<{ $isListening: boolean }>`
-  width: 40vh; /* 기존 35vh에서 40vh로 키움 */
-  height: 40vh; /* 기존 35vh에서 40vh로 키움 */
+  width: 30vh; /* 크기 줄임 */
+  height: 30vh; /* 크기 줄임 */
+  margin-top: 5rem;
   margin-left: auto;
   margin-right: auto;
   border-radius: 9999px;
@@ -122,8 +127,8 @@ const VoiceAICharacter = styled.div<{ $isListening: boolean }>`
   }
 
   @media (max-width: 768px) {
-    width: 35vh; /* 기존 30vh에서 35vh로 키움 */
-    height: 35vh; /* 기존 30vh에서 35vh로 키움 */
+    width: 25vh; /* 크기 줄임 */
+    height: 25vh; /* 크기 줄임 */
   }
 `;
 
@@ -193,43 +198,28 @@ const VoiceStatus = styled.p`
 `;
 
 const BottomButtonBar = styled.div`
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  width: 100vw;
   display: flex;
   justify-content: center;
   gap: 1.3rem;
   background: transparent;
-  padding: 2rem 0 1.5rem 0;
-  z-index: 99;
+  padding: 0 0 1rem 0;
 `;
 
 const ActionBtn = styled.button<{ $pdf?: boolean }>`
-  background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
-  color: #FFFFFF;
-  font-weight: 600;
-  border-radius: 1rem;
-  border: none; /* 그라데이션 배경을 위해 border 제거 */
-  font-size: 1.1rem;
-  padding: 0.8rem 2rem;
-  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
-  cursor: pointer;
-  transition: all 0.3s ease;
+  background-color: #06b6d4;
+  color: white;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.3s ease;
+
   &:hover {
-    background: linear-gradient(135deg, #6D28D9 0%, #5B21B6 100%);
-    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
-    transform: translateY(-2px);
+    background-color: #0891b2;
   }
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
-  }
-  &:disabled {
-    background: #4B5563;
-    color: #9CA3AF;
-    cursor: not-allowed;
-    box-shadow: none;
-    transform: none;
+
+  @media (max-width: 768px) {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
   }
 `;
 
@@ -256,7 +246,7 @@ const VoiceChattingPage: React.FC = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
-  const intervalIdRef = useRef<NodeJS.Timeout | null>(null); // 새로 추가된 useRef
+  const intervalIdRef = useRef<number | null>(null); // 새로 추가된 useRef
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -311,9 +301,9 @@ const VoiceChattingPage: React.FC = () => {
 
       // 볼륨 임계값에 따라 이미지 변경
       if (average > 25) { // 이 임계값은 조정이 필요할 수 있습니다.
-        setCurrentRobotImage(voiceChatRobot9);
-      } else {
         setCurrentRobotImage(voiceChatRobot3);
+      } else {
+        setCurrentRobotImage(voiceChatRobot2);
       }
 
       animationFrameIdRef.current = requestAnimationFrame(monitorVolume);
@@ -336,7 +326,7 @@ const VoiceChattingPage: React.FC = () => {
         clearInterval(intervalIdRef.current);
         intervalIdRef.current = null;
       }
-      setCurrentRobotImage(voiceChatRobot3); // TTS 재생 시작 시 robot3으로 변경
+      setCurrentRobotImage(voiceChatRobot2); // TTS 재생 시작 시 robot2으로 변경
       setDisplayedAiMessage(''); // 새로운 TTS 시작 시 기존 메시지 초기화
       const audioBlob = await textToSpeech(text);
       const audioUrl = URL.createObjectURL(audioBlob);
@@ -345,7 +335,7 @@ const VoiceChattingPage: React.FC = () => {
         audioPlayerRef.current.play();
 
         let charIndex = 0;
-        let intervalId: NodeJS.Timeout | null = null;
+        let intervalId: number | null = null;
 
         audioPlayerRef.current.onloadedmetadata = () => {
           const audioDuration = audioPlayerRef.current?.duration || 0;
@@ -492,12 +482,12 @@ const VoiceChattingPage: React.FC = () => {
           </svg>
         </BackButton>
         <ContentWrapper>
-          <QuestionText>
-            {displayedAiMessage || (messages.length > 0 ? messages[messages.length - 1].message : "안녕하세요! 대화 검사를 시작하겠습니다. 오늘 기분은 어떠신가요?")}
-          </QuestionText>
           <VoiceAICharacter $isListening={isListening}>
             <img src={currentRobotImage} alt="Voice Chat Robot" />
           </VoiceAICharacter>
+          <QuestionText>
+            {displayedAiMessage || (messages.length > 0 ? messages[messages.length - 1].message : "안녕하세요! 대화 검사를 시작하겠습니다. 오늘 기분은 어떠신가요?")}
+          </QuestionText>
           <MicButton $isListening={isListening} onClick={handleToggleListening} disabled={isLoading}>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>

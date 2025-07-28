@@ -96,13 +96,13 @@ export const getReportResult = async (reportId: number) => {
 
 // 채팅 생성 API
 export const createChat = async (chatData: CreateChatRequest) => {
-  const response = await axiosInstance.post<CreateChatResponse>('/chat', chatData);
+  const response = await axiosInstance.post<CreateChatResponse>('/chat/create', chatData);
   return response.data;
 };
 
 // 채팅 로그 조회 API
 export const getChatLogs = async (reportId: number) => {
-  const response = await axiosInstance.get<ChatLogResponse[]>(`/chat/${reportId}/logs`);
+  const response = await axiosInstance.get<ChatLogResponse[]>(`/chat/logs/${reportId}`);
   return response.data;
 };
 
@@ -167,16 +167,17 @@ export const streamChat = async (chatRequest: ChatRequest, onData: (data: any) =
 
 // 채팅 평가 API
 export const evaluateChat = async (chatId: number, reportId: number) => {
-  const response = await axiosInstance.post<EvaluateChatResponse>('/chat/evaluate', {
-    chat_id: chatId,
-    report_id: reportId,
-  });
+  const response = await axiosInstance.post<EvaluateChatResponse>(
+    `/chat/chats/${chatId}/evaluate`,
+    null, // 요청 본문은 비워둡니다.
+    { params: { report_id: reportId } } // report_id를 쿼리 매개변수로 전달합니다.
+  );
   return response.data;
 };
 
 // 리포트 최종화 API
 export const finalizeReport = async (reportId: number) => {
-  const response = await axiosInstance.post<ReportResponse>(`/reports/${reportId}/finalize`);
+  const response = await axiosInstance.put(`/reports/${reportId}/finalize`);
   return response.data;
 };
 
@@ -185,7 +186,7 @@ export const speechToText = async (file: any) => {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await axiosInstance.post('/trans/stt', formData, {
+  const response = await axiosInstance.post<{ text: string }>('/stt', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -195,15 +196,13 @@ export const speechToText = async (file: any) => {
 
 // 텍스트-음성 변환 API
 export const textToSpeech = async (text: string): Promise<Blob> => {
-  const response = await axiosInstance.post('/trans/tts', { text }, {
-    responseType: 'blob',
-  });
+  const response = await axiosInstance.post('/tts', { text }, { responseType: 'blob' });
   return response.data;
 };
 
 // 채팅 요청 전송 API
 export const sendChatRequest = async (chatRequest: ChatRequest) => {
-  const response = await axiosInstance.post<ChatResponse>('/chat/send', chatRequest);
+  const response = await axiosInstance.post<ChatResponse>('/chat', chatRequest);
   return response.data;
 };
 
