@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  Animated,
   Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -31,17 +30,20 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [animationFrameId, setAnimationFrameId] = useState<number | null>(null);
+  
+  // Use useRef to store the animation frame ID without causing re-renders.
+  const animationFrameId = useRef<number | null>(null);
 
-  // useEffect for cleanup when the component unmounts
+  // useEffect for cleanup when the component unmounts.
+  // The empty dependency array [] ensures this runs only once on mount and unmount.
   useEffect(() => {
     return () => {
-      if (animationFrameId) {
-        console.log("Cancelling animation frame.");
-        cancelAnimationFrame(animationFrameId);
+      if (animationFrameId.current) {
+        console.log("Cancelling animation frame on unmount.");
+        cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, [animationFrameId]);
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -54,7 +56,6 @@ export default function LoginPage() {
       const response = await loginUser({ email, password });
       console.log('로그인 성공:', response);
       
-      // 로그인 성공 시 토큰 저장
       if (response.access_token) {
         setAuthToken(response.access_token);
       }
@@ -72,19 +73,16 @@ export default function LoginPage() {
     navigation.navigate('Register');
   };
 
-  // Three.js 배경 애니메이션 설정
+  // Three.js background animation setup
   const onContextCreate = async (gl: ExpoWebGLRenderingContext) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
 
-    // Create a Three.js scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0c0a1a);
 
-    // Create a perspective camera
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     camera.position.z = 8;
 
-    // Create a Three.js renderer
     const renderer = new THREE.WebGLRenderer({
       canvas: {
         width,
@@ -100,7 +98,6 @@ export default function LoginPage() {
     renderer.setPixelRatio(1);
     renderer.setSize(width, height);
 
-    // Particle System Creation
     const particleCount = 1000;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
@@ -125,8 +122,8 @@ export default function LoginPage() {
 
     // Animation Loop
     const animate = () => {
-      const frameId = requestAnimationFrame(animate);
-      setAnimationFrameId(frameId);
+      // Store the frame ID in the ref's .current property. This does not trigger a re-render.
+      animationFrameId.current = requestAnimationFrame(animate);
 
       if (particles) {
         particles.rotation.x += 0.0005;
@@ -146,7 +143,6 @@ export default function LoginPage() {
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Three.js 배경 */}
       <View style={styles.backgroundContainer}>
         <GLView
           style={{ flex: 1 }}
@@ -154,7 +150,6 @@ export default function LoginPage() {
         />
       </View>
 
-      {/* 헤더 */}
       <View style={styles.topHeader}>
         <TouchableOpacity
           style={styles.backButton}
@@ -165,20 +160,18 @@ export default function LoginPage() {
           </Svg>
         </TouchableOpacity>
         <View style={styles.logoContainer}>
-                          <Image
-          source={require('../../../shared/assets/imgs/logo.png')}
-          style={styles.logoImage}
-        />
+          <Image
+            source={require('../../../shared/assets/imgs/logo.png')}
+            style={styles.logoImage}
+          />
           <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
         </View>
         <View style={styles.placeholder} />
       </View>
 
-      {/* 메인 컨텐츠 */}
       <View style={styles.content}>
         <View style={styles.formContainer}>
           <Text style={styles.title}>로그인</Text>
-
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>이메일</Text>
@@ -235,7 +228,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0c0a1a',
   },
-  
   backgroundContainer: {
     position: 'absolute',
     top: 0,
@@ -244,9 +236,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 0,
   },
-  
-
-  
   topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -259,7 +248,6 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
     zIndex: 1,
   },
-  
   backButton: {
     backgroundColor: 'rgba(17, 24, 39, 0.82)',
     borderRadius: 20,
@@ -267,31 +255,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
   },
-  
   logoImage: {
     width: 34,
     height: 34,
     marginRight: spacing.sm,
   },
-  
   logoText: {
     fontSize: fontSize.lg,
     fontWeight: '700',
     color: '#96e7d4',
     letterSpacing: -1,
   },
-  
   placeholder: {
     width: 40,
   },
-  
   content: {
     flex: 1,
     justifyContent: 'flex-start',
@@ -299,7 +282,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl * 5,
     zIndex: 1,
   },
-  
   formContainer: {
     backgroundColor: 'rgba(17, 24, 39, 0.95)',
     borderRadius: borderRadius.xl,
@@ -315,7 +297,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
   },
-  
   title: {
     fontSize: fontSize.xl,
     fontWeight: '700',
@@ -323,25 +304,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
-  
-  subtitle: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  
   inputContainer: {
     marginBottom: spacing.sm,
   },
-  
   label: {
     fontSize: fontSize.sm,
     color: colors.text,
     marginBottom: spacing.xs,
     fontWeight: '600',
   },
-  
   input: {
     backgroundColor: '#1e293b',
     borderRadius: borderRadius.md,
@@ -353,8 +324,6 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
     height: 40,
   },
-  
-  
   loginButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.round,
@@ -373,29 +342,24 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  
   loginButtonText: {
     color: colors.text,
     fontSize: fontSize.sm,
     fontWeight: '700',
     textAlign: 'center',
   },
-  
   disabledButton: {
     opacity: 0.6,
   },
-  
   registerLink: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: spacing.md,
   },
-  
   registerText: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
   },
-  
   registerButtonText: {
     fontSize: fontSize.sm,
     color: colors.primary,
