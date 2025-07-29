@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   Animated,
   Dimensions,
   Alert,
@@ -11,6 +10,7 @@ import {
   useWindowDimensions,
   Platform,
 } from 'react-native';
+import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
@@ -19,6 +19,8 @@ import { useReportIdStore } from '../store/reportIdStore';
 import { uploadDrawingTest } from '../api';
 import Svg, { Path } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
+import BottomBar from '../components/BottomBar';
+import AppHeader from '../components/AppHeader';
 
 type DrawingPageNavigationProp = StackNavigationProp<RootStackParamList, 'Drawing'>;
 
@@ -40,6 +42,9 @@ export default function DrawingPage() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
+  const { width: windowWidth } = useWindowDimensions();
+  const canvasSize = Math.max(320, Math.min(400, windowWidth * 0.85));
+
   useEffect(() => {
     // 페이지 진입 애니메이션
     Animated.parallel([
@@ -56,7 +61,7 @@ export default function DrawingPage() {
     ]).start();
   }, []);
 
-  const canvasSize = Math.min(screenWidth * 0.8, screenHeight * 0.5);
+  
 
   // 웹 환경에서 Canvas API 사용
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -272,254 +277,239 @@ export default function DrawingPage() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.background} />
+    <Container>
+      {/* 그라데이션 배경 */}
+      <BackgroundGradient />
       
-      <Animated.View
+      <Content
         style={[
-          styles.content,
           {
             opacity: fadeAnim,
             transform: [{ translateY: slideAnim }],
           },
         ]}
       >
-        {/* 헤더 */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.navigate('Main' as any)}
-            activeOpacity={0.8}
-          >
-            <Svg width={24} height={24} fill="none" stroke="#fff" viewBox="0 0 24 24">
-              <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </Svg>
-          </TouchableOpacity>
-          
-          <Text style={styles.title}>그림 검사</Text>
-          <Text style={styles.subtitle}>
-            주어진 시계판 위에 <Text style={styles.highlight}>11시 10분</Text>을 그려주세요.
-          </Text>
-        </View>
+        {/* 상단 헤더 */}
+        <AppHeader />
+        
+        {/* 그림 검사 제목과 지시문 */}
+        <TitleSection>
+          <Title>그림 검사</Title>
+          <Subtitle>
+            주어진 시계판 위에 <Highlight>11시 10분</Highlight>을 그려주세요
+          </Subtitle>
+        </TitleSection>
 
-        {/* 캔버스 */}
-        <View style={styles.canvasWrapper}>
-          {Platform.OS === 'web' ? (
-            <canvas
-              ref={canvasRef}
-              style={{
-                width: 326,
-                height: 326,
-                backgroundColor: '#0f172a',
-                borderRadius: borderRadius.lg,
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                cursor: 'crosshair',
-                display: 'block',
-                touchAction: 'none',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-                MozUserSelect: 'none',
-                msUserSelect: 'none',
-              }}
-              onMouseDown={handleStart}
-              onMouseMove={handleMove}
-              onMouseUp={handleEnd}
-              onMouseLeave={handleEnd}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const mouseEvent = new MouseEvent('mousedown', {
-                  clientX: touch.clientX,
-                  clientY: touch.clientY,
-                });
-                handleStart(mouseEvent as any);
-              }}
-              onTouchMove={(e) => {
-                e.preventDefault();
-                if (isDrawing) {
+        {/* 캔버스 섹션 */}
+        <CanvasSection>
+          <CanvasWrapper style={{ width: canvasSize, height: canvasSize }}>
+            {Platform.OS === 'web' ? (
+                <canvas
+                ref={canvasRef}
+                width={canvasSize}
+                height={canvasSize}
+                style={{
+                  width: canvasSize,
+                  height: canvasSize,
+                  backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                  borderRadius: 20,
+                  border: '2px solid rgba(127, 206, 187, 0.3)',
+                  cursor: 'crosshair',
+                  display: 'block',
+                  touchAction: 'none',
+                  userSelect: 'none',
+                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)',
+                }}
+                onMouseDown={handleStart}
+                onMouseMove={handleMove}
+                onMouseUp={handleEnd}
+                onMouseLeave={handleEnd}
+                onTouchStart={(e) => {
+                  e.preventDefault();
                   const touch = e.touches[0];
-                  const mouseEvent = new MouseEvent('mousemove', {
+                  const mouseEvent = new MouseEvent('mousedown', {
                     clientX: touch.clientX,
                     clientY: touch.clientY,
                   });
-                  handleMove(mouseEvent as any);
-                }
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                handleEnd(e as any);
-              }}
-            />
-          ) : (
-            <View style={styles.mobileNotSupported}>
-              <Text style={styles.mobileNotSupportedText}>
-                모바일 환경에서는 아직 지원되지 않습니다.
-              </Text>
-            </View>
-          )}
-        </View>
+                  handleStart(mouseEvent as any);
+                }}
+                onTouchMove={(e) => {
+                  e.preventDefault();
+                  if (isDrawing) {
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousemove', {
+                      clientX: touch.clientX,
+                      clientY: touch.clientY,
+                    });
+                    handleMove(mouseEvent as any);
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  handleEnd(e as any);
+                }}
+              />
+            ) : (
+              <MobileNotSupported>
+                <Svg width={48} height={48} fill="none" stroke="#7fcebb" viewBox="0 0 24 24">
+                  <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </Svg>
+                <MobileNotSupportedText>
+                  모바일 환경에서는 아직 지원되지 않습니다
+                </MobileNotSupportedText>
+              </MobileNotSupported>
+            )}
+          </CanvasWrapper>
+        </CanvasSection>
 
-        {/* 컨트롤 버튼들 */}
-        <View style={styles.controls}>
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={handleClear}
-            disabled={isSubmitting}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.clearButtonText}>모두 지우기</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.submitButton}
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.submitButtonText}>
-              {isSubmitting ? "제출 중..." : "제출하기"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    </View>
+                 {/* 컨트롤 버튼들 */}
+         <Controls style={{ width: canvasSize }}>
+           <ClearButton
+             onPress={handleClear}
+             disabled={isSubmitting}
+             activeOpacity={0.8}
+           >
+             <ClearButtonText>모두 지우기</ClearButtonText>
+           </ClearButton>
+           
+           <SubmitButton
+             onPress={handleSubmit}
+             disabled={isSubmitting}
+             activeOpacity={0.8}
+           >
+             <SubmitButtonText>
+               {isSubmitting ? "제출 중..." : "제출하기"}
+             </SubmitButtonText>
+           </SubmitButton>
+         </Controls>
+      </Content>
+
+      {/* 하단바 */}
+      <BottomBar currentPage="Drawing" />
+    </Container>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  
-  background: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.background,
-  },
-  
-  content: {
-    flex: 1,
-    padding: spacing.md,
-    paddingTop: spacing.xxl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
-  header: {
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  
-  backButton: {
-    position: 'absolute',
-    top: -spacing.xl,
-    left: -spacing.md,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(17, 24, 39, 0.82)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 110,
-  },
-  
-  title: {
-    fontSize: fontSize.xxxl,
-    fontWeight: '700',
-    color: '#7fcebb',
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  
-  subtitle: {
-    fontSize: fontSize.lg,
-    color: '#7fcebb',
-    textAlign: 'center',
-  },
-  
-  highlight: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: fontSize.xl,
-  },
-  
-  canvasWrapper: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-    ...(Platform.OS === 'web' && {
-      pointerEvents: 'auto',
-    }),
-  },
-  
-  canvas: {
-    backgroundColor: '#0f172a',
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    ...shadows.large,
-  },
-  
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.lg,
-    flexWrap: 'wrap',
-    marginTop: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  
-  clearButton: {
-    backgroundColor: '#334155',
-    borderRadius: borderRadius.round,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    ...shadows.medium,
-  },
-  
-  clearButtonText: {
-    fontSize: fontSize.md,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  
-  submitButton: {
-    backgroundColor: '#7fcebb',
-    borderRadius: borderRadius.round,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    ...shadows.medium,
-  },
-  
-  submitButtonText: {
-    fontSize: fontSize.md,
-    fontWeight: '700',
-    color: '#fff',
-  },
+// Styled Components
+const Container = styled.View`
+  flex: 1;
+  background: #0f172a;
+`;
 
-  mobileNotSupported: {
-    width: 300,
-    height: 300,
-    backgroundColor: '#0f172a',
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...shadows.large,
-  },
+const BackgroundGradient = styled.View`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #0f172a;
+`;
 
-  mobileNotSupportedText: {
-    fontSize: fontSize.lg,
-    color: '#7fcebb',
-    textAlign: 'center',
-  },
-});
-  
+const Content = styled(Animated.View)`
+  flex: 1;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 24px;
+  padding-bottom: 16px;
+  justify-content: space-between;
+`;
+
+const TitleSection = styled.View`
+  align-items: center;
+  margin-top: 100px;     
+  margin-bottom: 28px; 
+`;
+
+const Title = styled.Text`
+  font-size: 33px;
+  font-weight: 700;
+  color: #19B0CA;
+  margin-bottom: 8px;
+`;
+
+const Subtitle = styled.Text`
+  font-size: 16px;
+  color: #19B0CA;
+  font-weight: 500;
+  line-height: 20px;
+`;
+
+const Highlight = styled.Text`
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 18px;
+`;
+
+const CanvasSection = styled.View`
+  flex: 0;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 39px;   
+`;
+
+const CanvasWrapper = styled.View`
+  background: #222433;
+  border-radius: 18px;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+`;
+
+const Controls = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  align-self: center;
+  margin-bottom: 180px;
+  margin-top: 1px;
+  width: 100%;
+`;
+
+const ClearButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  background-color: #505664;
+  border-radius: 30px;
+  padding: 8px 20px;
+`;
+
+const ClearButtonText = styled.Text`
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+`;
+
+const SubmitButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  background-color: #19B0CA;
+  border-radius: 30px;
+  padding: 8px 20px;
+`;
+
+const SubmitButtonText = styled.Text`
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+`;
+
+const MobileNotSupported = styled.View`
+  width: 326px;
+  height: 326px;
+  background-color: rgba(15, 23, 42, 0.8);
+  border-radius: 16px;
+  border-width: 2px;
+  border-color: rgba(127, 206, 187, 0.3);
+  justify-content: center;
+  align-items: center;
+  elevation: 8;
+`;
+
+const MobileNotSupportedText = styled.Text`
+  font-size: 18px;
+  color: #7fcebb;
+  text-align: center;
+  margin-top: 16px;
+  padding-left: 20px;
+  padding-right: 20px;
+`;
