@@ -17,45 +17,22 @@ import type {
   EvaluateChatResponse,
   ChatResponse,
 } from '../types/api';
-import { storage } from '../store/reportHistoryStore';
-
-// 환경에 따른 API baseURL 설정
-export const getBaseURL = () => {
-  // React Native 환경인지 확인
-  if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
-    // React Native 환경에서는 Android 에뮬레이터용 IP 사용
-    return 'http://10.0.2.2:8000';
-  }
-  
-  // 웹 환경에서는 현재 도메인 기반으로 설정
-  if (typeof window !== 'undefined') {
-    // 개발 환경
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:8000';
-    }
-    // 배포 환경 - 현재 도메인과 같은 포트 사용
-    return `${window.location.protocol}//${window.location.hostname}:8000`;
-  }
-  
-  // 기본값
-  return 'http://localhost:8000';
-};
 
 // axios 인스턴스 생성
 const axiosInstance = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: 'https://www.neurocare11.site',
 });
 
 // 요청 인터셉터: 모든 요청에 access_token을 헤더에 추가
 axiosInstance.interceptors.request.use(
-  (config: any) => {
-    const token = storage.getItem('access_token');
+  (config) => {
+    const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error: any) => {
+  (error) => {
     return Promise.reject(error);
   }
 );
@@ -66,21 +43,26 @@ export const registerUser = async (userData: RegisterData) => {
   return response.data;
 };
 
-// 로그인 API: 로그인 성공 시 access_token을 반환 (상태 관리는 호출하는 쪽에서 처리)
+// 로그인 API: 로그인 성공 시 access_token을 localStorage에 저장
 export const loginUser = async (userData: LoginData) => {
   const response = await axiosInstance.post('/user/login', userData);
+  if (response.data.access_token) {
+    localStorage.setItem('access_token', response.data.access_token);
+  }
   return response.data;
 };
 
-// 로그아웃 API: 로그아웃 요청만 처리 (상태 관리는 호출하는 쪽에서 처리)
+// 로그아웃 API: 로그아웃 시 localStorage에서 access_token 제거
 export const logoutUser = async () => {
   const response = await axiosInstance.post<Message>('/user/logout');
+  localStorage.removeItem('access_token');
   return response.data;
 };
 
-// 사용자 계정 삭제 API: 삭제 요청만 처리 (상태 관리는 호출하는 쪽에서 처리)
+// 사용자 계정 삭제 API
 export const deleteUser = async () => {
   const response = await axiosInstance.delete<Message>('/user/delete');
+  localStorage.removeItem('access_token');
   return response.data;
 };
 
@@ -96,8 +78,8 @@ export const createEmptyReport = async (reportData: EmptyReportCreate) => {
   return response.data;
 };
 
-// 드로잉 테스트 업로드 API (React Native에서는 파일 업로드 방식이 다를 수 있음)
-export const uploadDrawingTest = async (reportId: number, file: any) => {
+// 드로잉 테스트 업로드 API
+export const uploadDrawingTest = async (reportId: number, file: File) => {
   const formData = new FormData();
   formData.append('reportId', reportId.toString());
   formData.append('file', file);
@@ -116,78 +98,85 @@ export const getReportResult = async (reportId: number) => {
   return response.data;
 };
 
-// 채팅 생성 API
+// 채팅방 생성 API
 export const createChat = async (chatData: CreateChatRequest) => {
   const response = await axiosInstance.post<CreateChatResponse>('/chat/create', chatData);
   return response.data;
 };
 
-// 채팅 로그 조회 API
+/**
+ * 리포트ID(reportId)로 해당 리포트의 모든 채팅 로그를 조회합니다.
+ * 백엔드에서 /chat/logs/{report_id} 엔드포인트를 사용합니다.
+ */
 export const getChatLogs = async (reportId: number) => {
   const response = await axiosInstance.get<ChatLogResponse[]>(`/chat/logs/${reportId}`);
   return response.data;
 };
 
-// 채팅 ID로 로그 조회 API
+/**
+ * chat_id로 해당 채팅의 모든 채팅 로그를 조회합니다.
+ * 백엔드에서 /chat/logs/{chat_id} 엔드포인트를 사용합니다.
+ */
 export const getChatLogsByChatId = async (chatId: number) => {
   const response = await axiosInstance.get<ChatLogResponse[]>(`/chat/logs/${chatId}`);
   return response.data;
 };
 
-// 스트림 채팅 API (React Native에서는 다르게 구현될 수 있음)
+// 채팅 스트리밍 API
 export const streamChat = async (chatRequest: ChatRequest, onData: (data: any) => void) => {
+  const response = await fetch(`${axiosInstance.defaults.baseURL}/chat/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+    },
+    body: JSON.stringify(chatRequest),
+  });
+
+  if (!response.body) {
+    throw new Error('Response body is null');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
   try {
-    const response = await fetch(`${getBaseURL()}/chat/stream`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${storage.getItem('access_token')}`,
-      },
-      body: JSON.stringify(chatRequest),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('Response body is null');
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = '';
-
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        break;
+      }
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+      buffer = lines.pop() || ''; // Keep the last partial line in the buffer
 
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') {
-            return;
+        if (line.startsWith('data:')) {
+          const dataString = line.substring(5).trim();
+          if (dataString === '[DONE]') {
+            return; // Stream finished
           }
-          try {
-            const parsed = JSON.parse(data);
-            onData(parsed);
-          } catch (e) {
-            console.error('Failed to parse SSE data:', e);
+          if (dataString) {
+            try {
+              const json = JSON.parse(dataString);
+              console.log('Received data:', json);
+              onData(json);
+            } catch (e) {
+              console.error('Error parsing JSON:', e, 'Data:', dataString);
+            }
           }
         }
       }
     }
-  } catch (error) {
-    console.error('Stream chat error:', error);
-    throw error;
+  } finally {
+    reader.releaseLock();
   }
 };
 
-// 채팅 평가 API
+
+// 채팅 평가 및 결과 저장 API
 export const evaluateChat = async (chatId: number, reportId: number) => {
   const response = await axiosInstance.post<EvaluateChatResponse>(
     `/chat/chats/${chatId}/evaluate`,
@@ -197,34 +186,19 @@ export const evaluateChat = async (chatId: number, reportId: number) => {
   return response.data;
 };
 
-// 리포트 최종화 API
+/**
+ * 리포트ID(reportId)로 해당 리포트를 최종화(finalize)합니다.
+ * 백엔드에서 /reports/{report_id}/finalize 엔드포인트를 사용합니다.
+ */
 export const finalizeReport = async (reportId: number) => {
   const response = await axiosInstance.put(`/reports/${reportId}/finalize`);
   return response.data;
 };
 
-// 음성-텍스트 변환 API (React Native에서는 파일 처리 방식이 다를 수 있음)
-export const speechToText = async (file: any) => {
+// STT API
+export const speechToText = async (file: File) => {
   const formData = new FormData();
-
-  let fileToUpload: Blob | File;
-  let fileName: string;
-  let fileType: string;
-
-  // Check if it's a React Native file object { uri, name, type }
-  if (file && typeof file === 'object' && file.uri && file.name && file.type) {
-    const response = await fetch(file.uri);
-    fileToUpload = await response.blob();
-    fileName = file.name;
-    fileType = file.type;
-  } else {
-    // Assume it's already a Blob or File object (e.g., from web)
-    fileToUpload = file;
-    fileName = file.name || 'audio.m4a'; // Fallback name
-    fileType = file.type || 'audio/m4a'; // Fallback type
-  }
-
-  formData.append('file', fileToUpload, fileName); // Append Blob with filename
+  formData.append('file', file);
 
   const response = await axiosInstance.post<{ text: string }>('/stt', formData, {
     headers: {
@@ -234,13 +208,13 @@ export const speechToText = async (file: any) => {
   return response.data;
 };
 
-// 텍스트-음성 변환 API
+// TTS API
 export const textToSpeech = async (text: string): Promise<Blob> => {
   const response = await axiosInstance.post('/tts', { text }, { responseType: 'blob' });
   return response.data;
 };
 
-// 채팅 요청 전송 API
+// 일반 채팅 메시지 전송 API (스트리밍 아님)
 export const sendChatRequest = async (chatRequest: ChatRequest) => {
   const response = await axiosInstance.post<ChatResponse>('/chat', chatRequest);
   return response.data;
@@ -255,4 +229,4 @@ export const getMyReports = async () => {
     console.error('Error getting my reports:', error);
     throw error;
   }
-}; 
+};

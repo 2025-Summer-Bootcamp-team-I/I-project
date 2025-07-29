@@ -16,7 +16,7 @@ import { RootStackParamList } from '../App';
 import { colors, spacing, fontSize, borderRadius, shadows } from '../AppStyle';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useReportHistoryStore } from '../store/reportHistoryStore';
-import type { MyReportSummary } from '@shared/types/api';
+import type { MyReportSummary } from '../types/api';
 
 type MyPageNavigationProp = StackNavigationProp<RootStackParamList, 'MyPage'>;
 
@@ -117,7 +117,7 @@ export default function MyPage() {
           </TouchableOpacity>
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../../shared/assets/imgs/logo.png')}
+              source={require('../assets/imgs/logo.png')}
               style={styles.logoImage}
             />
             <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
@@ -151,7 +151,7 @@ export default function MyPage() {
           </TouchableOpacity>
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../../shared/assets/imgs/logo.png')}
+              source={require('../assets/imgs/logo.png')}
               style={styles.logoImage}
             />
             <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
@@ -192,7 +192,7 @@ export default function MyPage() {
         </TouchableOpacity>
         <View style={styles.logoContainer}>
           <Image
-            source={require('../../../shared/assets/imgs/logo.png')}
+            source={require('../assets/imgs/logo.png')}
             style={styles.logoImage}
           />
           <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>

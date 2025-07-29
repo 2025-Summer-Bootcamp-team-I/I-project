@@ -1,10 +1,10 @@
-import { useReportIdStore } from "@shared/store/reportIdStore";
+import { useReportIdStore } from "../store/reportIdStore";
 import React, { useRef, useEffect, useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
-import NeuralBackground from '@shared/components/Background';
-import Header from "@shared/components/Header";
-import { uploadDrawingTest } from '@shared/api';
+import NeuralBackground from '../components/Background';
+import Header from "../components/Header";
+import { uploadDrawingTest } from '../api';
 
 const PageContainer = styled.div`
   display: flex;

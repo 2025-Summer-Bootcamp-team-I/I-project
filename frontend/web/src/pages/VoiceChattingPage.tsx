@@ -1,15 +1,15 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
-import Background from '@shared/components/Background';
-import Header from '@shared/components/Header';
-import { useVoiceChatStore } from '@shared/store/voiceChatStore';
-import { useReportIdStore } from '@shared/store/reportIdStore';
-import { speechToText, textToSpeech } from '@shared/api';
-import type { ChatLogResponse } from '@shared/types/api';
-import voiceChatRobot1 from '@shared/assets/imgs/robot-character1.png';
-import voiceChatRobot2 from '@shared/assets/imgs/robot-character2.png';
-import voiceChatRobot3 from '@shared/assets/imgs/robot-character3.png';
+import Background from '../components/Background';
+import Header from '../components/Header';
+import { useVoiceChatStore } from '../store/voiceChatStore';
+import { useReportIdStore } from '../store/reportIdStore';
+import { speechToText, textToSpeech } from '../api';
+import type { ChatLogResponse } from '../types/api';
+import voiceChatRobot1 from '../assets/imgs/robot-character1.png';
+import voiceChatRobot2 from '../assets/imgs/robot-character2.png';
+import voiceChatRobot3 from '../assets/imgs/robot-character3.png';
 
 const pulse = keyframes`
   0%, 100% { transform: scale(1); opacity: 1; }

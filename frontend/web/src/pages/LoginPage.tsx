@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import LoginBackground from "@shared/components/LoginBackground";
+import LoginBackground from "../components/LoginBackground";
 import { useState } from "react"; // useState 임포트
-import { loginUser } from "@shared/api"; // loginUser 임포트
-import type { LoginData } from "@shared/types/api"; // LoginData 임포트
+import { loginUser } from "../api"; // loginUser 임포트
+import type { LoginData } from "../types/api"; // LoginData 임포트
 
 export default function LoginPage() {
   const navigate = useNavigate();

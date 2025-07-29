@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import NeuralBackground from '@shared/components/Background';
-import Header from '@shared/components/Header';
-import useAD8TestStore from '@shared/store/testStore';
+import NeuralBackground from '../components/Background';
+import Header from '../components/Header';
+import useAD8TestStore from '../store/testStore';
 import styled from 'styled-components';
-import { submitAD8 } from '@shared/api';
-import { useReportIdStore } from '@shared/store/reportIdStore';
+import { submitAD8 } from '../api';
+import { useReportIdStore } from '../store/reportIdStore';
 
 const AD8Page = () => {
   const navigate = useNavigate();

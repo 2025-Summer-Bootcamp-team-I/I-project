@@ -77,7 +77,7 @@ export default function LoginPage() {
         </TouchableOpacity>
         <View style={styles.logoContainer}>
                           <Image
-          source={require('../../../shared/assets/imgs/logo.png')}
+          source={require('../assets/imgs/logo.png')}
           style={styles.logoImage}
         />
           <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>

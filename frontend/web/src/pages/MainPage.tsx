@@ -1,11 +1,11 @@
 // src/pages/MainPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import NeuralBackground from '@shared/components/Background';
-import Header from "@shared/components/Header";
+import NeuralBackground from '../components/Background';
+import Header from "../components/Header";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useReportIdStore } from "@shared/store/reportIdStore";
-import { createEmptyReport } from "@shared/api";
+import { useReportIdStore } from "../store/reportIdStore";
+import { createEmptyReport } from "../api";
 
 
 const TitleContainer = styled.div`
@@ -284,6 +284,15 @@ const MainPage = () => {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const navigate = useNavigate();
+  const resetReportId = useReportIdStore((state) => state.resetReportId);
+
+  useEffect(() => {
+    if (location.state?.needsReset) {
+      resetReportId();
+      const { needsReset, ...restState } = location.state;
+      navigate(location.pathname, { replace: true, state: restState });
+    }
+  }, [location, resetReportId, navigate]);
 
   const handleNext = () => {
     setCurrentIndex((prev: number) => (prev + 1) % dashboardData.length);

@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import LoginBackground from "@shared/components/LoginBackground";
+import LoginBackground from "../components/LoginBackground";
 import { useState } from "react"; // useState 임포트
-import { registerUser } from "@shared/api"; // registerUser 임포트
-import type { RegisterData } from "@shared/types/api"; // RegisterData 임포트
+import { registerUser } from "../api"; // registerUser 임포트
+import type { RegisterData } from "../types/api"; // RegisterData 임포트
 
 export default function RegisterPage() {
   const navigate = useNavigate();

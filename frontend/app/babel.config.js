@@ -5,9 +5,6 @@ module.exports = {
     [
       'module-resolver',
       {
-        alias: {
-          '@shared': '../shared',
-        },
         extensions: ['.ts', '.tsx', '.js', '.json'],
       },
     ],

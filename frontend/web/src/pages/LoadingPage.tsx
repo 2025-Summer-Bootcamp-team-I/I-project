@@ -1,5 +1,5 @@
 import styled, { keyframes } from 'styled-components';
-import LoginBackground from "@shared/components/LoginBackground";
+import LoginBackground from "../components/LoginBackground";
 
 /**
  * LoadingPage 컴포넌트 - 데이터 분석 중 로딩 화면
