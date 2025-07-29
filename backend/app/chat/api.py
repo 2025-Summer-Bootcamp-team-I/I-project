@@ -4,11 +4,6 @@ from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
 import asyncio
 import json
-from celery.result import AsyncResult
-from app.worker import stt_task, ai_chat_task, tts_task
-from app.celery import celery_app
-from celery import chain
-
 
 from app.database import get_db
 from app.auth.utils import get_current_user
@@ -27,6 +22,7 @@ from app.chat.stream_handler import get_streaming_chain
 from app.report.models import Report
 
 
+
 router = APIRouter(tags=["Chat"])
 
 
@@ -41,55 +37,22 @@ def is_gpt_end_response(response: str) -> bool:
 #
 @router.post(
     "",
-    summary="음성 채팅 시작 (STT -> AI -> TTS)",
-    description="음성 파일을 받아 전체 비동기 처리 파이프라인을 시작하고, 작업 ID를 반환합니다."
+    response_model=ChatResponse,
+    summary="채팅 메시지 전송",
+    description="채팅 메시지를 전송하고 AI 응답을 반환합니다."
 )
-async def chat(
-        report_id: int = Form(...),
-        chat_id: int = Form(...),
-        file: UploadFile = File(...),
+def chat(
+        request: ChatRequest,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
-    audio_content = await file.read()
-    
-    # STT -> AI Chat -> TTS 순서로 실행되는 Celery 체인 생성
-    pipeline = chain(
-        stt_task.s(audio_content=audio_content, original_filename=file.filename),
-        ai_chat_task.s(report_id=report_id, chat_id=chat_id),
-        tts_task.s()
+    response = chat_with_ai(
+        report_id=request.report_id,
+        chat_id=request.chat_id,
+        message=request.message,
+        db=db
     )
-    
-    # 파이프라인 시작
-    task = pipeline.delay()
-    
-    return {"task_id": task.id}
-
-
-@router.get("/task-status/{task_id}", summary="작업 상태 및 결과 조회")
-async def get_task_status(task_id: str):
-    """Celery 작업의 상태와 최종 결과(TTS 오디오)를 반환합니다."""
-    task_result = AsyncResult(task_id, app=celery_app)
-    
-    if task_result.failed():
-        response = {
-            "task_id": task_id,
-            "status": "FAILURE",
-            "error": str(task_result.result)
-        }
-    elif task_result.ready():
-        response = {
-            "task_id": task_id,
-            "status": "SUCCESS",
-            "result": task_result.result  # worker에서 반환한 딕셔너리
-        }
-    else:
-        response = {
-            "task_id": task_id,
-            "status": task_result.status
-        }
-    return response
-
+    return {"response": response}
 
 @router.post("/stream")
 async def stream_chat(
@@ -99,25 +62,50 @@ async def stream_chat(
 ):
     async def event_generator():
         import json
+        import logging
+        
         response_text = ""
-        chain, memory, handler = get_streaming_chain(request.report_id)
-        task = asyncio.create_task(chain.acall(request.message))
+        try:
+            # 1. get_streaming_chain 호출을 수정하고, 반환 값의 개수에 따라 분기 처리합니다.
+            result = get_streaming_chain(request.report_id, request.message)
+            is_farewell = False
+            if len(result) == 2:
+                chain, memory = result
+                is_farewell = True
+            else:
+                chain, memory, _ = result  # turn_count는 여기서 사용하지 않습니다.
 
-        async for token in handler.aiter():
+            # 2. astream을 사용하여 스트리밍을 처리합니다.
+            stream_input = {}
+            if not is_farewell:
+                stream_input = {"question": request.message}
 
-            response_text += token
+            async for chunk in chain.astream(stream_input):
+                token = ""
+                # LangChain 체인의 종류에 따라 반환되는 chunk의 타입이 다릅니다.
+                if isinstance(chunk, dict) and "answer" in chunk:
+                    token = chunk["answer"]  # ConversationalRetrievalChain의 경우
+                elif hasattr(chunk, 'content'):
+                    token = chunk.content  # LCEL 체인 (farewell)의 경우
+                
+                if token:
+                    response_text += token
+                    json_data = json.dumps({"token": token})
+                    yield f"data: {json_data}\\n\\n"
+            
+            # 스트리밍 성공 시 로그 저장
+            save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
+            if response_text:
+                save_chat_log(db, request.chat_id, RoleEnum.ai, response_text)
 
-            clean_token = token
-
-            # JSON 포맷 감싸기
-            json_data = json.dumps({"token": clean_token})
-
-            yield json_data
-
-        yield "[DONE]"
-
-        save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
-        save_chat_log(db, request.chat_id, RoleEnum.ai, response_text)
+        except Exception:
+            logging.exception("Error during streaming chat")
+            error_data = json.dumps({"error": "스트리밍 중 오류가 발생했습니다."})
+            yield f"data: {error_data}\\n\\n"
+        
+        finally:
+            # 3. 스트림 종료를 클라이언트에 알립니다.
+            yield "event: end\\ndata: [DONE]\\n\\n"
 
     return EventSourceResponse(event_generator())
 
