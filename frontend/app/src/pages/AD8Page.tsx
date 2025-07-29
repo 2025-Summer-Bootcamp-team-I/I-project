@@ -17,6 +17,7 @@ import { submitAD8 } from '../api';
 import { useReportIdStore } from '../store/reportIdStore';
 import useAD8TestStore from '../../src/store/testStore';
 import Svg, { Path } from 'react-native-svg';
+import AppHeader from '../components/AppHeader';
 
 type AD8PageNavigationProp = StackNavigationProp<RootStackParamList, 'AD8'>;
 
@@ -86,16 +87,8 @@ export default function AD8Page() {
       {/* 배경 */}
       <View style={styles.background} />
       
-             {/* 뒤로가기 버튼만 */}
-       <TouchableOpacity
-         style={styles.backButton}
-         onPress={() => navigation.navigate('Main' as any)}
-       >
-         <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
-           <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
-         </Svg>
-       </TouchableOpacity>
-
+      <AppHeader />
+      
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <Text style={styles.title}>AD-8 설문 검사</Text>
         <Text style={styles.subtitle}>최근 1년 동안의 변화에 해당되면 '예'를 선택해주세요.</Text>
@@ -240,24 +233,26 @@ const styles = StyleSheet.create({
    },
   
   title: {
-    fontSize: fontSize.xxxl,
-    fontWeight: '800',
-    color: '#96E7D4',
+    fontSize: fontSize.xxl,
+    fontWeight: '600',
+    color: '#5EEAD4',
     textAlign: 'center',
     marginBottom: spacing.sm,
+    marginTop: spacing.xxl * 2,
     letterSpacing: -1.2,
   },
   
   subtitle: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     color: '#94a3b8',
     textAlign: 'center',
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xl,
   },
   
   progressContainer: {
-    width: '100%',
-    marginBottom: spacing.xxl,
+    width: '90%',
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
   },
   
   progressLabel: {
@@ -276,17 +271,17 @@ const styles = StyleSheet.create({
   
   progress: {
     height: 6,
-    backgroundColor: '#96E7D4',
+    backgroundColor: '#2DD4BF',
     borderRadius: 3,
   },
   
   questionCard: {
     backgroundColor: '#131828',
     borderRadius: borderRadius.xl,
-    padding: spacing.xxl,
+    padding: spacing.xl,
     borderWidth: 1.7,
     borderColor: '#96E7D422',
-    width: '100%',
+    width: '90%',
     shadowColor: '#96e7d4',
     shadowOffset: {
       width: 0,
@@ -298,14 +293,14 @@ const styles = StyleSheet.create({
   },
   
   questionNumber: {
-    color: '#96E7D4',
+    color: '#9CA3AF',
     fontSize: fontSize.md,
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
   
   question: {
-    fontSize: fontSize.xxl,
+    fontSize: fontSize.xl,
     fontWeight: '600',
     color: colors.text,
     textAlign: 'center',
@@ -322,15 +317,17 @@ const styles = StyleSheet.create({
   
   answerButton: {
     flex: 1,
-    backgroundColor: '#253741',
+    backgroundColor: '#113742',
     borderRadius: borderRadius.round,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
     maxWidth: 140,
+    borderWidth: 1,
+    borderColor: '#125E60',
   },
   
   answerButtonText: {
-    color: '#B9F3E4',
+    color: '#99F6E4',
     fontSize: fontSize.md,
     fontWeight: '600',
     textAlign: 'center',
