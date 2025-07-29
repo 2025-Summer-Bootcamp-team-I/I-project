@@ -19,6 +19,7 @@ import { colors, spacing, fontSize, borderRadius, shadows, responsiveUtils, isSm
 import { createEmptyReport } from '../api';
 import { useReportIdStore } from '../store/reportIdStore';
 import Svg, { Path } from 'react-native-svg';
+import Header from '../components/AppHeader';
 
 type MainPageNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -270,78 +271,11 @@ export default function MainPage() {
       {/* 배경 */}
       <View style={styles.background} />
       
-      {/* 헤더 */}
-      <View style={[
-        styles.topHeader,
-        {
-          paddingTop: isSmallScreen ? spacing.md : spacing.lg,
-          paddingBottom: isSmallScreen ? spacing.xs : spacing.sm,
-        }
-      ]}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/imgs/logo.png')}
-            style={[
-              styles.logoImage,
-              {
-                width: isTablet ? 40 : 34,
-                height: isTablet ? 40 : 34,
-              }
-            ]}
-          />
-          <Text style={[
-            styles.logoText,
-            {
-              fontSize: isTablet ? fontSize.xl : fontSize.lg,
-            }
-          ]}>Neurocare 치매진단 서비스</Text>
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.myPageButton,
-            {
-              paddingVertical: isSmallScreen ? spacing.xs : spacing.sm,
-              paddingHorizontal: isTablet ? spacing.lg : spacing.md,
-            }
-          ]}
-          onPress={() => navigation.navigate('MyPage' as any)}
-        >
-          <Text style={[
-            styles.myPageButtonText,
-            {
-              fontSize: isTablet ? fontSize.md : fontSize.sm,
-            }
-          ]}>마이페이지</Text>
-        </TouchableOpacity>
-      </View>
+      {/* AppHeader 컴포넌트 */}
+      <Header 
+        showLogoText={true}
+      />
       
-      {/* 메인 헤더 */}
-      <View style={[
-        styles.header,
-        {
-          paddingTop: isSmallScreen ? spacing.lg : spacing.xxl,
-          paddingBottom: isSmallScreen ? spacing.md : spacing.xl,
-        }
-      ]}>
-        <Text style={[
-          styles.headerTitle,
-          {
-            fontSize: isTablet ? fontSize.xxxl : fontSize.xxl,
-            marginBottom: isSmallScreen ? spacing.sm : spacing.md,
-          }
-        ]}>기억 건강 진단 프로그램</Text>
-        <Text style={[
-          styles.headerSubtitle,
-          {
-            fontSize: isTablet ? fontSize.xl : fontSize.lg,
-            lineHeight: isTablet ? 28 : 24,
-            paddingHorizontal: isTablet ? spacing.xxl : spacing.xl,
-          }
-        ]}>
-          체계적인 4단계 검사를 통해 당신의 인지 건강을 정밀하게 분석합니다.
-        </Text>
-      </View>
-
       {/* 카드 슬라이더 */}
       <View style={[
         styles.sliderContainer,
@@ -365,13 +299,41 @@ export default function MainPage() {
           </Svg>
         </TouchableOpacity>
         
-        <View style={[
-          styles.cardContainer,
-          {
-            height: isTablet ? screenWidth * 0.6 : screenWidth * 0.85,
-          }
-        ]}>
-          {cards.map((card, index) => renderCard(card, index))}
+        <View style={styles.centerContent}>
+          {/* 메인 헤더 - 카드 바로 위에 배치 */}
+          <View style={[
+            styles.header,
+            {
+              paddingBottom: isSmallScreen ? spacing.md : spacing.lg,
+            }
+          ]}>
+            <Text style={[
+              styles.headerTitle,
+              {
+                fontSize: isTablet ? fontSize.xxxl : fontSize.xxl,
+                marginBottom: isSmallScreen ? spacing.sm : spacing.md,
+              }
+            ]}>기억 건강 진단 프로그램</Text>
+            <Text style={[
+              styles.headerSubtitle,
+              {
+                fontSize: isTablet ? fontSize.md : fontSize.sm,
+                lineHeight: isTablet ? 20 : 16,
+                paddingHorizontal: isTablet ? spacing.xxl : spacing.xl,
+              }
+            ]}>
+              체계적인 4단계 검사를 통해 당신의 인지 건강을 정밀하게 분석합니다.
+            </Text>
+          </View>
+          
+          <View style={[
+            styles.cardContainer,
+            {
+              height: isTablet ? screenWidth * 0.6 : screenWidth * 0.85,
+            }
+          ]}>
+            {cards.map((card, index) => renderCard(card, index))}
+          </View>
         </View>
         
         <TouchableOpacity
@@ -431,45 +393,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  topHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: spacing.xl,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'flex-start',
-  },
-  
-  logoImage: {
-    marginRight: spacing.sm,
-  },
-  
-  logoText: {
-    fontWeight: '700',
-    color: '#96e7d4',
-    letterSpacing: -1,
-  },
-  
-  myPageButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.7,
-    borderColor: '#96E7D4',
-    borderRadius: borderRadius.round,
-  },
-  
-  myPageButtonText: {
-    color: '#96E7D4',
-    fontWeight: '600',
-  },
-  
   header: {
     alignItems: 'center',
   },
@@ -481,8 +404,9 @@ const styles = StyleSheet.create({
   },
   
   headerSubtitle: {
-    color: colors.textSecondary,
+    color: '#D4DAE4',
     textAlign: 'center',
+    fontSize: fontSize.sm,
   },
   
   sliderContainer: {
@@ -492,8 +416,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   
-  cardContainer: {
+  centerContent: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  cardContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
