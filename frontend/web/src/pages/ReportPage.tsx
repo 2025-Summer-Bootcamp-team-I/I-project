@@ -1,20 +1,20 @@
 import React, { useRef, useEffect, useState } from "react";
 import styled, { createGlobalStyle } from "styled-components";
-import Background from "@shared/components/Background";
-import Header from "@shared/components/Header";
+import Background from "../components/Background";
+import Header from "../components/Header";
 import { useNavigate, useParams } from "react-router-dom";
-import { useReportIdStore } from "@shared/store/reportIdStore";
+import { useReportIdStore } from "../store/reportIdStore";
 import html2pdf from "html2pdf.js";
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import 'highcharts/highcharts-3d';
-import { useReportStore } from "@shared/store/reportStore";
-import { useReportHistoryStore } from "@shared/store/reportHistoryStore";
-import { getReportResult, getChatLogs, finalizeReport } from "@shared/api"; // finalizeReport 추가
-import lightbulbIcon from '@shared/assets/imgs/lightbulb.png'; // 경계, 기본
-import lightbulbBlueIcon from '@shared/assets/imgs/lightbulb-blue.png'; // 양호
-import lightbulbRedIcon from '@shared/assets/imgs/lightbulb-red.png'; // 주의
-import type { ChatLogResponse } from "@shared/types/api";
+import { useReportStore } from "../store/reportStore";
+import { useReportHistoryStore } from "../store/reportHistoryStore";
+import { getReportResult, getChatLogs, finalizeReport } from "../api"; // finalizeReport 추가
+import lightbulbIcon from '../assets/imgs/lightbulb.png'; // 경계, 기본
+import lightbulbBlueIcon from '../assets/imgs/lightbulb-blue.png'; // 양호
+import lightbulbRedIcon from '../assets/imgs/lightbulb-red.png'; // 주의
+import type { ChatLogResponse } from "../types/api";
 
 import LoadingPage from "./LoadingPage"; // LoadingPage 임포트
 
@@ -660,8 +660,7 @@ const ReportPage: React.FC = () => {
         </ScrollContent>
         <BottomButtonBar>
           <ActionBtn onClick={() => {
-            resetReportId();
-            navigate("/main");
+            navigate("/main", { state: { cardIndex: 0, needsReset: true } });
           }}>다시하기</ActionBtn>
           <ActionBtn $pdf onClick={handleDownloadPdf}>PDF로 저장</ActionBtn>
         </BottomButtonBar>
