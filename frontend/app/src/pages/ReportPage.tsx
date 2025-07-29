@@ -23,9 +23,9 @@ import type { ChatLogResponse } from '@shared/types/api';
 import type { ReportResponse } from '../store/reportStore';
 
 // lightbulb 이미지 에셋들 - require 사용
-const lightbulbIcon = require('../../../shared/assets/imgs/lightbulb.png');
-const lightbulbBlueIcon = require('../../../shared/assets/imgs/lightbulb-blue.png');
-const lightbulbRedIcon = require('../../../shared/assets/imgs/lightbulb-red.png');
+const lightbulbIcon = require('../assets/imgs/lightbulb.png');
+const lightbulbBlueIcon = require('../assets/imgs/lightbulb-blue.png');
+const lightbulbRedIcon = require('../assets/imgs/lightbulb-red.png');
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
