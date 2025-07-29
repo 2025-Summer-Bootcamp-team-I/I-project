@@ -38,9 +38,11 @@ PROMPT = (
     "[출력 형식 - 반드시 아래 JSON 형식 그대로 출력하세요]\n"
     "다음 형식에 맞추어 JSON만 출력하세요:\n"
     "{\n"
+    "  \"risk_score\": <0~5>,\n"
     "  \"drawing_score\": <0~5>,\n"
     "  \"drawingtest_result\": \"<선택한 점수의 판단 이유를 1~2문장으로 작성>\"\n"
     "}\n"
+    "※ risk_score와 drawing_score는 동일한 점수를 입력하세요.\n"
     "설명이 너무 길어지지 않도록 주의하세요. 반드시 위 JSON 형식만 출력하세요.\n"
 )
 
@@ -61,8 +63,12 @@ def call_gpt_vision(image_url: str):
     ]
     
     def img_to_base64(path):
-        with open(path, "rb") as f:
-            return base64.b64encode(f.read()).decode('utf-8')
+        try:
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode('utf-8')
+        except FileNotFoundError as e:
+            print(f"Error: Missing example image file: {path}")
+            return None
     
     # S3 URL에서 이미지 다운로드
     response = requests.get(image_url)
@@ -74,7 +80,11 @@ def call_gpt_vision(image_url: str):
     ]
     for score_text, img_path in example_image_info:
         content_list.append({"type": "text", "text": f"아래 이미지는 {score_text} 예시입니다."})
-        content_list.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_to_base64(img_path)}"}})
+        img_base64 = img_to_base64(img_path)
+        if img_base64:
+            content_list.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_base64}"}})
+        else:
+            print(f"Warning: Could not load image {img_path}")
         
     content_list.append({"type": "text", "text": "아래 이미지는 사용자가 그린 그림입니다."})
     content_list.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_data}"}})
