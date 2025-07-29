@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { ReportResponse } from "./reportStore";
 import type { MyReportSummary } from "@shared/types/api";
 
 // React Native용 메모리 스토리지 (임시)
@@ -24,6 +25,9 @@ export const removeAuthToken = () => {
  * 검사 기록 관리를 위한 상태 인터페이스
  */
 interface ReportHistoryState {
+  /** 저장된 모든 검사 결과 목록 */
+  reports: ReportResponse[];
+  
   /** 마이페이지용 리포트 요약 목록 */
   myReports: MyReportSummary[];
   
@@ -32,6 +36,15 @@ interface ReportHistoryState {
   
   /** 에러 상태 */
   error: string | null;
+  
+  /** 검사 결과 목록을 한번에 설정 (예: API에서 데이터를 받아올 때 사용) */
+  setReports: (reports: ReportResponse[]) => void;
+  
+  /** 새로운 검사 결과를 목록에 추가 */
+  addReport: (report: ReportResponse) => void;
+  
+  /** 모든 검사 기록을 초기화 */
+  clearReports: () => void;
   
   /** 마이페이지 리포트 목록을 API에서 가져오기 */
   fetchMyReports: () => Promise<void>;
@@ -55,9 +68,21 @@ interface ReportHistoryState {
  */
 export const useReportHistoryStore = create<ReportHistoryState>((set) => ({
   // 초기 상태: 빈 배열
+  reports: [],
   myReports: [],
   isLoading: false,
   error: null,
+  
+  // 검사 결과 목록 설정
+  setReports: (reports) => set({ reports }),
+  
+  // 새로운 검사 결과 추가
+  addReport: (report) => set((state) => ({ 
+    reports: [...state.reports, report] 
+  })),
+  
+  // 모든 검사 기록 초기화
+  clearReports: () => set({ reports: [], myReports: [] }),
   
   // 마이페이지 리포트 목록 설정
   setMyReports: (myReports) => set({ myReports }),

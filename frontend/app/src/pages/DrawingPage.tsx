@@ -17,8 +17,7 @@ import { RootStackParamList } from '../App';
 import { colors, spacing, fontSize, borderRadius, shadows } from '../AppStyle';
 import { useReportIdStore } from '../store/reportIdStore';
 import { uploadDrawingTest } from '../api';
-import Svg, { Path, Circle } from 'react-native-svg';
-import ViewShot from 'react-native-view-shot';
+import Svg, { Path } from 'react-native-svg';
 
 type DrawingPageNavigationProp = StackNavigationProp<RootStackParamList, 'Drawing'>;
 
@@ -27,20 +26,12 @@ interface Point {
   y: number;
 }
 
-interface DrawingLine {
-  points: Point[];
-  color: string;
-  width: number;
-}
-
 export default function DrawingPage() {
   const navigation = useNavigation<DrawingPageNavigationProp>();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPos, setLastPos] = useState<Point | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [drawingLines, setDrawingLines] = useState<DrawingLine[]>([]);
-  const [currentLine, setCurrentLine] = useState<DrawingLine | null>(null);
   
   const { reportId, setDrawingCompleted } = useReportIdStore();
   
@@ -65,56 +56,135 @@ export default function DrawingPage() {
   }, []);
 
   const canvasSize = Math.min(screenWidth * 0.8, screenHeight * 0.5);
-  const centerX = canvasSize / 2;
-  const centerY = canvasSize / 2;
-  const clockRadius = canvasSize * 0.35;
 
-  // 시계판 그리기 (초기화)
+  // 웹 환경에서 Canvas API 사용
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // 시계판 그리기 (웹 버전과 동일)
   const drawClockFace = () => {
-    setDrawingLines([]);
-    setCurrentLine(null);
+    if (Platform.OS !== 'web') return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      console.log('❌ Canvas ref가 없습니다');
+      return;
+    }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.log('❌ Canvas context를 가져올 수 없습니다');
+      return;
+    }
+    
+    // Canvas 크기를 고정값으로 설정 (마우스 이벤트 좌표계 문제 해결)
+    canvas.width = 326;
+    canvas.height = 326;
+    console.log('Canvas 크기 설정:', canvas.width, 'x', canvas.height);
+
+    // 시계판만 그리기 (유저 드로잉은 지우지 않음)
+    const radius = (canvas.width / 2) * 0.9;
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255,255,255,0.3)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 6, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fill();
+    ctx.restore();
+    console.log('✅ 시계판 그리기 완료');
   };
 
   useEffect(() => {
-    drawClockFace();
+    if (Platform.OS === 'web') {
+      // Canvas가 렌더링된 후 시계판 그리기
+      setTimeout(() => {
+        drawClockFace();
+      }, 100);
+    }
   }, []);
 
-  const handleStart = (x: number, y: number) => {
-    setIsDrawing(true);
-    setLastPos({ x, y });
-    const newLine: DrawingLine = {
-      points: [{ x, y }],
-      color: "#FFFFFF",
-      width: 3,
-    };
-    setCurrentLine(newLine);
-  };
-
-  const handleMove = (x: number, y: number) => {
-    if (!isDrawing || !lastPos || !currentLine) return;
+  // 마우스/터치 이벤트 핸들러 (웹 버전과 동일)
+  const getPos = (e: React.MouseEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
     
-    const updatedLine = {
-      ...currentLine,
-      points: [...currentLine.points, { x, y }],
-    };
-    setCurrentLine(updatedLine);
-    setLastPos({ x, y });
+    // Canvas 크기와 화면 크기의 비율 계산
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    console.log('🎯 Mouse position:', { clientX: e.clientX, clientY: e.clientY, rect: rect, x, y });
+    
+    return { x, y };
   };
 
-  const handleEnd = () => {
-    if (currentLine) {
-      setDrawingLines([...drawingLines, currentLine]);
-      setCurrentLine(null);
-    }
+  const handleStart = (e: React.MouseEvent) => {
+    if (Platform.OS !== 'web') return;
+    
+    console.log('🎨 Drawing START');
+    setIsDrawing(true);
+    const pos = getPos(e);
+    setLastPos(pos);
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // 새로운 경로 시작
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    console.log('🎨 Canvas path started at:', pos.x, pos.y);
+  };
+
+  const handleMove = (e: React.MouseEvent) => {
+    if (Platform.OS !== 'web' || !isDrawing) return;
+    
+    const pos = getPos(e);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !lastPos) return;
+    
+    // 선 그리기 설정
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    
+    // 선 그리기
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    setLastPos(pos);
+    console.log('🎨 Drawing line to:', pos.x, pos.y);
+  };
+
+  const handleEnd = (e: React.MouseEvent) => {
+    if (Platform.OS !== 'web') return;
+    console.log('🎨 Drawing END');
     setIsDrawing(false);
     setLastPos(null);
   };
 
   const handleClear = () => {
-    drawClockFace();
+    if (Platform.OS === 'web') {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // 캔버스 전체 지우기
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // 시계판 다시 그리기
+      drawClockFace();
+    }
   };
-
-  const canvasRef = useRef<ViewShot>(null);
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
@@ -128,129 +198,56 @@ export default function DrawingPage() {
     setIsSubmitting(true);
 
     try {
-      let imageUri: string;
-
       if (Platform.OS === 'web') {
-        // 웹 환경에서는 SVG를 Canvas로 변환하여 이미지 생성
-        console.log("웹 환경에서 SVG를 이미지로 변환 중...");
+        // 웹 환경에서는 Canvas를 직접 Blob으로 변환
+        console.log("웹 환경에서 Canvas를 Blob으로 변환 중...");
         
-        // SVG 요소 찾기
-        const svgElement = document.querySelector('svg');
-        if (!svgElement) {
-          throw new Error("SVG 요소를 찾을 수 없습니다.");
+        const canvas = canvasRef.current;
+        if (!canvas) {
+          throw new Error("Canvas를 찾을 수 없습니다.");
         }
 
-        // SVG를 문자열로 변환
-        const svgString = new XMLSerializer().serializeToString(svgElement);
-        const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
-        const svgUrl = URL.createObjectURL(svgBlob);
-
-        // Canvas 생성 및 이미지 그리기
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          throw new Error("Canvas context를 생성할 수 없습니다.");
-        }
-
-        canvas.width = canvasSize;
-        canvas.height = canvasSize;
-
-        // 배경색 설정
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(0, 0, canvasSize, canvasSize);
-
-        // SVG 이미지 로드 및 그리기
-        const img = new Image();
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = svgUrl;
-        });
-
-        ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
-        URL.revokeObjectURL(svgUrl);
+        // Canvas 크기 확인
+        console.log('Canvas 크기:', canvas.width, 'x', canvas.height);
+        console.log('Canvas 스타일 크기:', canvas.style.width, 'x', canvas.style.height);
 
         // Canvas를 Blob으로 변환
         const blob = await new Promise<Blob>((resolve) => {
           canvas.toBlob((blob) => {
-            if (blob) resolve(blob);
+            if (blob) {
+              console.log('Canvas Blob 생성 성공, 크기:', blob.size, 'bytes');
+              resolve(blob);
+            } else {
+              console.error('Canvas Blob 생성 실패');
+              throw new Error("Canvas를 Blob으로 변환할 수 없습니다.");
+            }
           }, 'image/png');
         });
 
-                 // Blob을 File로 변환
-         const file = new File([blob], 'drawing.png', { type: 'image/png' });
-         
-         // 기존 uploadDrawingTest 함수 사용 (인증 처리 포함)
-         await uploadDrawingTest(reportId, file);
-        imageUri = URL.createObjectURL(blob);
-      } else {
-        // 모바일 환경에서는 ViewShot 사용
-        console.log("모바일 환경에서 ViewShot 사용 중...");
+        // Blob을 File로 변환
+        const file = new File([blob], 'drawing.png', { type: 'image/png' });
+        console.log('File 생성 완료:', file.name, file.size, 'bytes');
         
-        if (canvasRef.current?.capture) {
-          imageUri = await canvasRef.current.capture();
-          
-          const formData = new FormData();
-          formData.append('file', {
-            uri: imageUri,
-            type: 'image/png',
-            name: 'drawing.png',
-          } as any);
-          
-          await uploadDrawingTest(reportId, formData);
-        } else {
-          throw new Error("캔버스를 찾을 수 없습니다.");
-        }
+        console.log("Canvas Blob 생성 완료, 업로드 시작...");
+        await uploadDrawingTest(reportId, file);
+        console.log("업로드 성공!");
+      } else {
+        // 모바일 환경에서는 ViewShot 사용 (기존 로직 유지)
+        console.log("모바일 환경에서 ViewShot 사용 중...");
+        Alert.alert("알림", "모바일 환경에서는 아직 지원되지 않습니다.");
+        return;
       }
       
-      console.log("그림 제출 성공!", imageUri);
+      console.log("그림 제출 성공!");
       setDrawingCompleted(true);
       Alert.alert("성공", "그림이 성공적으로 제출되었습니다.");
       navigation.navigate('Main' as any);
     } catch (error) {
       console.error("Error uploading drawing:", error);
-      Alert.alert("오류", "그림 제출 중 오류가 발생했습니다.");
+      Alert.alert("오류", `그림 제출 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: (evt) => {
-      const { locationX, locationY } = evt.nativeEvent;
-      handleStart(locationX, locationY);
-    },
-    onPanResponderMove: (evt) => {
-      const { locationX, locationY } = evt.nativeEvent;
-      handleMove(locationX, locationY);
-    },
-    onPanResponderRelease: () => {
-      handleEnd();
-    },
-  });
-
-  const renderDrawingLines = () => {
-    const allLines = [...drawingLines];
-    if (currentLine) {
-      allLines.push(currentLine);
-    }
-
-    return allLines.map((line, lineIndex) => (
-      <Svg key={lineIndex} width={canvasSize} height={canvasSize} style={StyleSheet.absoluteFill}>
-        <Path
-          d={line.points.map((point, index) => 
-            index === 0 ? `M ${point.x} ${point.y}` : `L ${point.x} ${point.y}`
-          ).join(' ')}
-          stroke={line.color}
-          strokeWidth={line.width}
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
-    ));
   };
 
   return (
@@ -286,39 +283,59 @@ export default function DrawingPage() {
 
         {/* 캔버스 */}
         <View style={styles.canvasWrapper}>
-          <ViewShot ref={canvasRef} options={{ format: 'png', quality: 0.9 }}>
-            <View
-              style={[
-                styles.canvas,
-                {
-                  width: canvasSize,
-                  height: canvasSize,
-                },
-              ]}
-              {...panResponder.panHandlers}
-            >
-              {/* 시계 외곽선 */}
-              <Svg width={canvasSize} height={canvasSize} style={StyleSheet.absoluteFill}>
-                <Circle
-                  cx={centerX}
-                  cy={centerY}
-                  r={clockRadius}
-                  stroke="rgba(255,255,255,0.3)"
-                  strokeWidth={2}
-                  fill="none"
-                />
-                <Circle
-                  cx={centerX}
-                  cy={centerY}
-                  r={6}
-                  fill="rgba(255,255,255,0.5)"
-                />
-              </Svg>
-              
-              {/* 그려진 선들 */}
-              {renderDrawingLines()}
+          {Platform.OS === 'web' ? (
+            <canvas
+              ref={canvasRef}
+              style={{
+                width: 326,
+                height: 326,
+                backgroundColor: '#0f172a',
+                borderRadius: borderRadius.lg,
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                cursor: 'crosshair',
+                display: 'block',
+                touchAction: 'none',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                MozUserSelect: 'none',
+                msUserSelect: 'none',
+              }}
+              onMouseDown={handleStart}
+              onMouseMove={handleMove}
+              onMouseUp={handleEnd}
+              onMouseLeave={handleEnd}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousedown', {
+                  clientX: touch.clientX,
+                  clientY: touch.clientY,
+                });
+                handleStart(mouseEvent as any);
+              }}
+              onTouchMove={(e) => {
+                e.preventDefault();
+                if (isDrawing) {
+                  const touch = e.touches[0];
+                  const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                  });
+                  handleMove(mouseEvent as any);
+                }
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                handleEnd(e as any);
+              }}
+            />
+          ) : (
+            <View style={styles.mobileNotSupported}>
+              <Text style={styles.mobileNotSupportedText}>
+                모바일 환경에서는 아직 지원되지 않습니다.
+              </Text>
             </View>
-          </ViewShot>
+          )}
         </View>
 
         {/* 컨트롤 버튼들 */}
@@ -415,6 +432,9 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     marginBottom: spacing.xl,
+    ...(Platform.OS === 'web' && {
+      pointerEvents: 'auto',
+    }),
   },
   
   canvas: {
@@ -461,6 +481,24 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: '700',
     color: '#fff',
+  },
+
+  mobileNotSupported: {
+    width: 300,
+    height: 300,
+    backgroundColor: '#0f172a',
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.large,
+  },
+
+  mobileNotSupportedText: {
+    fontSize: fontSize.lg,
+    color: '#7fcebb',
+    textAlign: 'center',
   },
 });
   
