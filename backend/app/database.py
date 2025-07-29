@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+from contextlib import contextmanager
 
 load_dotenv()
 MYSQL_USER = os.getenv("MYSQL_USER")
@@ -27,6 +28,19 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    finally:
+        db.close()
+
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    db = SessionLocal()
+    try:
+        yield db
+        db.commit()
+    except:
+        db.rollback()
+        raise
     finally:
         db.close()
 
