@@ -105,3 +105,16 @@ async def delete_file_from_s3(s3_url: str) -> bool:
     except Exception as e:
         print(f"파일 삭제 중 오류 발생: {str(e)}")
         return False
+
+def generate_presigned_url(s3_key: str, expiration: int = 3600) -> str:
+    try:
+        return s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': S3_BUCKET_NAME,
+                'Key': s3_key
+            },
+            ExpiresIn=expiration
+        )
+    except Exception as e:
+        raise Exception(f"Presigned URL 생성 실패: {str(e)}")

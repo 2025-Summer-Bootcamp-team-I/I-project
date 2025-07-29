@@ -148,7 +148,11 @@ export default function MainPage() {
         }
         navigation.navigate('Drawing' as any);
       } else if (testId === 'report') {
-        navigation.navigate('Report' as any);
+        if (!reportId) {
+          Alert.alert('오류', '리포트 ID를 찾을 수 없습니다. 메인 페이지에서 다시 시도해주세요.');
+          return;
+        }
+        navigation.navigate('Report' as any, { reportId: reportId.toString() });
       }
     } catch (error) {
       console.error('검사 시작 오류:', error);
