@@ -12,7 +12,7 @@ const Header: React.FC<HeaderProps> = ({ showLogoText = true, rightElement }) =>
     <View style={styles.headerBar}>
       <View style={styles.logoArea}>
         <Image 
-          source={require('@shared/assets/imgs/logo.png')} 
+          source={require('../assets/imgs/logo.png')} 
           style={styles.logoImage} 
           resizeMode="contain"
         />
