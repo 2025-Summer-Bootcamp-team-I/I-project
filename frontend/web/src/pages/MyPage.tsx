@@ -1,8 +1,8 @@
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
-import Background from "@shared/components/Background";
-import Header from "@shared/components/Header";
-import { useReportHistoryStore } from "@shared/store/reportHistoryStore";
+import Background from "../components/Background";
+import Header from "../components/Header";
+import { useReportHistoryStore } from "../store/reportHistoryStore";
 import { useEffect } from "react";
 
 // ChattingSelectPage에서 사용한 BackButton 스타일 복사

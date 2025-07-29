@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import Background from '@shared/components/Background';
-import Header from '@shared/components/Header';
+import Background from '../components/Background';
+import Header from '../components/Header';
 
 // Styled Components 정의
 const PageContainer = styled.div`

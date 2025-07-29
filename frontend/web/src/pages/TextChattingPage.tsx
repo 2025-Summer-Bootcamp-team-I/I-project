@@ -1,10 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import Background from '@shared/components/Background';
-import Header from '@shared/components/Header';
-import { useChatStore } from '@shared/store/chatStore';
-import { useReportIdStore } from '@shared/store/reportIdStore';
+import Background from '../components/Background';
+import Header from '../components/Header';
+import { useChatStore } from '../store/chatStore';
+import { useReportIdStore } from '../store/reportIdStore';
 
 const PageContainer = styled.div`
   position: relative;
@@ -17,11 +17,9 @@ const PageContainer = styled.div`
   padding: 1rem;
   color: white;
   box-sizing: border-box;
-  padding-bottom: 8rem; /* Add padding to create space at the bottom for the button bar */
 
   @media (max-width: 768px) {
     padding: 0.5rem;
-    padding-bottom: 7rem; /* Adjust for smaller screens */
   }
 `;
 
@@ -232,9 +230,7 @@ const ErrorMessage = styled.p`
 `;
 
 const BottomButtonBar = styled.div`
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  width: 100vw;
+  width: 100%;
   display: flex;
   justify-content: center;
   gap: 1.3rem;
@@ -244,31 +240,20 @@ const BottomButtonBar = styled.div`
 `;
 
 const ActionBtn = styled.button<{ $pdf?: boolean }>`
-  background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
-  color: #FFFFFF;
-  font-weight: 600;
-  border-radius: 1rem;
-  border: none; /* 그라데이션 배경을 위해 border 제거 */
-  font-size: 1.1rem;
-  padding: 0.8rem 2rem;
-  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
-  cursor: pointer;
-  transition: all 0.3s ease;
+  background-color: #06b6d4;
+  color: white;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.3s ease;
+
   &:hover {
-    background: linear-gradient(135deg, #6D28D9 0%, #5B21B6 100%);
-    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
-    transform: translateY(-2px);
+    background-color: #0891b2;
   }
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
-  }
-  &:disabled {
-    background: #4B5563;
-    color: #9CA3AF;
-    cursor: not-allowed;
-    box-shadow: none;
-    transform: none;
+
+  @media (max-width: 768px) {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
   }
 `;
 

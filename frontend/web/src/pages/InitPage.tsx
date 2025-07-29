@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
-import InitBackground from "@shared/components/InitBackground";
+import InitBackground from "../components/InitBackground";
 
 /**
  * InitPage 컴포넌트 - 온보딩 페이지
