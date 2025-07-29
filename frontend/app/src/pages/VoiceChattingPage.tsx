@@ -7,7 +7,7 @@ import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import { useVoiceChatStore } from '../store/voiceChatStore';
 import { useReportIdStore } from '../store/reportIdStore';
 import { speechToText, textToSpeech } from '../api';
-import type { ChatLogResponse } from '@shared/types/api';
+import type { ChatLogResponse } from '../types/api';
 import Svg, { Path } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
@@ -122,7 +122,7 @@ const VoiceChattingPage: React.FC = () => {
   const { chatId, messages, isLoading, createChat, sendMessage, clearMessages, addMessage, evaluateChat } = useVoiceChatStore();
   const [isListening, setIsListening] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
-  const [currentRobotImage, setCurrentRobotImage] = useState(require('@shared/assets/imgs/robot-character1.png'));
+  const [currentRobotImage, setCurrentRobotImage] = useState(require('../assets/imgs/robot-character1.png'));
   const [displayedAiMessage, setDisplayedAiMessage] = useState('');
 
   const recordingRef = useRef<Audio.Recording | null>(null);
@@ -189,7 +189,7 @@ const VoiceChattingPage: React.FC = () => {
       if (soundRef.current) {
         await soundRef.current.unloadAsync();
       }
-      setCurrentRobotImage(require('@shared/assets/imgs/robot-character2.png')); // TTS 재생 시작 시 robot2으로 변경
+      setCurrentRobotImage(require('../assets/imgs/robot-character2.png')); // TTS 재생 시작 시 robot2으로 변경
       setDisplayedAiMessage(''); // 새로운 TTS 시작 시 기존 메시지 초기화
 
       const audioBlob = await textToSpeech(text);
@@ -208,7 +208,7 @@ const VoiceChattingPage: React.FC = () => {
 
         sound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded && status.isPlaying) {
-            setCurrentRobotImage(require('@shared/assets/imgs/robot-character3.png')); // 재생 중 robot3
+            setCurrentRobotImage(require('../assets/imgs/robot-character3.png')); // 재생 중 robot3
             if (!intervalId) {
               const audioDuration = status.durationMillis || 0;
               const charDelay = text.length > 0 ? (audioDuration) / text.length : 0;
@@ -224,7 +224,7 @@ const VoiceChattingPage: React.FC = () => {
               }, charDelay);
             }
           } else if (status.isLoaded && !status.isPlaying && status.didJustFinish) {
-            setCurrentRobotImage(require('@shared/assets/imgs/robot-character1.png')); // 재생 종료 시 robot1으로 복귀
+            setCurrentRobotImage(require('../assets/imgs/robot-character1.png')); // 재생 종료 시 robot1으로 복귀
             if (intervalId) clearInterval(intervalId);
             setDisplayedAiMessage(text); // 음성 재생이 끝나면 전체 텍스트 표시
 
@@ -238,7 +238,7 @@ const VoiceChattingPage: React.FC = () => {
             };
             addMessage(aiMessage);
           } else if (status.isLoaded && !status.isPlaying && !status.didJustFinish) {
-            setCurrentRobotImage(require('@shared/assets/imgs/robot-character2.png')); // 일시 정지 시 robot2
+            setCurrentRobotImage(require('../assets/imgs/robot-character2.png')); // 일시 정지 시 robot2
             if (intervalId) clearInterval(intervalId);
           }
         });
@@ -246,7 +246,7 @@ const VoiceChattingPage: React.FC = () => {
     } catch (error) {
       console.error("Error with TTS:", error);
       Alert.alert("오류", "음성 재생 중 오류가 발생했습니다.");
-      setCurrentRobotImage(require('@shared/assets/imgs/robot-character1.png'));
+      setCurrentRobotImage(require('../assets/imgs/robot-character1.png'));
       setDisplayedAiMessage(text);
     }
   };
@@ -273,12 +273,12 @@ const VoiceChattingPage: React.FC = () => {
       await recording.startAsync();
       recordingRef.current = recording;
       setIsListening(true);
-      setCurrentRobotImage(require('@shared/assets/imgs/robot-character3.png'));
+      setCurrentRobotImage(require('../assets/imgs/robot-character3.png'));
     } catch (err) {
       console.error("Error starting recording:", err);
       Alert.alert("오류", "녹음 시작 중 오류가 발생했습니다.");
       setIsListening(false);
-      setCurrentRobotImage(require('@shared/assets/imgs/robot-character1.png'));
+      setCurrentRobotImage(require('../assets/imgs/robot-character1.png'));
     }
   };
 
@@ -290,7 +290,7 @@ const VoiceChattingPage: React.FC = () => {
       const uri = recordingRef.current.getURI();
       recordingRef.current = null;
       setIsListening(false);
-      setCurrentRobotImage(require('@shared/assets/imgs/robot-character1.png'));
+      setCurrentRobotImage(require('../assets/imgs/robot-character1.png'));
 
       if (uri) {
         const audioFile = {
@@ -321,7 +321,7 @@ const VoiceChattingPage: React.FC = () => {
       console.error("Error stopping recording:", err);
       Alert.alert("오류", "녹음 중지 중 오류가 발생했습니다.");
       setIsListening(false);
-      setCurrentRobotImage(require('@shared/assets/imgs/robot-character1.png'));
+      setCurrentRobotImage(require('../assets/imgs/robot-character1.png'));
     }
   };
 
