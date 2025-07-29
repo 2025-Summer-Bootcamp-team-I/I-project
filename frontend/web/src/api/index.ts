@@ -20,7 +20,7 @@ import type {
 
 // axios 인스턴스 생성
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: 'https://www.neurocare11.site',
 });
 
 // 요청 인터셉터: 모든 요청에 access_token을 헤더에 추가
