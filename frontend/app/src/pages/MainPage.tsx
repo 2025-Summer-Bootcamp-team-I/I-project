@@ -20,6 +20,7 @@ import { createEmptyReport } from '../api';
 import { useReportIdStore } from '../store/reportIdStore';
 import Svg, { Path } from 'react-native-svg';
 import Header from '../components/AppHeader';
+import BottomBar from '../components/BottomBar';
 
 type MainPageNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -178,13 +179,14 @@ export default function MainPage() {
       (card.required === 'conversation' && isChatCompleted) ||
       (card.required === 'drawing' && isDrawingCompleted);
 
-    // 카드 위치 계산 (정사각형 형태로 조정)
-    const cardWidth = isTablet ? screenWidth * 0.6 : screenWidth * 0.85;
-    const cardHeight = cardWidth; // 정사각형으로 만들기 위해 너비와 동일하게 설정
-    const dx = (index - currentIndex) * (cardWidth * 0.8); // 카드 간격
-    const scale = 1 - Math.abs(index - currentIndex) * 0.15; // 스케일 차이
-    const opacity = 1 - Math.abs(index - currentIndex) * 0.3; // 투명도 차이
-    const translateY = index !== currentIndex ? 20 : 0; // Y축 이동
+    // 현재 카드만 보이도록 설정
+    if (index !== currentIndex) {
+      return null;
+    }
+
+    // 카드 크기 설정 (더 작게 조정)
+    const cardWidth = isTablet ? screenWidth * 0.5 : screenWidth * 0.7;
+    const cardHeight = cardWidth * 0.8; // 높이를 너비보다 작게 설정하여 직사각형으로 만들기
 
     return (
       <Animated.View
@@ -194,13 +196,6 @@ export default function MainPage() {
           {
             width: cardWidth,
             height: cardHeight,
-            transform: [
-              { translateX: dx },
-              { scale },
-              { translateY },
-            ],
-            opacity,
-            zIndex: 4 - Math.abs(index - currentIndex),
           },
         ]}
       >
@@ -329,7 +324,7 @@ export default function MainPage() {
           <View style={[
             styles.cardContainer,
             {
-              height: isTablet ? screenWidth * 0.6 : screenWidth * 0.85,
+              height: isTablet ? screenWidth * 0.5 * 0.8 : screenWidth * 0.7 * 0.8,
             }
           ]}>
             {cards.map((card, index) => renderCard(card, index))}
@@ -352,31 +347,34 @@ export default function MainPage() {
         </TouchableOpacity>
       </View>
 
-      {/* 하단 점들 */}
-      <View style={[
-        styles.dotsContainer,
-        {
-          paddingBottom: isSmallScreen ? spacing.md : spacing.lg,
-        }
-      ]}>
-        {cards.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dot,
-              index === currentIndex && styles.activeDot,
-              {
-                width: isTablet ? 10 : 8,
-                height: isTablet ? 10 : 8,
-                borderRadius: isTablet ? 5 : 4,
-              }
-            ]}
-          />
-        ))}
-      </View>
-    </View>
-  );
-}
+             {/* 하단 점들 */}
+       <View style={[
+         styles.dotsContainer,
+         {
+           paddingBottom: isSmallScreen ? spacing.md : spacing.lg,
+         }
+       ]}>
+         {cards.map((_, index) => (
+           <View
+             key={index}
+             style={[
+               styles.dot,
+               index === currentIndex && styles.activeDot,
+               {
+                 width: isTablet ? 10 : 8,
+                 height: isTablet ? 10 : 8,
+                 borderRadius: isTablet ? 5 : 4,
+               }
+             ]}
+           />
+         ))}
+       </View>
+       
+       {/* BottomBar 컴포넌트 */}
+       <BottomBar currentPage="Main" />
+     </View>
+   );
+ }
 
 const styles = StyleSheet.create({
   container: {
@@ -419,7 +417,8 @@ const styles = StyleSheet.create({
   centerContent: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    marginTop: -spacing.xxxl * 2,
   },
   
   cardContainer: {
