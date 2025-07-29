@@ -174,18 +174,6 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   
-     backButton: {
-     position: 'absolute',
-     top: spacing.xl,
-     left: spacing.xl,
-     backgroundColor: 'rgba(17, 24, 39, 0.82)',
-     borderRadius: 20,
-     padding: spacing.sm,
-     borderWidth: 1,
-     borderColor: 'rgba(255, 255, 255, 0.1)',
-     zIndex: 100,
-   },
-  
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
