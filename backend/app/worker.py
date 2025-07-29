@@ -31,7 +31,7 @@ def stt_task(self, audio_content: bytes, original_filename: str):
     # 파일 내용을 바이트로 받아 처리하는 것이 더 안정적입니다.
     file_like_object = BytesIO(audio_content)
     fake_upload_file = UploadFile(filename=original_filename, file=file_like_object)
-    
+
     try:
         text = asyncio.run(transcribe_audio(fake_upload_file))
         print(f"STT Result: {text}")
