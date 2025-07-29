@@ -11,7 +11,7 @@ import ReportPage from './pages/ReportPage';
 import ChattingSelectPage from './pages/ChattingSelectPage';
 import VoiceChattingPage from './pages/VoiceChattingPage';
 import TextChattingPage from './pages/TextChattingPage';
-import ProtectedRoute from '@shared/components/ProtectedRoute';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
