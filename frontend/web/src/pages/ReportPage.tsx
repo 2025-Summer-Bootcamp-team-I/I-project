@@ -225,7 +225,7 @@ const ReportPage: React.FC = () => {
   const reportId = Number(reportIdFromUrl) || reportIdFromStore;
   const pdfRef = useRef<HTMLDivElement>(null);
   const chartComponentRef = useRef<HighchartsReact.RefObject>(null);
-  const resetReportId = useReportIdStore((state) => state.resetReportId);
+  
   const { report, setReport } = useReportStore();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
