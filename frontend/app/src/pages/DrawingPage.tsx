@@ -18,6 +18,7 @@ import { colors, spacing, fontSize, borderRadius, shadows } from '../AppStyle';
 import { useReportIdStore } from '../store/reportIdStore';
 import { uploadDrawingTest } from '../api';
 import Svg, { Path } from 'react-native-svg';
+import { captureRef } from 'react-native-view-shot';
 
 type DrawingPageNavigationProp = StackNavigationProp<RootStackParamList, 'Drawing'>;
 
@@ -232,10 +233,30 @@ export default function DrawingPage() {
         await uploadDrawingTest(reportId, file);
         console.log("업로드 성공!");
       } else {
-        // 모바일 환경에서는 ViewShot 사용 (기존 로직 유지)
+        // 모바일 환경에서는 ViewShot 사용
         console.log("모바일 환경에서 ViewShot 사용 중...");
-        Alert.alert("알림", "모바일 환경에서는 아직 지원되지 않습니다.");
-        return;
+        
+        const canvasViewRef = canvasRef.current;
+        if (!canvasViewRef) {
+          throw new Error("캔버스를 찾을 수 없습니다.");
+        }
+
+        // ViewShot을 사용하여 캔버스를 이미지로 캡처
+        const uri = await captureRef(canvasViewRef, {
+          format: 'png',
+          quality: 0.8,
+        });
+
+        console.log("ViewShot 캡처 완료:", uri);
+
+        // URI를 File로 변환
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        const file = new File([blob], 'drawing.png', { type: 'image/png' });
+        
+        console.log("모바일 File 생성 완료:", file.name, file.size, 'bytes');
+        await uploadDrawingTest(reportId, file);
+        console.log("모바일 업로드 성공!");
       }
       
       console.log("그림 제출 성공!");
