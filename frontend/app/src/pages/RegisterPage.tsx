@@ -19,6 +19,7 @@ import { registerUser } from '../api';
 import Svg, { Path } from 'react-native-svg';
 import { GLView, ExpoWebGLRenderingContext } from 'expo-gl';
 import * as THREE from 'three';
+import Header from '../components/AppHeader';
 
 type RegisterPageNavigationProp = StackNavigationProp<RootStackParamList, 'Register'>;
 
@@ -166,24 +167,9 @@ export default function RegisterPage() {
       </View>
 
       {/* Header */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
-            <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
-          </Svg>
-        </TouchableOpacity>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/imgs/logo.png')}
-            style={styles.logoImage}
-          />
-          <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
-        </View>
-        <View style={styles.placeholder} />
-      </View>
+      <Header 
+        showLogoText={true}
+      />
 
       {/* Main Content */}
       <View style={styles.content}>
@@ -266,45 +252,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 0,
-  },
-  topHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
-    backgroundColor: 'rgba(17, 24, 39, 0.82)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-    zIndex: 1,
-  },
-  backButton: {
-    backgroundColor: 'rgba(17, 24, 39, 0.82)',
-    borderRadius: 20,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  logoImage: {
-    width: 34,
-    height: 34,
-    marginRight: spacing.sm,
-  },
-  logoText: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
-    color: '#96e7d4',
-    letterSpacing: -1,
-  },
-  placeholder: {
-    width: 40,
   },
   content: {
     flex: 1,
