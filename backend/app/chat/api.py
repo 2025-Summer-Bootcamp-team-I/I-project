@@ -4,6 +4,11 @@ from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
 import asyncio
 import json
+from celery.result import AsyncResult
+from app.worker import stt_task, ai_chat_task, tts_task
+from app.celery import celery_app
+from celery import chain
+
 
 from app.database import get_db
 from app.auth.utils import get_current_user
@@ -36,22 +41,55 @@ def is_gpt_end_response(response: str) -> bool:
 #
 @router.post(
     "",
-    response_model=ChatResponse,
-    summary="채팅 메시지 전송",
-    description="채팅 메시지를 전송하고 AI 응답을 반환합니다."
+    summary="음성 채팅 시작 (STT -> AI -> TTS)",
+    description="음성 파일을 받아 전체 비동기 처리 파이프라인을 시작하고, 작업 ID를 반환합니다."
 )
-def chat(
-        request: ChatRequest,
+async def chat(
+        report_id: int = Form(...),
+        chat_id: int = Form(...),
+        file: UploadFile = File(...),
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)
 ):
-    response = chat_with_ai(
-        report_id=request.report_id,
-        chat_id=request.chat_id,
-        message=request.message,
-        db=db
+    audio_content = await file.read()
+    
+    # STT -> AI Chat -> TTS 순서로 실행되는 Celery 체인 생성
+    pipeline = chain(
+        stt_task.s(audio_content=audio_content, original_filename=file.filename),
+        ai_chat_task.s(report_id=report_id, chat_id=chat_id),
+        tts_task.s()
     )
-    return {"response": response}
+    
+    # 파이프라인 시작
+    task = pipeline.delay()
+    
+    return {"task_id": task.id}
+
+
+@router.get("/task-status/{task_id}", summary="작업 상태 및 결과 조회")
+async def get_task_status(task_id: str):
+    """Celery 작업의 상태와 최종 결과(TTS 오디오)를 반환합니다."""
+    task_result = AsyncResult(task_id, app=celery_app)
+    
+    if task_result.failed():
+        response = {
+            "task_id": task_id,
+            "status": "FAILURE",
+            "error": str(task_result.result)
+        }
+    elif task_result.ready():
+        response = {
+            "task_id": task_id,
+            "status": "SUCCESS",
+            "result": task_result.result  # worker에서 반환한 딕셔너리
+        }
+    else:
+        response = {
+            "task_id": task_id,
+            "status": task_result.status
+        }
+    return response
+
 
 @router.post("/stream")
 async def stream_chat(
@@ -62,22 +100,22 @@ async def stream_chat(
     async def event_generator():
         import json
         response_text = ""
-        # 핸들러 없이 체인과 메모리만 받도록 수정
-        chain, memory, turn_count = get_streaming_chain(request.report_id, request.message)
-        
-        # 새로운 astream 방식으로 호출하고, 답변(answer)만 사용
-        async for chunk in chain.astream(request.message):
-            # astream은 보통 딕셔너리 형태로 여러 정보를 반환하므로, 'answer' 키만 추출
-            if "answer" in chunk:
-                token = chunk["answer"]
-                
-                response_text += token
-                json_data = json.dumps({"token": token})
-                yield json_data
+        chain, memory, handler = get_streaming_chain(request.report_id)
+        task = asyncio.create_task(chain.acall(request.message))
+
+        async for token in handler.aiter():
+
+            response_text += token
+
+            clean_token = token
+
+            # JSON 포맷 감싸기
+            json_data = json.dumps({"token": clean_token})
+
+            yield json_data
 
         yield "[DONE]"
 
-        # 대화가 끝난 후 전체 대화 내용을 DB에 한 번에 저장
         save_chat_log(db, request.chat_id, RoleEnum.user, request.message)
         save_chat_log(db, request.chat_id, RoleEnum.ai, response_text)
 
