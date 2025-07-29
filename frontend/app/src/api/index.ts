@@ -19,9 +19,31 @@ import type {
 } from '@shared/types/api';
 import { storage } from '../store/reportHistoryStore';
 
+// 환경에 따른 API baseURL 설정
+export const getBaseURL = () => {
+  // React Native 환경인지 확인
+  if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
+    // React Native 환경에서는 Android 에뮬레이터용 IP 사용
+    return 'http://10.0.2.2:8000';
+  }
+  
+  // 웹 환경에서는 현재 도메인 기반으로 설정
+  if (typeof window !== 'undefined') {
+    // 개발 환경
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:8000';
+    }
+    // 배포 환경 - 현재 도메인과 같은 포트 사용
+    return `${window.location.protocol}//${window.location.hostname}:8000`;
+  }
+  
+  // 기본값
+  return 'http://localhost:8000';
+};
+
 // axios 인스턴스 생성
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: getBaseURL(),
 });
 
 // 요청 인터셉터: 모든 요청에 access_token을 헤더에 추가
@@ -115,7 +137,7 @@ export const getChatLogsByChatId = async (chatId: number) => {
 // 스트림 채팅 API (React Native에서는 다르게 구현될 수 있음)
 export const streamChat = async (chatRequest: ChatRequest, onData: (data: any) => void) => {
   try {
-    const response = await fetch('http://localhost:8000/chat/stream', {
+    const response = await fetch(`${getBaseURL()}/chat/stream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

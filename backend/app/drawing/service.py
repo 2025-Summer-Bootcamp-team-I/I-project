@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException
 import re
 from ..report.models import Report, RiskLevel
+from urllib.parse import urlparse
+
 
 env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
 load_dotenv(env_path)
@@ -138,8 +140,13 @@ async def handle_upload(
         logger.info("S3 업로드 시작")
         image_url = await utils.save_file_to_s3(file)
         logger.info(f"S3 업로드 완료 - URL: {image_url}")
-        
-        # GPT Vision 분석
+
+        # presigned URL 생성
+        parsed = urlparse(image_url)
+        s3_key = parsed.path.lstrip("/")  # 'drawings/abc.png'
+        presigned_url = utils.generate_presigned_url(s3_key)
+
+        # GPT Vision 분석 (원래 S3 URL로 전송)
         logger.info("GPT Vision 분석 시작")
         risk_score, drawing_score, drawingtest_result = call_gpt_vision(image_url)
         logger.info(f"GPT Vision 분석 완료 - 점수: {drawing_score}")
@@ -171,6 +178,7 @@ async def handle_upload(
             "drawing_id": db_obj.drawing_id,
             "report_id": db_obj.report_id,
             "image_url": db_obj.image_url,
+            "presigned_url": presigned_url,
             "risk_score": risk_score,
             "drawing_score": drawing_score,
             "drawingtest_result": drawingtest_result,
