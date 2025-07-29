@@ -18,6 +18,7 @@ import { useReportIdStore } from '../store/reportIdStore';
 import useAD8TestStore from '../../src/store/testStore';
 import Svg, { Path } from 'react-native-svg';
 import AppHeader from '../components/AppHeader';
+import BottomBar from '../components/BottomBar';
 
 type AD8PageNavigationProp = StackNavigationProp<RootStackParamList, 'AD8'>;
 
@@ -86,9 +87,9 @@ export default function AD8Page() {
     <View style={styles.container}>
       {/* 배경 */}
       <View style={styles.background} />
-      
+
       <AppHeader />
-      
+
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <Text style={styles.title}>AD-8 설문 검사</Text>
         <Text style={styles.subtitle}>최근 1년 동안의 변화에 해당되면 '예'를 선택해주세요.</Text>
@@ -101,7 +102,7 @@ export default function AD8Page() {
                 <View style={[styles.progress, { width: `${(currentQuestionIndex / questions.length) * 100}%` }]} />
               </View>
             </View>
-            
+
             <View style={styles.questionCard}>
               <Text style={styles.questionNumber}>질문 {currentQuestionIndex + 1}/{questions.length}</Text>
               <Text style={styles.question}>{questions[currentQuestionIndex]}</Text>
@@ -142,6 +143,8 @@ export default function AD8Page() {
             </TouchableOpacity>
           </View>
         )}
+
+        <BottomBar currentPage="AD8" />
       </ScrollView>
     </View>
   );
@@ -152,7 +155,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  
+
   background: {
     position: 'absolute',
     top: 0,
@@ -161,7 +164,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: colors.background,
   },
-  
+
   topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -173,27 +176,27 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
-  
+
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
   },
-  
+
   logoImage: {
     width: 34,
     height: 34,
     marginRight: spacing.sm,
   },
-  
+
   logoText: {
     fontSize: fontSize.lg,
     fontWeight: '700',
     color: '#96e7d4',
     letterSpacing: -1,
   },
-  
+
   myPageButton: {
     backgroundColor: 'transparent',
     borderWidth: 1.7,
@@ -202,24 +205,24 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
-  
+
   myPageButtonText: {
     color: '#96E7D4',
     fontSize: fontSize.sm,
     fontWeight: '600',
   },
-  
+
   content: {
     flex: 1,
   },
-  
-     contentContainer: {
-     paddingTop: spacing.xl,
-     paddingHorizontal: spacing.xl,
-     paddingBottom: spacing.xl,
-     alignItems: 'center',
-   },
-  
+
+  contentContainer: {
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxxl * 4.5,
+    alignItems: 'center',
+  },
+
   title: {
     fontSize: fontSize.xxl,
     fontWeight: '600',
@@ -229,26 +232,26 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxl * 2,
     letterSpacing: -1.2,
   },
-  
+
   subtitle: {
     fontSize: fontSize.md,
     color: '#94a3b8',
     textAlign: 'center',
     marginBottom: spacing.xl,
   },
-  
+
   progressContainer: {
     width: '90%',
     marginTop: spacing.lg,
     marginBottom: spacing.lg,
   },
-  
+
   progressLabel: {
     color: '#94a3b8',
     fontSize: fontSize.sm,
     marginBottom: spacing.sm,
   },
-  
+
   progressBar: {
     width: '100%',
     height: 6,
@@ -256,13 +259,13 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     overflow: 'hidden',
   },
-  
+
   progress: {
     height: 6,
     backgroundColor: '#2DD4BF',
     borderRadius: 3,
   },
-  
+
   questionCard: {
     backgroundColor: '#131828',
     borderRadius: borderRadius.xl,
@@ -279,14 +282,14 @@ const styles = StyleSheet.create({
     shadowRadius: 38,
     elevation: 10,
   },
-  
+
   questionNumber: {
     color: '#9CA3AF',
     fontSize: fontSize.md,
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
-  
+
   question: {
     fontSize: fontSize.xl,
     fontWeight: '600',
@@ -296,13 +299,13 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     letterSpacing: -0.5,
   },
-  
+
   buttonContainer: {
     flexDirection: 'row',
     gap: spacing.lg,
     justifyContent: 'center',
   },
-  
+
   answerButton: {
     flex: 1,
     backgroundColor: '#113742',
@@ -313,14 +316,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#125E60',
   },
-  
+
   answerButtonText: {
     color: '#99F6E4',
     fontSize: fontSize.md,
     fontWeight: '600',
     textAlign: 'center',
   },
-  
+
   resultCard: {
     backgroundColor: '#131828',
     borderRadius: borderRadius.xl,
@@ -330,7 +333,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  
+
   resultTitle: {
     fontSize: fontSize.xxxl,
     fontWeight: '700',
@@ -338,19 +341,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
-  
+
   resultScore: {
     fontSize: fontSize.lg,
     color: '#94a3b8',
     textAlign: 'center',
     marginBottom: spacing.md,
   },
-  
+
   score: {
     color: '#96E7D4',
     fontWeight: '700',
   },
-  
+
   resultMessage: {
     fontSize: fontSize.md,
     color: '#f87171',
@@ -358,18 +361,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxl,
     lineHeight: 24,
   },
-  
+
   goodMessage: {
     color: '#96E7D4',
   },
-  
+
   homeButton: {
     backgroundColor: '#96E7D4',
     borderRadius: borderRadius.round,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
   },
-  
+
   homeButtonText: {
     color: '#131828',
     fontSize: fontSize.md,
