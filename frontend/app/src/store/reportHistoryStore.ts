@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { MyReportSummary } from "@shared/types/api";
+import type { MyReportSummary } from "../types/api";
 
 // React Native용 메모리 스토리지 (임시)
 const memoryStorage: { [key: string]: string } = {};

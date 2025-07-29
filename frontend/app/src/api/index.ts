@@ -16,7 +16,7 @@ import type {
   ChatLogResponse,
   EvaluateChatResponse,
   ChatResponse,
-} from '@shared/types/api';
+} from '../types/api';
 import { storage } from '../store/reportHistoryStore';
 
 // axios 인스턴스 생성
