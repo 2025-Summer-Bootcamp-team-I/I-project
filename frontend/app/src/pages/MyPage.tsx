@@ -9,6 +9,7 @@ import {
   Animated,
   Image,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -64,6 +65,19 @@ const TestIcon = ({ label, risk }: { label: string, risk?: '양호' | '경계' |
 export default function MyPage() {
   const navigation = useNavigation<MyPageNavigationProp>();
   const { myReports, isLoading, error, fetchMyReports } = useReportHistoryStore();
+  
+  // 화면 크기 가져오기
+  const { width: screenWidth } = useWindowDimensions();
+  
+  // 화면 크기에 따라 카드 너비 계산
+  const getCardWidth = () => {
+    // 모바일에서는 기본적으로 2개씩 보여주되, 화면이 너무 작으면 1개씩
+    if (screenWidth < 350) {
+      return '100%'; // 매우 작은 화면에서는 한 열로
+    } else {
+      return undefined; // flex로 자동 계산되도록
+    }
+  };
   
   // 애니메이션 값들
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -189,7 +203,13 @@ export default function MyPage() {
                  return (
                    <TouchableOpacity
                      key={report.report_id}
-                     style={[styles.reportCard, { borderColor: finalStatus === 'danger' ? '#F87171' : finalStatus === 'warning' ? '#FBBF24' : finalStatus === 'good' ? '#6EE7B7' : '#94A3B8' }]}
+                     style={[
+                       styles.reportCard, 
+                       { 
+                         width: getCardWidth(),
+                         borderColor: finalStatus === 'danger' ? '#F87171' : finalStatus === 'warning' ? '#FBBF24' : finalStatus === 'good' ? '#6EE7B7' : '#94A3B8' 
+                       }
+                     ]}
                      onPress={() => handleViewReport(report.report_id)}
                      activeOpacity={0.8}
                    >
@@ -365,16 +385,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
     marginBottom: spacing.lg,
+    paddingHorizontal: 0, // 좌우 패딩 제거 (카드에서 직접 계산)
   },
   
   reportCard: {
-    width: '48%', // 2x2 그리드 레이아웃을 위해 각 카드의 너비를 48%로 설정
     backgroundColor: 'rgba(30, 41, 59, 0.7)',
     borderWidth: 1,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     ...shadows.medium,
     minHeight: 200, // 최소 높이 설정
+    minWidth: 140, // 최소 너비 조정
+    flex: 1, // 남은 공간을 균등하게 분배
+    maxWidth: '48%', // 최대 너비 제한
   },
   
   reportHeader: {
@@ -420,12 +443,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
     marginBottom: spacing.md,
+    flexWrap: 'wrap',
   },
   
   testIconContainer: {
     alignItems: 'center',
     gap: spacing.xs,
     flex: 1,
+    minWidth: 50,
   },
   
   testIconLabel: {
