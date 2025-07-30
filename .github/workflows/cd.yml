@@ -1,4 +1,4 @@
-name: CD - Deploy to Server on main branch
+name: CD Deploy to EC2 on main branch
 
 on:
   push:
@@ -19,8 +19,11 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          disable_host_key_check: true
+          debug: true
           script: |
             cd /home/ubuntu/I-project
-            git pull origin main
-            docker-compose down
-            docker-compose up -d --build
+            git fetch --all
+            git reset --hard origin/main
+            docker compose down
+            docker compose up -d --build
