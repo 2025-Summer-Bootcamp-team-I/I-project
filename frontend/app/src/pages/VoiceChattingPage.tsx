@@ -9,6 +9,7 @@ import { useReportIdStore } from '../store/reportIdStore';
 import { speechToText, textToSpeech } from '../api';
 import type { ChatLogResponse } from '../types/api';
 import Svg, { Path } from 'react-native-svg';
+import BottomBar from '../components/BottomBar';
 
 const { width, height } = Dimensions.get('window');
 
@@ -20,18 +21,20 @@ const PageContainer = styled.View`
   background-color: transparent;
 `;
 
-const BackButton = styled.TouchableOpacity`
-  background-color: rgba(255, 255, 255, 0.05);
-  border-width: 1px;
-  border-color: rgba(255, 255, 255, 0.1);
+const TopLeftButtonContainer = styled.View`
+  position: absolute;
+  top: ${width > 768 ? 32 : 24}px;
+  left: ${width > 768 ? 24 : 12}px;
+  z-index: 30;
+  align-items: center;
+`;
+
+const CloseButton = styled.TouchableOpacity`
+  background-color: #606060;
   border-radius: 9999px;
-  padding: ${width > 768 ? 6 : 4}px; /* Adjusted padding */
+  padding: ${width > 768 ? 6 : 4}px;
   align-items: center;
   justify-content: center;
-  position: absolute;
-  top: ${width > 768 ? 32 : 24}px; /* Adjusted top */
-  left: ${width > 768 ? 24 : 12}px; /* Adjusted left */
-  z-index: 30;
 `;
 
 const ContentWrapper = styled.View`
@@ -44,13 +47,15 @@ const ContentWrapper = styled.View`
 
 const QuestionText = styled.Text`
   color: #67e8f9;
-  font-size: ${width > 768 ? 1.25 * 16 : 0.9 * 16}px; /* Adjusted font size */
+  font-size: ${width > 768 ? 1.3 * 16 : 1.0 * 16}px;
   font-weight: 600;
   text-align: center;
-  line-height: ${1.5 * 16}px;
+  line-height: ${1.3 * 16}px;
   padding-bottom: 0;
-  margin-top: 8px; /* Adjusted margin-top */
-  min-height: ${width > 768 ? 7 * 16 : 5 * 16}px; /* Adjusted min-height */
+  margin-top: 8px;
+  min-height: ${width > 768 ? 7 * 16 : 5 * 16}px;
+  padding-left: 32px;
+  padding-right: 32px;
 `;
 
 const VoiceAICharacter = styled(Animated.View)<{ $isListening: boolean }>`
@@ -64,23 +69,45 @@ const VoiceAICharacter = styled(Animated.View)<{ $isListening: boolean }>`
   justify-content: center;
 `;
 
+
+
 const MicButton = styled(Animated.createAnimatedComponent(TouchableOpacity))<{ $isListening: boolean }>`
   width: ${width > 768 ? height * 0.08 : height * 0.06}px; /* 8vh vs 6vh */
   height: ${width > 768 ? height * 0.08 : height * 0.06}px; /* 8vh vs 6vh */
   min-width: ${width > 768 ? 64 : 48}px; /* 4rem = 64px, 3rem = 48px */
   min-height: ${width > 768 ? 64 : 48}px; /* 4rem = 64px, 3rem = 48px */
-  background-color: ${({ $isListening }) => $isListening ? '#ef4444' : '#06b6d4'};
+  background-color: ${({ $isListening }: { $isListening: boolean }) => $isListening ? '#ef4444' : '#06b6d4'};
   border-radius: 9999px;
+  border-width: 0; /* web 버전처럼 border 제거 */
   align-items: center;
   justify-content: center;
   position: relative;
-  /* Box shadow for iOS */
-  shadow-color: ${({ $isListening }) => $isListening ? 'rgba(239, 68, 68, 0.5)' : 'rgba(14, 116, 144, 0.5)'};
+  overflow: visible; /* 추가: 자식 요소가 밖으로 확장될 수 있도록 */
+  
+  /* web 버전의 box-shadow를 native 속성으로 변환 */
+  shadow-color: ${({ $isListening }: { $isListening: boolean }) => $isListening ? 'rgba(239, 68, 68, 0.5)' : 'rgba(14, 116, 144, 0.5)'};
   shadow-offset: 0px 0px;
   shadow-opacity: 1;
-  shadow-radius: ${({ $isListening }) => $isListening ? 20 : 20}px; /* 20px blur */
-  /* Box shadow for Android */
-  elevation: ${({ $isListening }) => $isListening ? 10 : 10}; /* Approximate elevation */
+  shadow-radius: ${({ $isListening }: { $isListening: boolean }) => $isListening ? 20 : 20}px;
+  elevation: ${({ $isListening }: { $isListening: boolean }) => $isListening ? 10 : 10}; /* Android용 그림자 */
+
+  /* web 버전의 transition과 hover 효과를 유사하게 구현 */
+  transition: background-color 0.3s ease; /* React Native에서는 직접적인 hover는 아니지만, 터치 피드백에 사용될 수 있음 */
+
+  /* web 버전의 &:hover와 유사한 효과를 위해 background-color 변경 로직 추가 */
+  /* &:hover {
+    background-color: ${({ $isListening }: { $isListening: boolean }) => $isListening ? '#dc2626' : '#0891b2'};
+  } */
+
+  /* web 버전의 svg 스타일 */
+  /* React Native에서는 Svg 컴포넌트 자체에 스타일을 적용해야 함 */
+  /* svg {
+    width: 99%;
+    height: 99%;
+    color: white;
+  } */
+
+  
 `;
 
 const VoiceStatus = styled.Text`
@@ -104,9 +131,23 @@ const ActionBtn = styled.TouchableOpacity<{ $pdf?: boolean }>`
   border-radius: 8px; /* 0.5rem = 8px */
 `;
 
+const ChatTerminateTextButton = styled.TouchableOpacity`
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ChatTerminateText = styled.Text`
+  color: #67e8f9;
+  font-size: ${width > 768 ? 12 : 10}px;
+  font-weight: 600;
+`;
+
 const BottomSectionWrapper = styled.View`
   position: absolute;
-  bottom: 0;
+  bottom: 80px;
   left: 0;
   right: 0;
   width: 100%;
@@ -361,11 +402,17 @@ const VoiceChattingPage: React.FC = () => {
     <PageContainer>
       {/* <Background isSurveyActive={true} /> */}
       {/* <Header showLogoText={true} /> */}
-      <BackButton onPress={handleBack}>
-        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white">
-          <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </Svg>
-      </BackButton>
+      <TopLeftButtonContainer>
+        <CloseButton onPress={handleTerminateChat}>
+          <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: [{ translateY: -2 }] }}>
+            <Path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+            <Path d="M12 2v10" />
+          </Svg>
+        </CloseButton>
+        <ChatTerminateTextButton>
+          <ChatTerminateText>{isEvaluating ? "제출 중..." : "채팅 종료"}</ChatTerminateText>
+        </ChatTerminateTextButton>
+      </TopLeftButtonContainer>
       <ContentWrapper>
         <VoiceAICharacter $isListening={isListening} style={{
           transform: [{ scale: pulseAnim.interpolate({
@@ -392,19 +439,16 @@ const VoiceChattingPage: React.FC = () => {
             })
           }]
         }}>
-          <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          
+          <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white">
             <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
           </Svg>
         </MicButton>
         <VoiceStatus>
           {isListening ? '듣고 있어요...' : (isLoading ? '응답을 생성 중입니다...' : '버튼을 누르고 말씀해주세요')}
         </VoiceStatus>
-        <BottomButtonBar>
-          <ActionBtn onPress={handleTerminateChat} disabled={isEvaluating}>
-            <Text style={{ color: 'white', fontWeight: '700' }}>{isEvaluating ? "제출 중..." : "채팅 종료"}</Text>
-          </ActionBtn>
-        </BottomButtonBar>
       </BottomSectionWrapper>
+      <BottomBar currentPage="VoiceChatting" />
     </PageContainer>
   );
 };
