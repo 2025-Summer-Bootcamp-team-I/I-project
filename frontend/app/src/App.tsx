@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -20,6 +20,9 @@ import ChattingSelectPage from './pages/ChattingSelectPage';
 import VoiceChattingPage from './pages/VoiceChattingPage';
 import TextChattingPage from './pages/TextChattingPage';
 
+// 상태 관리 import
+import { useReportIdStore } from './store/reportIdStore';
+
 // 네비게이션 타입 정의
 export type RootStackParamList = {
   Init: undefined;
@@ -39,6 +42,21 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
+  const { loadPersistedState } = useReportIdStore();
+
+  // 앱 시작 시 저장된 상태 복원
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        await loadPersistedState();
+      } catch (error) {
+        console.error('앱 초기화 중 오류:', error);
+      }
+    };
+
+    initializeApp();
+  }, [loadPersistedState]);
+
   return (
     <NavigationContainer>
       <StatusBar style="light" />
