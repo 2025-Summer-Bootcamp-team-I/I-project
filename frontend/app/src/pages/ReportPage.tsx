@@ -28,9 +28,9 @@ import BottomBar from '../components/BottomBar';
 
 // lightbulb 이미지 에셋들 - require 사용
 
-const lightbulbIcon = require('../assets/imgs/lightbulb.png');
-const lightbulbBlueIcon = require('../assets/imgs/lightbulb-blue.png');
-const lightbulbRedIcon = require('../assets/imgs/lightbulb-red.png');
+import lightbulbBlue from '../assets/imgs/lightbulb-blue.png';
+import lightbulb from '../assets/imgs/lightbulb.png';
+import lightbulbRed from '../assets/imgs/lightbulb-red.png';
 
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -1843,3 +1843,4 @@ const ComprehensiveResultStatus = styled.Text`
   font-size: ${fontSize.md}px;
   font-weight: 600;
 `;
+
