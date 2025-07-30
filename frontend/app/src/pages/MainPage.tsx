@@ -4,21 +4,23 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Animated,
-  Dimensions,
-  Alert,
-  Image,
   useWindowDimensions,
-  Platform,
+  Alert,
+  FlatList,
+  ListRenderItem,
 } from 'react-native';
+// PanGestureHandler는 더 이상 사용하지 않으므로 제거합니다.
+// import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
-import { colors, spacing, fontSize, borderRadius, shadows, responsiveUtils, isSmallScreen, isTablet } from '../AppStyle';
+import { colors, spacing, fontSize, borderRadius, shadows, isSmallScreen, isTablet } from '../AppStyle';
 import { createEmptyReport } from '../api';
 import { useReportIdStore } from '../store/reportIdStore';
 import Svg, { Path } from 'react-native-svg';
+import Header from '../components/AppHeader';
+import BottomBar from '../components/BottomBar';
 
 type MainPageNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -89,12 +91,27 @@ const cards: CardData[] = [
 export default function MainPage() {
   const navigation = useNavigation<MainPageNavigationProp>();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const isLandscape = screenWidth > screenHeight;
+  const { width: screenWidth } = useWindowDimensions();
 
-  // 애니메이션 값들
+  // 애니메이션 값
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
+  
+  // FlatList 참조 생성
+  const flatListRef = useRef<FlatList<CardData>>(null);
+
+  // 검사 완료 상태를 실시간으로 감지하기 위한 상태
+  const [completionStates, setCompletionStates] = useState({
+    isAD8Completed: false,
+    isChatCompleted: false,
+    isDrawingCompleted: false,
+  });
+
+  // 카드 너비 및 간격 계산
+  const cardWidth = isTablet ? screenWidth * 0.55 : screenWidth * 0.75;
+  const cardMargin = spacing.md;
+  const itemWidth = cardWidth + cardMargin * 2; // 각 아이템의 전체 너비 (카드 + 양쪽 마진)
+  const emptyItemWidth = (screenWidth - itemWidth) / 2; // 중앙 정렬을 위한 빈 공간 너비
 
   useEffect(() => {
     // 페이지 진입 애니메이션
@@ -110,23 +127,64 @@ export default function MainPage() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
+  // 검사 완료 상태를 실시간으로 감지
+  const { isAD8Completed, isChatCompleted, isDrawingCompleted } = useReportIdStore();
+  
+  useEffect(() => {
+    setCompletionStates({
+      isAD8Completed,
+      isChatCompleted,
+      isDrawingCompleted,
+    });
+  }, [isAD8Completed, isChatCompleted, isDrawingCompleted]);
+
+  // 페이지 포커스 시 상태 업데이트 (Zustand가 자동으로 구독하므로 불필요)
+  // useEffect(() => {
+  //   const unsubscribe = navigation.addListener('focus', () => {
+  //     const { isAD8Completed, isChatCompleted, isDrawingCompleted } = useReportIdStore.getState();
+  //     setCompletionStates({
+  //       isAD8Completed,
+  //       isChatCompleted,
+  //       isDrawingCompleted,
+  //     });
+  //   });
+
+  //   return unsubscribe;
+  // }, [navigation]);
+
+  // 다음 카드로 이동
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % cards.length);
+    const nextIndex = (currentIndex + 1) % cards.length;
+    flatListRef.current?.scrollToIndex({ animated: true, index: nextIndex });
   };
 
+  // 이전 카드로 이동
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+    const prevIndex = (currentIndex - 1 + cards.length) % cards.length;
+    flatListRef.current?.scrollToIndex({ animated: true, index: prevIndex });
   };
+
+  // 현재 보이는 아이템이 변경될 때 currentIndex를 업데이트하는 함수
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ item: CardData; index: number | null }> }) => {
+    if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+      setCurrentIndex(viewableItems[0].index);
+    }
+  }).current;
+
+  // onViewableItemsChanged가 언제 호출될지 결정하는 설정
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
 
   const handleStartTest = async (testId: string) => {
-    const { reportId, isAD8Completed, isDrawingCompleted, isChatCompleted, setReportId } = useReportIdStore.getState();
+    const { reportId, setReportId } = useReportIdStore.getState();
 
     try {
       if (testId === 'survey') {
         if (isAD8Completed) {
-          Alert.alert('알림', '이미 AD8 검사를 완료하셨습니다.');
+          Alert.alert('알림', '이미 설문 검사를 완료하셨습니다.');
           return;
         }
         if (!reportId) {
@@ -134,25 +192,25 @@ export default function MainPage() {
           setReportId(reportResponse.report_id);
           console.log('빈 리포트 생성 성공:', reportResponse);
         }
-        navigation.navigate('AD8' as any);
+        navigation.navigate('AD8');
       } else if (testId === 'conversation') {
         if (isChatCompleted) {
           Alert.alert('알림', '이미 대화 검사를 완료하셨습니다.');
           return;
         }
-        navigation.navigate('ChattingSelect' as any);
+        navigation.navigate('ChattingSelect');
       } else if (testId === 'drawing') {
         if (isDrawingCompleted) {
           Alert.alert('알림', '이미 그림 검사를 완료하셨습니다.');
           return;
         }
-        navigation.navigate('Drawing' as any);
+        navigation.navigate('Drawing');
       } else if (testId === 'report') {
         if (!reportId) {
           Alert.alert('오류', '리포트 ID를 찾을 수 없습니다. 메인 페이지에서 다시 시도해주세요.');
           return;
         }
-        navigation.navigate('Report' as any, { reportId: reportId.toString() });
+        navigation.navigate('Report', { reportId: reportId.toString() });
       }
     } catch (error) {
       console.error('검사 시작 오류:', error);
@@ -160,268 +218,127 @@ export default function MainPage() {
     }
   };
 
-  const renderCard = (card: CardData, index: number) => {
-    const { isAD8Completed, isDrawingCompleted, isChatCompleted } = useReportIdStore.getState();
-    
+  const renderCard: ListRenderItem<CardData> = ({ item: card }) => {
     let isCompleted = false;
-    if (card.id === 'survey') {
-      isCompleted = isAD8Completed;
-    } else if (card.id === 'conversation') {
-      isCompleted = isChatCompleted;
-    } else if (card.id === 'drawing') {
-      isCompleted = isDrawingCompleted;
-    }
+    if (card.id === 'survey') isCompleted = completionStates.isAD8Completed;
+    else if (card.id === 'conversation') isCompleted = completionStates.isChatCompleted;
+    else if (card.id === 'drawing') isCompleted = completionStates.isDrawingCompleted;
     
     const canStart = !card.required || 
-      (card.required === 'survey' && isAD8Completed) ||
-      (card.required === 'conversation' && isChatCompleted) ||
-      (card.required === 'drawing' && isDrawingCompleted);
+      (card.required === 'survey' && completionStates.isAD8Completed) ||
+      (card.required === 'conversation' && completionStates.isChatCompleted) ||
+      (card.required === 'drawing' && completionStates.isDrawingCompleted);
 
-    // 카드 위치 계산 (정사각형 형태로 조정)
-    const cardWidth = isTablet ? screenWidth * 0.6 : screenWidth * 0.85;
-    const cardHeight = cardWidth; // 정사각형으로 만들기 위해 너비와 동일하게 설정
-    const dx = (index - currentIndex) * (cardWidth * 0.8); // 카드 간격
-    const scale = 1 - Math.abs(index - currentIndex) * 0.15; // 스케일 차이
-    const opacity = 1 - Math.abs(index - currentIndex) * 0.3; // 투명도 차이
-    const translateY = index !== currentIndex ? 20 : 0; // Y축 이동
+    const cardHeight = cardWidth * 0.8;
 
     return (
-      <Animated.View
-        key={card.id}
+      <View
         style={[
           styles.card,
           {
             width: cardWidth,
             height: cardHeight,
-            transform: [
-              { translateX: dx },
-              { scale },
-              { translateY },
-            ],
-            opacity,
-            zIndex: 4 - Math.abs(index - currentIndex),
+            marginHorizontal: cardMargin, // 카드 좌우 마진 추가
           },
         ]}
       >
         <View style={styles.cardContent}>
-          <View style={[
-            styles.iconContainer,
-            {
-              width: isTablet ? 48 : 40,
-              height: isTablet ? 48 : 40,
-              marginBottom: isSmallScreen ? spacing.xs : spacing.sm,
-            }
-          ]}>
+          <View style={[styles.iconContainer, { width: isTablet ? 48 : 40, height: isTablet ? 48 : 40, position: 'absolute', top: spacing.xl, left: spacing.md, zIndex: 1 }]}>
             {card.icon}
           </View>
-          <Text style={[
-            styles.cardStep,
-            {
-              fontSize: isTablet ? fontSize.md : fontSize.sm,
-              marginBottom: isSmallScreen ? spacing.xs : spacing.xs,
-            }
-          ]}>Step {card.step}</Text>
-          <Text style={[
-            styles.cardTitle,
-            {
-              fontSize: isTablet ? fontSize.xl : fontSize.lg,
-              marginBottom: isSmallScreen ? spacing.xs : spacing.sm,
-            }
-          ]}>{card.title}</Text>
-          <Text style={[
-            styles.cardDescription,
-            {
-              fontSize: isTablet ? fontSize.sm : fontSize.xs,
-              marginBottom: isSmallScreen ? spacing.md : spacing.lg,
-              lineHeight: isTablet ? 20 : 16,
-            }
-          ]}>{card.description}</Text>
           
-          <TouchableOpacity
-            style={[
-              isCompleted ? styles.completedButton : styles.startButton,
-              !canStart && !isCompleted && styles.disabledButton,
-              {
-                paddingVertical: isTablet ? spacing.md : spacing.sm,
-                paddingHorizontal: isTablet ? spacing.xl : spacing.lg,
-              }
-            ]}
-            onPress={() => handleStartTest(card.id)}
-            disabled={!canStart && !isCompleted}
-            activeOpacity={0.8}
-          >
-            <Text style={[
-              isCompleted ? styles.completedButtonText : styles.startButtonText,
-              !canStart && !isCompleted && styles.disabledButtonText,
-              {
-                fontSize: isTablet ? fontSize.md : fontSize.sm,
-              }
-            ]}>
-              {isCompleted ? '완료' : '검사 시작'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.textContainer}>
+            <Text style={[styles.cardStep, { fontSize: isTablet ? fontSize.md : fontSize.sm, marginBottom: isSmallScreen ? spacing.sm : spacing.md, textAlign: 'center' }]}>Step {card.step}</Text>
+            <Text style={[styles.cardTitle, { fontSize: isTablet ? fontSize.xxxl : fontSize.xxl, marginBottom: isSmallScreen ? spacing.xs : spacing.sm, textAlign: 'center' }]}>{card.title}</Text>
+            <Text style={[styles.cardDescription, { fontSize: isTablet ? fontSize.sm : fontSize.xs, marginBottom: isSmallScreen ? spacing.md : spacing.lg, lineHeight: isTablet ? 20 : 16, textAlign: 'center' }]}>{card.description}</Text>
+            
+            <TouchableOpacity
+              style={[
+                isCompleted ? styles.completedButton : styles.startButton,
+                !canStart && !isCompleted && styles.disabledButton,
+                { paddingVertical: isTablet ? spacing.md : spacing.sm, paddingHorizontal: isTablet ? spacing.xl : spacing.lg, alignSelf: 'center' }
+              ]}
+              onPress={() => handleStartTest(card.id)}
+              disabled={!canStart && !isCompleted}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                isCompleted ? styles.completedButtonText : styles.startButtonText,
+                !canStart && !isCompleted && styles.disabledButtonText,
+                { fontSize: isTablet ? fontSize.md : fontSize.sm }
+              ]}>
+                {isCompleted ? '완료' : '검사 시작'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </Animated.View>
+      </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      {/* 배경 */}
       <View style={styles.background} />
       
-      {/* 헤더 */}
-      <View style={[
-        styles.topHeader,
-        {
-          paddingTop: isSmallScreen ? spacing.md : spacing.lg,
-          paddingBottom: isSmallScreen ? spacing.xs : spacing.sm,
-        }
-      ]}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/imgs/logo.png')}
-            style={[
-              styles.logoImage,
-              {
-                width: isTablet ? 40 : 34,
-                height: isTablet ? 40 : 34,
-              }
-            ]}
-          />
-          <Text style={[
-            styles.logoText,
-            {
-              fontSize: isTablet ? fontSize.xl : fontSize.lg,
-            }
-          ]}>Neurocare 치매진단 서비스</Text>
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.myPageButton,
-            {
-              paddingVertical: isSmallScreen ? spacing.xs : spacing.sm,
-              paddingHorizontal: isTablet ? spacing.lg : spacing.md,
-            }
-          ]}
-          onPress={() => navigation.navigate('MyPage' as any)}
-        >
-          <Text style={[
-            styles.myPageButtonText,
-            {
-              fontSize: isTablet ? fontSize.md : fontSize.sm,
-            }
-          ]}>마이페이지</Text>
-        </TouchableOpacity>
-      </View>
+      <Header showLogoText={true} />
       
-      {/* 메인 헤더 */}
-      <View style={[
-        styles.header,
-        {
-          paddingTop: isSmallScreen ? spacing.lg : spacing.xxl,
-          paddingBottom: isSmallScreen ? spacing.md : spacing.xl,
-        }
-      ]}>
-        <Text style={[
-          styles.headerTitle,
-          {
-            fontSize: isTablet ? fontSize.xxxl : fontSize.xxl,
-            marginBottom: isSmallScreen ? spacing.sm : spacing.md,
-          }
-        ]}>기억 건강 진단 프로그램</Text>
-        <Text style={[
-          styles.headerSubtitle,
-          {
-            fontSize: isTablet ? fontSize.xl : fontSize.lg,
-            lineHeight: isTablet ? 28 : 24,
-            paddingHorizontal: isTablet ? spacing.xxl : spacing.xl,
-          }
-        ]}>
-          체계적인 4단계 검사를 통해 당신의 인지 건강을 정밀하게 분석합니다.
-        </Text>
-      </View>
-
-      {/* 카드 슬라이더 */}
-      <View style={[
-        styles.sliderContainer,
-        {
-          paddingHorizontal: isTablet ? spacing.lg : spacing.md,
-          paddingVertical: isSmallScreen ? spacing.md : spacing.lg,
-        }
-      ]}>
-        <TouchableOpacity
-          style={[
-            styles.navButton,
-            {
-              width: isTablet ? 48 : 40,
-              height: isTablet ? 48 : 40,
-            }
-          ]}
-          onPress={handlePrev}
-        >
-          <Svg width={isTablet ? 28 : 24} height={isTablet ? 28 : 24} fill="none" stroke="#ffffff" viewBox="0 0 24 24">
+      <View style={[styles.sliderContainer, { paddingHorizontal: isTablet ? spacing.lg : spacing.md, paddingVertical: isSmallScreen ? spacing.md : spacing.lg }]}>
+        <TouchableOpacity style={[styles.navButton, { width: isTablet ? 36 : 32, height: isTablet ? 36 : 32 }]} onPress={handlePrev}>
+          <Svg width={isTablet ? 20 : 18} height={isTablet ? 20 : 18} fill="none" stroke="#ffffff" viewBox="0 0 24 24">
             <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
           </Svg>
         </TouchableOpacity>
         
-        <View style={[
-          styles.cardContainer,
-          {
-            height: isTablet ? screenWidth * 0.6 : screenWidth * 0.85,
-          }
-        ]}>
-          {cards.map((card, index) => renderCard(card, index))}
+        <View style={styles.centerContent}>
+          <View style={[styles.header, { paddingBottom: isSmallScreen ? spacing.md : spacing.lg }]}>
+            <Text style={[styles.headerTitle, { fontSize: isTablet ? fontSize.xxxl : fontSize.xxl, marginBottom: isSmallScreen ? spacing.sm : spacing.md }]}>기억 건강 진단 프로그램</Text>
+            <Text style={[styles.headerSubtitle, { fontSize: isTablet ? fontSize.xs : fontSize.xs, lineHeight: isTablet ? 18 : 14, paddingHorizontal: isTablet ? spacing.xxxl : spacing.xxl }]} numberOfLines={2} ellipsizeMode="tail">
+              체계적인 4단계 검사를 통해 당신의 인지 건강을 정밀하게 분석합니다.
+            </Text>
+          </View>
+          
+                     {/* FlatList with pagingEnabled */}
+           <FlatList
+             ref={flatListRef}
+             data={cards}
+             renderItem={renderCard}
+             keyExtractor={(item) => item.id}
+             horizontal
+             showsHorizontalScrollIndicator={false}
+             pagingEnabled={true}
+             snapToInterval={itemWidth}
+             snapToAlignment="center"
+             decelerationRate="fast"
+             bounces={false}
+             contentContainerStyle={{ 
+               alignItems: 'center',
+               paddingHorizontal: emptyItemWidth
+             }}
+             onViewableItemsChanged={onViewableItemsChanged}
+             viewabilityConfig={viewabilityConfig}
+             getItemLayout={(_, index) => (
+               { length: itemWidth, offset: itemWidth * index, index }
+             )}
+           />
         </View>
         
-        <TouchableOpacity
-          style={[
-            styles.navButton,
-            {
-              width: isTablet ? 48 : 40,
-              height: isTablet ? 48 : 40,
-            }
-          ]}
-          onPress={handleNext}
-        >
-          <Svg width={isTablet ? 28 : 24} height={isTablet ? 28 : 24} fill="none" stroke="#ffffff" viewBox="0 0 24 24">
+        <TouchableOpacity style={[styles.navButton, { width: isTablet ? 36 : 32, height: isTablet ? 36 : 32 }]} onPress={handleNext}>
+          <Svg width={isTablet ? 20 : 18} height={isTablet ? 20 : 18} fill="none" stroke="#ffffff" viewBox="0 0 24 24">
             <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
           </Svg>
         </TouchableOpacity>
       </View>
-
-      {/* 하단 점들 */}
-      <View style={[
-        styles.dotsContainer,
-        {
-          paddingBottom: isSmallScreen ? spacing.md : spacing.lg,
-        }
-      ]}>
-        {cards.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dot,
-              index === currentIndex && styles.activeDot,
-              {
-                width: isTablet ? 10 : 8,
-                height: isTablet ? 10 : 8,
-                borderRadius: isTablet ? 5 : 4,
-              }
-            ]}
-          />
-        ))}
-      </View>
-    </View>
-  );
-}
+       
+       <BottomBar currentPage="Main" />
+     </View>
+   );
+ }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  
   background: {
     position: 'absolute',
     top: 0,
@@ -430,144 +347,97 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: colors.background,
   },
-  
-  topHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: spacing.xl,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'flex-start',
-  },
-  
-  logoImage: {
-    marginRight: spacing.sm,
-  },
-  
-  logoText: {
-    fontWeight: '700',
-    color: '#96e7d4',
-    letterSpacing: -1,
-  },
-  
-  myPageButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.7,
-    borderColor: '#96E7D4',
-    borderRadius: borderRadius.round,
-  },
-  
-  myPageButtonText: {
-    color: '#96E7D4',
-    fontWeight: '600',
-  },
-  
   header: {
     alignItems: 'center',
   },
-  
   headerTitle: {
     fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
+    marginBottom: -spacing.lg,
+    marginTop: spacing.xxl,
   },
-  
   headerSubtitle: {
-    color: colors.textSecondary,
+    color: '#D4DAE4',
     textAlign: 'center',
+    fontSize: 8,
+    marginBottom: -spacing.md,
+    marginTop: -spacing.md,
   },
-  
   sliderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     flex: 1,
   },
-  
-  cardContainer: {
+  centerContent: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    justifyContent: 'flex-start',
+    marginTop: -spacing.xxxl * 2,
   },
-  
+  // cardContainer 스타일은 FlatList로 대체되어 제거
   card: {
     backgroundColor: 'rgba(17, 24, 39, 0.6)',
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
     ...shadows.large,
-    position: 'absolute',
+    // position: 'absolute' 속성 제거
   },
-  
   cardContent: {
+    flex: 1,
+    padding: spacing.lg,
+  },
+  textContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.lg,
+    paddingTop: 0,
   },
-  
   iconContainer: {
     borderRadius: 12,
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
   cardStep: {
     color: '#c4b5fd',
     fontWeight: '600',
   },
-  
   cardTitle: {
     fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
   },
-  
   cardDescription: {
-    color: colors.textSecondary,
+    color: '#9CA3AF',
     textAlign: 'center',
   },
-  
   startButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#8B5CF6',
     borderRadius: borderRadius.round,
     ...shadows.medium,
+    opacity: 1,
   },
-  
   startButtonText: {
     color: colors.text,
     fontWeight: '700',
   },
-  
   completedButton: {
     backgroundColor: '#7fcebb',
     borderRadius: borderRadius.round,
     ...shadows.medium,
   },
-  
   completedButtonText: {
     color: colors.text,
     fontWeight: '700',
   },
-  
   disabledButton: {
     backgroundColor: colors.textMuted,
   },
-  
   disabledButtonText: {
     color: colors.textSecondary,
   },
-  
   navButton: {
     backgroundColor: 'rgba(17, 24, 39, 0.6)',
     borderWidth: 1,
@@ -576,19 +446,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
-  },
-  
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  
-  dot: {
-    backgroundColor: colors.textMuted,
-  },
-  
-  activeDot: {
-    backgroundColor: '#8b5cf6',
   },
 });
