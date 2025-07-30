@@ -85,6 +85,11 @@ export default function LoadingPage() {
     
     // --- Glow Effect ---
     const createGlowTexture = () => {
+        // 브라우저 환경에서만 canvas 사용
+        if (typeof document === 'undefined') {
+            return null;
+        }
+        
         const canvas = document.createElement('canvas');
         canvas.width = 128;
         canvas.height = 128;
@@ -205,7 +210,7 @@ export default function LoadingPage() {
             />
           </View>
           <Animated.Text style={[styles.loadingText, animatedTextStyle]}>
-            결과를 분석하고 있습니다...
+            잠시만 기다려 주세요...
           </Animated.Text>
         </View>
       </View>

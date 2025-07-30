@@ -25,6 +25,7 @@ import type { ChatLogResponse } from '../types/api';
 import type { ReportResponse } from '../store/reportStore';
 import AppHeader from '../components/AppHeader';
 import BottomBar from '../components/BottomBar';
+import LoadingPage from './LoadingPage';
 
 // lightbulb 이미지 에셋들 - require 사용
 import lightbulbBlue from '../assets/imgs/lightbulb-blue.png';
@@ -685,11 +686,7 @@ export default function ReportPage() {
   };
 
   if (isLoading) {
-    return (
-      <LoadingContainer>
-        <LoadingText>리포트를 생성하고 있습니다...</LoadingText>
-      </LoadingContainer>
-    );
+    return <LoadingPage />;
   }
 
   if (error || !report) {
@@ -942,18 +939,7 @@ const Container = styled.View`
   background-color: ${colors.background};
 `;
 
-const LoadingContainer = styled.View`
-  flex: 1;
-  justify-content: center;
-  align-items: center;
-  background-color: ${colors.background};
-`;
 
-const LoadingText = styled.Text`
-  font-size: ${fontSize.lg}px;
-  color: ${colors.text};
-  text-align: center;
-`;
 
 const ErrorContainer = styled.View`
   flex: 1;
