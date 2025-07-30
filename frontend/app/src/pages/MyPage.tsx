@@ -17,6 +17,7 @@ import { colors, spacing, fontSize, borderRadius, shadows } from '../AppStyle';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useReportHistoryStore } from '../store/reportHistoryStore';
 import type { MyReportSummary } from '../types/api';
+import Header from '../components/AppHeader';
 
 type MyPageNavigationProp = StackNavigationProp<RootStackParamList, 'MyPage'>;
 
@@ -31,7 +32,7 @@ const getRiskStatus = (risk?: '양호' | '경계' | '위험' | null) => {
 
 // 전구 아이콘 컴포넌트
 const LightbulbIcon = ({ color }: { color: string }) => (
-  <Svg width="60" height="60" viewBox="0 0 72 72" fill="none">
+  <Svg width="40" height="40" viewBox="0 0 72 72" fill="none">
     <Path d="M36 5C24.954 5 16 13.954 16 25C16 32.379 20.621 38.796 27 42.154V48C27 50.209 28.791 52 31 52H41C43.209 52 45 50.209 45 48V42.154C51.379 38.796 56 32.379 56 25C56 13.954 47.046 5 36 5Z" fill={color} fillOpacity="0.3"/>
     <Path d="M36 5C24.954 5 16 13.954 16 25C16 32.379 20.621 38.796 27 42.154V48C27 50.209 28.791 52 31 52H41C43.209 52 45 50.209 45 48V42.154C51.379 38.796 56 32.379 56 25C56 13.954 47.046 5 36 5Z" stroke={color} strokeWidth="2"/>
     <Path d="M31 58H41C42.1046 58 43 58.8954 43 60V61H29V60C29 58.8954 29.8954 58 31 58Z" fill="#4A5568"/>
@@ -104,26 +105,7 @@ export default function MyPage() {
     return (
       <View style={styles.container}>
         <View style={styles.background} />
-        
-        {/* 헤더 */}
-        <View style={styles.topHeader}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
-              <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
-            </Svg>
-          </TouchableOpacity>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../assets/imgs/logo.png')}
-              style={styles.logoImage}
-            />
-            <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
-          </View>
-          <View style={styles.placeholder} />
-        </View>
+        <Header />
         
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -138,26 +120,7 @@ export default function MyPage() {
     return (
       <View style={styles.container}>
         <View style={styles.background} />
-        
-        {/* 헤더 */}
-        <View style={styles.topHeader}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
-              <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
-            </Svg>
-          </TouchableOpacity>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../assets/imgs/logo.png')}
-              style={styles.logoImage}
-            />
-            <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
-          </View>
-          <View style={styles.placeholder} />
-        </View>
+        <Header />
         
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
@@ -165,11 +128,11 @@ export default function MyPage() {
             <TouchableOpacity style={styles.retryButton} onPress={fetchMyReports}>
               <Text style={styles.retryButtonText}>다시 시도</Text>
             </TouchableOpacity>
-                         {error.includes('로그인') && (
-               <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login')}>
-                 <Text style={styles.loginButtonText}>로그인</Text>
-               </TouchableOpacity>
-             )}
+            {error.includes('로그인') && (
+              <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.loginButtonText}>로그인</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
@@ -179,26 +142,7 @@ export default function MyPage() {
   return (
     <View style={styles.container}>
       <View style={styles.background} />
-      
-      {/* 헤더 */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
-            <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
-          </Svg>
-        </TouchableOpacity>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/imgs/logo.png')}
-            style={styles.logoImage}
-          />
-          <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
-        </View>
-        <View style={styles.placeholder} />
-      </View>
+      <Header />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <Animated.View
@@ -218,16 +162,16 @@ export default function MyPage() {
           {myReports.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>아직 검사 기록이 없습니다.</Text>
-                             <TouchableOpacity
-                 style={styles.startButton}
-                 onPress={() => navigation.navigate('Main')}
-                 activeOpacity={0.8}
-               >
+              <TouchableOpacity
+                style={styles.startButton}
+                onPress={() => navigation.navigate('Main')}
+                activeOpacity={0.8}
+              >
                 <Text style={styles.startButtonText}>검사 시작하기</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={styles.reportList}>
+            <View style={styles.reportGrid}>
               {myReports.map((report: MyReportSummary) => {
                 const finalStatus = getRiskStatus(report.final_risk);
                 const statusText = {
@@ -296,49 +240,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  topHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  
-  backButton: {
-    backgroundColor: 'rgba(17, 24, 39, 0.82)',
-    borderRadius: 20,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  
-  logoImage: {
-    width: 34,
-    height: 34,
-    marginRight: spacing.sm,
-  },
-  
-  logoText: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
-    color: '#96e7d4',
-    letterSpacing: -1,
-  },
-  
-  placeholder: {
-    width: 40,
-  },
+
   
   scrollView: {
     flex: 1,
@@ -447,41 +349,48 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   
-  reportList: {
-    gap: spacing.lg,
+  reportGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: spacing.md,
     marginBottom: spacing.lg,
   },
   
   reportCard: {
+    width: '48%', // 2x2 그리드 레이아웃을 위해 각 카드의 너비를 48%로 설정
     backgroundColor: 'rgba(30, 41, 59, 0.7)',
     borderWidth: 1,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     ...shadows.medium,
+    minHeight: 200, // 최소 높이 설정
   },
   
   reportHeader: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   
   reportDate: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   
   finalResult: {
     marginBottom: spacing.md,
+    alignItems: 'center',
   },
   
   finalResultLabel: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
   
   finalResultText: {
-    fontSize: fontSize.xxxl,
+    fontSize: fontSize.lg,
     fontWeight: 'bold',
     marginBottom: spacing.xs,
   },
@@ -495,28 +404,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   
   testIconContainer: {
     alignItems: 'center',
     gap: spacing.xs,
+    flex: 1,
   },
   
   testIconLabel: {
-    fontSize: fontSize.sm,
+    fontSize: 10,
     fontWeight: '500',
     color: colors.textSecondary,
     textAlign: 'center',
   },
   
   testIconRisk: {
-    fontSize: fontSize.xs,
+    fontSize: 8,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -526,14 +436,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary,
     borderRadius: borderRadius.md,
-    padding: spacing.md,
+    padding: spacing.sm,
     alignItems: 'center',
   },
   
   viewButtonText: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: '600',
     color: colors.primary,
   },
 });
-  
