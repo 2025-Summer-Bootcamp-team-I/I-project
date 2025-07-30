@@ -99,8 +99,7 @@ def get_streaming_chain(report_id: int, question: str):
         llm = ChatGoogleGenerativeAI(
             model="gemini-1.5-pro-latest",
             temperature=0.1,
-            # streaming=True, # <--- 삭제
-            # callbacks=[handler], # <--- 삭제
+            streaming=True, # [수정] 스트리밍 옵션 활성화
             google_api_key=google_api_key
         )
         chain = farewell_prompt | llm
@@ -111,15 +110,18 @@ def get_streaming_chain(report_id: int, question: str):
     llm = ChatGoogleGenerativeAI(
         model="gemini-1.5-pro-latest",
         temperature=0,
-        # streaming=True, # <--- 삭제
-        # callbacks=[handler], # <--- 삭제
-        google_api_key=google_api_key
+        streaming=True,
+        google_api_key=google_api_key,
+        max_output_tokens=2048,  # 토큰 제한 추가
+        top_p=0.8,  # 더 세밀한 스트리밍을 위한 설정
+        top_k=40
     )
     chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=vectordb.as_retriever(),
         memory=memory,
-        combine_docs_chain_kwargs={"prompt": prompt}
+        combine_docs_chain_kwargs={"prompt": prompt},
+        verbose=True  # 디버깅을 위한 verbose 모드
     )
 
     return chain, memory, turn_count  # <--- 핸들러 반환 안함

@@ -35,14 +35,14 @@ class TTSRequest(BaseModel):
             raise ValueError(f"텍스트 길이는 {MIN_TEXT_LENGTH}자에서 {MAX_TEXT_LENGTH}자 사이여야 합니다.")
         return v
 
-@router.post("/tts")
-async def generate_tts(data: TTSRequest):
+async def synthesize_speech(text: str) -> bytes:
+    """텍스트를 음성으로 변환하는 핵심 로직"""
     api_key = os.getenv("ELEVENLABS_API_KEY")
     if not api_key:
         logger.error(".env 파일에 ELEVENLABS_API_KEY가 설정되지 않았습니다.")
         raise HTTPException(status_code=500, detail="서버 설정 오류: ElevenLabs API 키가 없습니다.")
     
-    logger.info(f"TTS 요청 수신: 텍스트 길이 {len(data.text)}, VOICE_ID: {VOICE_ID}")
+    logger.info(f"TTS 요청 수신: 텍스트 길이 {len(text)}, VOICE_ID: {VOICE_ID}")
 
     headers = {
         "xi-api-key": api_key,
@@ -50,8 +50,7 @@ async def generate_tts(data: TTSRequest):
     }
 
     payload = {
-        "text": data.text,
-        # ⭐ ⭐ 여기! 변경된 부분!
+        "text": text,
         "model_id": os.getenv(ELEVENLABS_MODEL_ID_KEY, DEFAULT_TTS_MODEL), 
         "voice_settings": {
             "stability": 0.7,
@@ -68,10 +67,8 @@ async def generate_tts(data: TTSRequest):
         async with httpx.AsyncClient(timeout=60.0) as client:
             res = await client.post(url, headers=headers, json=payload)
             res.raise_for_status()
-
-        logger.info("ElevenLabs TTS API 호출 성공")
-        logger.info(f"🎧 응답 오디오 크기: {len(res.content)} bytes")
-        logger.info(f"📎 응답 Content-Type: {res.headers.get('Content-Type')}")
+        
+        return res.content
 
     except httpx.HTTPStatusError as e:
         status_code = e.response.status_code
@@ -88,12 +85,21 @@ async def generate_tts(data: TTSRequest):
         logger.error(f"🌐 ElevenLabs TTS 서버 연결 실패: {e}")
         raise HTTPException(status_code=504, detail=f"TTS 서버 연결 실패: {str(e)}")
 
+@router.post("/tts")
+async def generate_tts(data: TTSRequest):
+    """FastAPI 엔드포인트: 텍스트를 음성으로 변환"""
+    try:
+        audio_content = await synthesize_speech(data.text)
+        logger.info("ElevenLabs TTS API 호출 성공")
+        logger.info(f"🎧 응답 오디오 크기: {len(audio_content)} bytes")
+
+        return Response(
+            content=audio_content,
+            media_type="audio/mpeg",
+            headers={"Content-Disposition": "inline; filename=output.mp3"}
+        )
     except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
         logger.critical(f"🔥 예상치 못한 서버 오류 발생: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"예상치 못한 서버 오류가 발생했습니다: {e}")
-
-    return Response(
-        content=res.content,
-        media_type="audio/mpeg",
-        headers={"Content-Disposition": "inline; filename=output.mp3"}
-    )

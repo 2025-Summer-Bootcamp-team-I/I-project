@@ -17,7 +17,7 @@ interface StyledProps {
 
 const Container = styled.View`
   width: calc(100% - 32px);
-  height: 64px;
+  height: 40px;
   background: #262642;
   border-radius: 16px;
   flex-direction: row;
@@ -37,15 +37,15 @@ const NavButton = styled.TouchableOpacity<StyledProps>`
   justify-content: center;
   padding: 8px;
   border-radius: 12px;
-  min-width: 60px;
-  min-height: 60px;
+  min-width: 50px;
+  min-height: 50px;
   background-color: transparent;
   margin: 0 50px;
 `;
 
 // 홈 아이콘 SVG
 const HomeIcon: React.FC<StyledProps> = ({ isActive }) => (
-  <Svg width="34" height="32" fill="none" viewBox="0 0 24 24">
+  <Svg width="28" height="28" fill="none" viewBox="0 0 24 24">
     <Path
       stroke="#ffffff"
       strokeWidth="2"
@@ -58,7 +58,7 @@ const HomeIcon: React.FC<StyledProps> = ({ isActive }) => (
 
 // 문서 아이콘 SVG (마이페이지용)
 const DocumentIcon: React.FC<StyledProps> = ({ isActive }) => (
-  <Svg width="34" height="32" fill="none" viewBox="0 0 24 24">
+  <Svg width="28" height="28" fill="none" viewBox="0 0 24 24">
     <Path
       stroke="#ffffff"
       strokeWidth="2"
