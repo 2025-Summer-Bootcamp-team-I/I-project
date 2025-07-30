@@ -37,18 +37,18 @@ async def save_file_to_s3(file: UploadFile, subdir: str = "drawings") -> str:
     """
     if not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME]):
         raise ValueError("S3 설정이 완료되지 않았습니다. AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME을 확인해주세요.")
-    
+
     # 파일 확장자 추출 (없으면 기본 .png)
     file_extension = ".png"
     if file.filename:
         _, ext = os.path.splitext(file.filename)
         if ext:
             file_extension = ext.lower()
-    
+
     # 유니크 파일명 생성
     file_name = f"{uuid.uuid4()}{file_extension}"
     s3_key = f"{subdir}/{file_name}"
-    
+
     try:
 
         # 파일을 S3에 업로드 (비동기 처리)
@@ -62,11 +62,11 @@ async def save_file_to_s3(file: UploadFile, subdir: str = "drawings") -> str:
                 # ACL 제거 - 버킷이 ACL을 지원하지 않음
             }
         )
-        
+
         # S3 URL 생성
         s3_url = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_key}"
         return s3_url
-        
+
     except ClientError as e:
         raise Exception(f"S3 업로드 실패: {str(e)}")
     except Exception as e:
@@ -76,10 +76,10 @@ async def save_file_to_s3(file: UploadFile, subdir: str = "drawings") -> str:
 async def delete_file_from_s3(s3_url: str) -> bool:
     """
     S3에서 파일을 삭제합니다.
-    
+
     Args:
         s3_url: 삭제할 파일의 S3 URL
-        
+
     Returns:
         bool: 삭제 성공 여부
     """
@@ -89,7 +89,7 @@ async def delete_file_from_s3(s3_url: str) -> bool:
         url_parts = s3_url.replace("https://", "").split("/")
         bucket_name = url_parts[0].split('.s3.')[0]
         s3_key = "/".join(url_parts[1:])
-        
+
 
         # 파일 삭제 (비동기 처리)
         await asyncio.to_thread(
@@ -98,10 +98,23 @@ async def delete_file_from_s3(s3_url: str) -> bool:
             Key=s3_key
         )
         return True
-        
+
     except ClientError as e:
         print(f"S3 파일 삭제 실패: {str(e)}")
         return False
     except Exception as e:
         print(f"파일 삭제 중 오류 발생: {str(e)}")
         return False
+
+def generate_presigned_url(s3_key: str, expiration: int = 3600) -> str:
+    try:
+        return s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': S3_BUCKET_NAME,
+                'Key': s3_key
+            },
+            ExpiresIn=expiration
+        )
+    except Exception as e:
+        raise Exception(f"Presigned URL 생성 실패: {str(e)}")

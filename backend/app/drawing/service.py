@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException
 import re
 from ..report.models import Report, RiskLevel
+from urllib.parse import urlparse
+
 
 env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
 load_dotenv(env_path)
@@ -17,64 +19,86 @@ if not os.getenv("OPENAI_API_KEY"):
     raise ValueError("OPENAI_API_KEY environment variable is not set")
 
 PROMPT = (
-  "아래 이미지는 사용자가 그린 시계 그림입니다. 원은 이미 그려져 있고, 사용자께서 시침, 분침, 숫자(1~12)를 직접 그렸습니다. 시계가 반드시 '11시 10분'을 가리키도록 그려야 합니다.\n"
-  "다음은 의료 연구와 임상에서 널리 사용하는 **Shulman 채점법(0~5점)**의 객관적 기준입니다. 그림이 아래 예시들과 일치할 경우, 반드시 해당 점수를 출력해야 합니다. 같은 이미지라면 항상 같은 점수가 나와야 하며, 평가 근거도 명확히 서술해야 합니다.\n"
-  "———\n"
-  "[📌 Shulman 채점법 요약]\n"
-  "• 5점(정상): 숫자 1~12 모두 정확하게 배치됨, 시침이 11 방향, 분침이 2 방향(10분) 정확하며, 중심에서 출발. 그림이 아래 'Score 5' 예시와 유사할 경우, 반드시 5점으로 판정.\n"
-  "• 4점(경미 결함): 숫자 하나 또는 둘만 살짝 틀렸지만 시간 해독 가능. 아래 'Score 4' 예시 수준일 경우, 반드시 4점.\n"
-  "• 3점(중등도 결함): 숫자 누락 또는 손 하나가 다른 방향으로 틀렸으며, 아래 'Score 3' 예시 수준이라면 3점.\n"
-  "• 2점(심각 결함): 숫자 2개 이상 누락되거나 손이 중심에서 벗어나거나 원 밖으로 나갔을 경우, 아래 'Score 2' 예시와 일치하면 2점.\n"
-  "• 1점(극심 결함): 숫자가 대부분 누락되거나 순서가 뒤섞이고, 시계로 보기 어려운 수준—'Score 1' 예시 수준이면 1점.\n"
-  "• 0점(실패): 시계인지 인식 불가능할 정도. 'Score 0' 예시와 같다면 0점.\n"
-  "※ 인터넷 '예시 이미지'들을 참고하여, 해당 이미지가 어느 기준에 속하면 반드시 일관되게 같은 점수가 나오도록 하세요. (예: ResearchGate 등에서 Score 5로 분류된 시계 그림은 AI에서도 5점으로 판정되어야 합니다.)\n"
-  "———\n"
-  "[평가 절차]\n"
-  "1. 입력 그림을 보고, 위 예시 이미지 중 가장 유사한 등급(5→0 순) 하나만 선택하세요.\n"
-  "2. 이미 예시 그림 수준으로 명확히 일치하면, 타 등급으로 분류하지 마세요.\n"
-  "3. 미세하게 구별하기 어려워도, 예시와 유사한 쪽으로 점수 고정하세요. 동일 그림에는 반드시 같은 점수로 대응됩니다.\n"
-  "4. 경계 사례를 회피하기 위해, 명확히 예시와 다른 경우 더 낮은 등급으로 내려갑니다.\n"
-  "———\n"
-  "[출력 형식 (JSON)]\n"
-  "{\"risk_score\":<0~5>, \"drawing_score\":<0~5>, "
-  "\"drawingtest_result\":\"<최소 130자 – 반드시 포함: (1) 예시 등급(Score X)과 비교, (2) 숫자 배열·누락 정도, (3) 시침/분침 위치 및 방향, (4) 시간 읽기 가능 여부 및 종합 평가>\"}\n"
-  "※ **risk_score**와 **drawing_score**는 동일한 점수를 사용하세요.\n"
-  "※ **drawingtest_result**에는 반드시 다음 내용을 포함하세요:\n"
-  "  1. '이 그림은 인터넷에서 Score X 예시와 비슷합니다'라는 비교 언급\n"
-  "  2. 숫자의 배열, 누락, 위치 정확성에 대한 구체적 설명\n"
-  "  3. 시침·분침의 방향(11·2 또는 다른 방향)과 중심 출발 여부\n"
-  "  4. 전체적으로 시간 읽기가 가능한지 여부\n"
-  "예시 출력:\n"
-  "{\"risk_score\":5, \"drawing_score\":5, "
-  "\"drawingtest_result\":\"이 그림은 인터넷에서 Score 5 예시와 매우 유사합니다. 숫자 1~12가 모두 원 둘레에 정확히 배치되어 있으며, 시침이 11시, 분침이 2(10분)를 분명히 가리키고 중심에서 출발합니다. 전체적으로 매우 깔끔하며, 시간 해독이 명확하고 혼동의 여지가 없습니다.\"}"
+    "아래 이미지는 사용자가 그린 시계 그림입니다. 원은 이미 그려져 있고, 사용자께서 시침, 분침, 숫자(1~12)를 직접 그렸습니다. 시계가 반드시 '11시 10분'을 가리키도록 그려야 합니다.\n"
+    "당신은 시계 그리기 인지 평가(Clock Drawing Test) 전문가입니다.\n\n"
+    "지금부터 첨부된 예시 이미지들은 Shulman 채점법(0~5점)의 점수별 기준에 따라 만들어졌습니다.\n"
+    "- 각 점수(0~5점)에 해당하는 예시 이미지가 제공됩니다. 동일 점수에 대한 여러 예시도 포함되어 있습니다.\n\n"
+    "사용자 그림을 아래 예시들과 정확히 비교하고, 가장 일치하는 점수 하나(0~5점)를 선택하세요.\n"
+    "점수를 선택할 때는 반드시 아래의 [점수별 기준 요약]과 예시 이미지를 함께 고려하세요.\n"
+    "절대적인 기준은 점수별 기준 요약이며, 점수는 오직 하나만 선택 가능합니다.\n"
+    "불확실한 경우, 가장 유사한 점수가 아닌 가장 적절한 점수 하나만 선택하세요.\n"
+    "점수를 착오 없이 판단하는 것이 가장 중요합니다.\n\n"
+    "[점수별 기준 요약]\n"
+    "5점: 숫자 1~12 모두 정확, 시침(11시)·분침(10분)도 정확, 중심 출발\n"
+    "4점: 숫자 1~2개 오류, 시침/분침 살짝 어긋나지만 시간 해독 가능\n"
+    "3점: 숫자 2~3개 누락 또는 오류, 시계는 인식 가능하지만 해석 어려움\n"
+    "2점: 숫자 배열이 무질서, 바늘이 원 밖이거나 중심이 아님, 숫자 4개 이상 누락\n"
+    "1점: 숫자가 3개 이하이거나 순서 무너짐, 시계 형태 붕괴\n"
+    "0점: 시계로 인식 불가. 숫자·바늘이 거의 없고 시계 구조를 갖추지 않음\n\n"
+    "[출력 형식 - 반드시 아래 JSON 형식 그대로 출력하세요]\n"
+    "다음 형식에 맞추어 JSON만 출력하세요:\n"
+    "{\n"
+    "  \"risk_score\": <0~5>,\n"
+    "  \"drawing_score\": <0~5>,\n"
+    "  \"drawingtest_result\": \"<선택한 점수의 판단 이유를 1~2문장으로 작성>\"\n"
+    "}\n"
+    "※ risk_score와 drawing_score는 동일한 점수를 입력하세요.\n"
+    "설명이 너무 길어지지 않도록 주의하세요. 반드시 위 JSON 형식만 출력하세요.\n"
 )
-
 
 
 def call_gpt_vision(image_url: str):
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    
+
+    example_image_info = [
+        ("5점", "static/uploads/drawings/시계5점-1.PNG"),
+        ("4점", "static/uploads/drawings/시계4점-1.PNG"),
+        ("3점", "static/uploads/drawings/시계3점-1.PNG"),
+        ("2점", "static/uploads/drawings/시계2점-1.PNG"),
+        ("2점", "static/uploads/drawings/시계2점-3.PNG"),
+        ("1점", "static/uploads/drawings/시계1점-1.PNG"),
+        ("1점", "static/uploads/drawings/시계1점-2.PNG"),
+        ("1점", "static/uploads/drawings/시계1점-3.PNG"),
+        ("0점", "static/uploads/drawings/시계0점-1.PNG"),
+    ]
+
+    def img_to_base64(path):
+        try:
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode('utf-8')
+        except FileNotFoundError as e:
+            print(f"Error: Missing example image file: {path}")
+            return None
+
     # S3 URL에서 이미지 다운로드
     response = requests.get(image_url)
     response.raise_for_status()
     image_data = base64.b64encode(response.content).decode('utf-8')
 
+    content_list = [
+        {"type": "text", "text": PROMPT}
+    ]
+    for score_text, img_path in example_image_info:
+        content_list.append({"type": "text", "text": f"아래 이미지는 {score_text} 예시입니다."})
+        img_base64 = img_to_base64(img_path)
+        if img_base64:
+            content_list.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_base64}"}})
+        else:
+            print(f"Warning: Could not load image {img_path}")
+
+    content_list.append({"type": "text", "text": "아래 이미지는 사용자가 그린 그림입니다."})
+    content_list.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_data}"}})
+
+    messages = [
+        {
+            "role": "user",
+            "content": content_list
+        }
+    ]
+
     response = client.chat.completions.create(
         model="gpt-4o",
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": PROMPT},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{image_data}"
-                        }
-                    }
-                ]
-            }
-        ],
+        messages=messages,
         max_tokens=700,
     )
     content = response.choices[0].message.content or ""
@@ -99,10 +123,10 @@ def call_gpt_vision(image_url: str):
 def get_drawing_risk_level(drawing_score: int) -> RiskLevel:
     """
     그림 분석 점수에 따른 위험도 평가
-    
+
     Args:
         drawing_score: 그림 분석 점수 (0-5)
-        
+
     Returns:
         RiskLevel: 위험도 enum 객체
     """
@@ -114,9 +138,9 @@ def get_drawing_risk_level(drawing_score: int) -> RiskLevel:
         return RiskLevel.DANGER
 
 async def handle_upload(
-    file,                  # UploadFile
-    report_id: int,        # Form 데이터(reportId)
-    db: Session = Depends()
+        file,                  # UploadFile
+        report_id: int,        # Form 데이터(reportId)
+        db: Session = Depends()
 ):
     """
     file: 업로드된 이미지 파일
@@ -125,7 +149,7 @@ async def handle_upload(
     """
     import logging
     logger = logging.getLogger(__name__)
-    
+
     # 리포트 존재 여부 확인
     db_report = db.query(Report).filter(Report.report_id == report_id).first()
     if not db_report:
@@ -133,17 +157,22 @@ async def handle_upload(
 
     try:
         logger.info(f"드로잉 업로드 시작 - report_id: {report_id}")
-        
+
         # S3에 파일 업로드
         logger.info("S3 업로드 시작")
         image_url = await utils.save_file_to_s3(file)
         logger.info(f"S3 업로드 완료 - URL: {image_url}")
-        
-        # GPT Vision 분석
+
+        # presigned URL 생성
+        parsed = urlparse(image_url)
+        s3_key = parsed.path.lstrip("/")  # 'drawings/abc.png'
+        presigned_url = utils.generate_presigned_url(s3_key)
+
+        # GPT Vision 분석 (원래 S3 URL로 전송)
         logger.info("GPT Vision 분석 시작")
         risk_score, drawing_score, drawingtest_result = call_gpt_vision(image_url)
         logger.info(f"GPT Vision 분석 완료 - 점수: {drawing_score}")
-        
+
         risk_level = get_drawing_risk_level(drawing_score)
 
         # drawing_test 테이블에는 이미지 URL과 risk_score만 저장
@@ -171,6 +200,7 @@ async def handle_upload(
             "drawing_id": db_obj.drawing_id,
             "report_id": db_obj.report_id,
             "image_url": db_obj.image_url,
+            "presigned_url": presigned_url,
             "risk_score": risk_score,
             "drawing_score": drawing_score,
             "drawingtest_result": drawingtest_result,
@@ -179,7 +209,7 @@ async def handle_upload(
     except Exception as e:
         logger.error(f"드로잉 업로드 중 에러 발생: {str(e)}", exc_info=True)
 
-                # 에러 발생 시 S3에 업로드된 파일 삭제 시도
+        # 에러 발생 시 S3에 업로드된 파일 삭제 시도
         if 'image_url' in locals():
             try:
                 await utils.delete_file_from_s3(image_url)
@@ -187,5 +217,3 @@ async def handle_upload(
             except Exception as delete_error:
                 logger.error(f"S3 파일 삭제 실패: {str(delete_error)}")
         raise HTTPException(status_code=500, detail="파일 업로드 중 오류가 발생했습니다.")
-
-     
