@@ -49,7 +49,7 @@ PROMPT = (
 
 def call_gpt_vision(image_url: str):
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    
+
     example_image_info = [
         ("5점", "static/uploads/drawings/시계5점-1.PNG"),
         ("4점", "static/uploads/drawings/시계4점-1.PNG"),
@@ -61,7 +61,7 @@ def call_gpt_vision(image_url: str):
         ("1점", "static/uploads/drawings/시계1점-3.PNG"),
         ("0점", "static/uploads/drawings/시계0점-1.PNG"),
     ]
-    
+
     def img_to_base64(path):
         try:
             with open(path, "rb") as f:
@@ -69,12 +69,12 @@ def call_gpt_vision(image_url: str):
         except FileNotFoundError as e:
             print(f"Error: Missing example image file: {path}")
             return None
-    
+
     # S3 URL에서 이미지 다운로드
     response = requests.get(image_url)
     response.raise_for_status()
     image_data = base64.b64encode(response.content).decode('utf-8')
-    
+
     content_list = [
         {"type": "text", "text": PROMPT}
     ]
@@ -85,7 +85,7 @@ def call_gpt_vision(image_url: str):
             content_list.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_base64}"}})
         else:
             print(f"Warning: Could not load image {img_path}")
-        
+
     content_list.append({"type": "text", "text": "아래 이미지는 사용자가 그린 그림입니다."})
     content_list.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_data}"}})
 
@@ -123,10 +123,10 @@ def call_gpt_vision(image_url: str):
 def get_drawing_risk_level(drawing_score: int) -> RiskLevel:
     """
     그림 분석 점수에 따른 위험도 평가
-    
+
     Args:
         drawing_score: 그림 분석 점수 (0-5)
-        
+
     Returns:
         RiskLevel: 위험도 enum 객체
     """
@@ -138,9 +138,9 @@ def get_drawing_risk_level(drawing_score: int) -> RiskLevel:
         return RiskLevel.DANGER
 
 async def handle_upload(
-    file,                  # UploadFile
-    report_id: int,        # Form 데이터(reportId)
-    db: Session = Depends()
+        file,                  # UploadFile
+        report_id: int,        # Form 데이터(reportId)
+        db: Session = Depends()
 ):
     """
     file: 업로드된 이미지 파일
@@ -149,7 +149,7 @@ async def handle_upload(
     """
     import logging
     logger = logging.getLogger(__name__)
-    
+
     # 리포트 존재 여부 확인
     db_report = db.query(Report).filter(Report.report_id == report_id).first()
     if not db_report:
@@ -157,7 +157,7 @@ async def handle_upload(
 
     try:
         logger.info(f"드로잉 업로드 시작 - report_id: {report_id}")
-        
+
         # S3에 파일 업로드
         logger.info("S3 업로드 시작")
         image_url = await utils.save_file_to_s3(file)
@@ -172,7 +172,7 @@ async def handle_upload(
         logger.info("GPT Vision 분석 시작")
         risk_score, drawing_score, drawingtest_result = call_gpt_vision(image_url)
         logger.info(f"GPT Vision 분석 완료 - 점수: {drawing_score}")
-        
+
         risk_level = get_drawing_risk_level(drawing_score)
 
         # drawing_test 테이블에는 이미지 URL과 risk_score만 저장
@@ -209,7 +209,7 @@ async def handle_upload(
     except Exception as e:
         logger.error(f"드로잉 업로드 중 에러 발생: {str(e)}", exc_info=True)
 
-                # 에러 발생 시 S3에 업로드된 파일 삭제 시도
+        # 에러 발생 시 S3에 업로드된 파일 삭제 시도
         if 'image_url' in locals():
             try:
                 await utils.delete_file_from_s3(image_url)

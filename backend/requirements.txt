@@ -38,3 +38,4 @@ celery==5.3.6
 google-generativeai
 boto3
 newrelic
+redis==4.6.0
