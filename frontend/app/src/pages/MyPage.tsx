@@ -17,6 +17,8 @@ import { colors, spacing, fontSize, borderRadius, shadows } from '../AppStyle';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useReportHistoryStore } from '../store/reportHistoryStore';
 import type { MyReportSummary } from '../types/api';
+import Header from '../components/AppHeader';
+import BottomBar from '../components/BottomBar';
 
 type MyPageNavigationProp = StackNavigationProp<RootStackParamList, 'MyPage'>;
 
@@ -31,7 +33,7 @@ const getRiskStatus = (risk?: '양호' | '경계' | '위험' | null) => {
 
 // 전구 아이콘 컴포넌트
 const LightbulbIcon = ({ color }: { color: string }) => (
-  <Svg width="60" height="60" viewBox="0 0 72 72" fill="none">
+  <Svg width="40" height="40" viewBox="0 0 72 72" fill="none">
     <Path d="M36 5C24.954 5 16 13.954 16 25C16 32.379 20.621 38.796 27 42.154V48C27 50.209 28.791 52 31 52H41C43.209 52 45 50.209 45 48V42.154C51.379 38.796 56 32.379 56 25C56 13.954 47.046 5 36 5Z" fill={color} fillOpacity="0.3"/>
     <Path d="M36 5C24.954 5 16 13.954 16 25C16 32.379 20.621 38.796 27 42.154V48C27 50.209 28.791 52 31 52H41C43.209 52 45 50.209 45 48V42.154C51.379 38.796 56 32.379 56 25C56 13.954 47.046 5 36 5Z" stroke={color} strokeWidth="2"/>
     <Path d="M31 58H41C42.1046 58 43 58.8954 43 60V61H29V60C29 58.8954 29.8954 58 31 58Z" fill="#4A5568"/>
@@ -104,31 +106,14 @@ export default function MyPage() {
     return (
       <View style={styles.container}>
         <View style={styles.background} />
-        
-        {/* 헤더 */}
-        <View style={styles.topHeader}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
-              <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
-            </Svg>
-          </TouchableOpacity>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../assets/imgs/logo.png')}
-              style={styles.logoImage}
-            />
-            <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
-          </View>
-          <View style={styles.placeholder} />
-        </View>
+        <Header />
         
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>검사 기록을 불러오는 중...</Text>
         </View>
+        
+        <BottomBar currentPage="MyPage" />
       </View>
     );
   }
@@ -138,26 +123,7 @@ export default function MyPage() {
     return (
       <View style={styles.container}>
         <View style={styles.background} />
-        
-        {/* 헤더 */}
-        <View style={styles.topHeader}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
-              <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
-            </Svg>
-          </TouchableOpacity>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../assets/imgs/logo.png')}
-              style={styles.logoImage}
-            />
-            <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
-          </View>
-          <View style={styles.placeholder} />
-        </View>
+        <Header />
         
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
@@ -165,13 +131,15 @@ export default function MyPage() {
             <TouchableOpacity style={styles.retryButton} onPress={fetchMyReports}>
               <Text style={styles.retryButtonText}>다시 시도</Text>
             </TouchableOpacity>
-                         {error.includes('로그인') && (
-               <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login')}>
-                 <Text style={styles.loginButtonText}>로그인</Text>
-               </TouchableOpacity>
-             )}
+            {error.includes('로그인') && (
+              <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.loginButtonText}>로그인</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
+        
+        <BottomBar currentPage="MyPage" />
       </View>
     );
   }
@@ -179,104 +147,90 @@ export default function MyPage() {
   return (
     <View style={styles.container}>
       <View style={styles.background} />
+      <Header />
       
-      {/* 헤더 */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
-            <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
-          </Svg>
-        </TouchableOpacity>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/imgs/logo.png')}
-            style={styles.logoImage}
-          />
-          <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
-        </View>
-        <View style={styles.placeholder} />
-      </View>
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          {/* 메인 헤더 */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>나의 검사 기록</Text>
-          </View>
+             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+         <Animated.View
+           style={[
+             styles.content,
+             {
+               opacity: fadeAnim,
+               transform: [{ translateY: slideAnim }],
+             },
+           ]}
+         >
+           {/* 메인 헤더 */}
+           <View style={styles.header}>
+             <Text style={styles.headerTitle}>나의 검사 기록</Text>
+           </View>
 
-          {myReports.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>아직 검사 기록이 없습니다.</Text>
-                             <TouchableOpacity
+           {myReports.length === 0 ? (
+             <View style={styles.emptyContainer}>
+               <Text style={styles.emptyText}>아직 검사 기록이 없습니다.</Text>
+               <TouchableOpacity
                  style={styles.startButton}
                  onPress={() => navigation.navigate('Main')}
                  activeOpacity={0.8}
                >
-                <Text style={styles.startButtonText}>검사 시작하기</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.reportList}>
-              {myReports.map((report: MyReportSummary) => {
-                const finalStatus = getRiskStatus(report.final_risk);
-                const statusText = {
-                  danger: "위험",
-                  warning: "경계",
-                  good: "양호",
-                  unknown: "미정",
-                };
+                 <Text style={styles.startButtonText}>검사 시작하기</Text>
+               </TouchableOpacity>
+             </View>
+           ) : (
+             <View style={styles.reportGrid}>
+               {myReports.map((report: MyReportSummary) => {
+                 const finalStatus = getRiskStatus(report.final_risk);
+                 const statusText = {
+                   danger: "위험",
+                   warning: "경계",
+                   good: "양호",
+                   unknown: "미정",
+                 };
 
-                return (
-                  <TouchableOpacity
-                    key={report.report_id}
-                    style={[styles.reportCard, { borderColor: finalStatus === 'danger' ? '#F87171' : finalStatus === 'warning' ? '#FBBF24' : finalStatus === 'good' ? '#6EE7B7' : '#94A3B8' }]}
-                    onPress={() => handleViewReport(report.report_id)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.reportHeader}>
-                      <Text style={styles.reportDate}>{getFormattedDate(report.created_at)}</Text>
-                      <View style={styles.finalResult}>
-                        <Text style={styles.finalResultLabel}>최종 결과</Text>
-                        <Text style={[styles.finalResultText, { color: finalStatus === 'danger' ? '#F87171' : finalStatus === 'warning' ? '#FBBF24' : finalStatus === 'good' ? '#6EE7B7' : '#94A3B8' }]}>
-                          {statusText[finalStatus]}
-                        </Text>
-                        {report.final_risk && (
-                          <Text style={styles.finalResultDetail}>{report.final_risk}</Text>
-                        )}
-                      </View>
-                    </View>
+                 return (
+                   <TouchableOpacity
+                     key={report.report_id}
+                     style={[styles.reportCard, { borderColor: finalStatus === 'danger' ? '#F87171' : finalStatus === 'warning' ? '#FBBF24' : finalStatus === 'good' ? '#6EE7B7' : '#94A3B8' }]}
+                     onPress={() => handleViewReport(report.report_id)}
+                     activeOpacity={0.8}
+                   >
+                     <View style={styles.reportHeader}>
+                       <Text style={styles.reportDate}>{getFormattedDate(report.created_at)}</Text>
+                       <View style={styles.finalResult}>
+                         <Text style={styles.finalResultLabel}>최종 결과</Text>
+                         <Text style={[styles.finalResultText, { color: finalStatus === 'danger' ? '#F87171' : finalStatus === 'warning' ? '#FBBF24' : finalStatus === 'good' ? '#6EE7B7' : '#94A3B8' }]}>
+                           {statusText[finalStatus]}
+                         </Text>
+                         {report.final_risk && (
+                           <Text style={styles.finalResultDetail}>{report.final_risk}</Text>
+                         )}
+                       </View>
+                     </View>
 
-                    <View style={styles.testIconsContainer}>
-                      <TestIcon label="AD-8 검사" risk={report.ad8_risk} />
-                      <TestIcon label="대화 검사" risk={report.chat_risk} />
-                      <TestIcon label="그림 검사" risk={report.drawing_risk} />
-                    </View>
-                    
-                    <TouchableOpacity
-                      style={styles.viewButton}
-                      onPress={() => handleViewReport(report.report_id)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.viewButtonText}>보고서 보기</Text>
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </Animated.View>
-      </ScrollView>
+                     <View style={styles.testIconsContainer}>
+                       <TestIcon label="AD-8 검사" risk={report.ad8_risk} />
+                       <TestIcon label="대화 검사" risk={report.chat_risk} />
+                       <TestIcon label="그림 검사" risk={report.drawing_risk} />
+                     </View>
+                     
+                     <TouchableOpacity
+                       style={styles.viewButton}
+                       onPress={() => handleViewReport(report.report_id)}
+                       activeOpacity={0.8}
+                     >
+                       <Text style={styles.viewButtonText}>보고서 보기</Text>
+                     </TouchableOpacity>
+                   </TouchableOpacity>
+                 );
+               })}
+             </View>
+           )}
+         </Animated.View>
+       </ScrollView>
+     
+       {/* 하단바 뒤에 카드들을 가리는 배경 상자 */}
+       <View style={styles.bottomOverlay} />
+       
+       <BottomBar currentPage="MyPage" />  
     </View>
   );
 }
@@ -296,49 +250,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  topHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  
-  backButton: {
-    backgroundColor: 'rgba(17, 24, 39, 0.82)',
-    borderRadius: 20,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  
-  logoImage: {
-    width: 34,
-    height: 34,
-    marginRight: spacing.sm,
-  },
-  
-  logoText: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
-    color: '#96e7d4',
-    letterSpacing: -1,
-  },
-  
-  placeholder: {
-    width: 40,
-  },
+
   
   scrollView: {
     flex: 1,
@@ -447,41 +359,48 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   
-  reportList: {
-    gap: spacing.lg,
+  reportGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: spacing.md,
     marginBottom: spacing.lg,
   },
   
   reportCard: {
+    width: '48%', // 2x2 그리드 레이아웃을 위해 각 카드의 너비를 48%로 설정
     backgroundColor: 'rgba(30, 41, 59, 0.7)',
     borderWidth: 1,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     ...shadows.medium,
+    minHeight: 200, // 최소 높이 설정
   },
   
   reportHeader: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   
   reportDate: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   
   finalResult: {
     marginBottom: spacing.md,
+    alignItems: 'center',
   },
   
   finalResultLabel: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
   
   finalResultText: {
-    fontSize: fontSize.xxxl,
+    fontSize: fontSize.lg,
     fontWeight: 'bold',
     marginBottom: spacing.xs,
   },
@@ -495,28 +414,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   
   testIconContainer: {
     alignItems: 'center',
     gap: spacing.xs,
+    flex: 1,
   },
   
   testIconLabel: {
-    fontSize: fontSize.sm,
+    fontSize: 10,
     fontWeight: '500',
     color: colors.textSecondary,
     textAlign: 'center',
   },
   
   testIconRisk: {
-    fontSize: fontSize.xs,
+    fontSize: 8,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -526,14 +446,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary,
     borderRadius: borderRadius.md,
-    padding: spacing.md,
+    padding: spacing.sm,
     alignItems: 'center',
   },
   
   viewButtonText: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: '600',
     color: colors.primary,
   },
-});
   
+  bottomOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 50, // BottomBar 높이 + 여백
+    backgroundColor: colors.background,
+    zIndex: 0,
+  },
+});
