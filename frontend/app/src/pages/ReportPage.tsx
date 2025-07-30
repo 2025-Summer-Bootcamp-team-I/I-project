@@ -21,7 +21,7 @@ import { useReportIdStore } from '../store/reportIdStore';
 import { useReportStore } from '../store/reportStore';
 import { useReportHistoryStore } from '../store/reportHistoryStore';
 import { getReportResult, getChatLogs, finalizeReport, getBaseURL } from '../api';
-import type { ChatLogResponse } from '../../../shared/types/api';
+import type { ChatLogResponse } from '../types/api';
 import type { ReportResponse } from '../store/reportStore';
 import AppHeader from '../components/AppHeader';
 import BottomBar from '../components/BottomBar';

@@ -4,12 +4,43 @@ import type { RootStackParamList } from '../App';
 import styled, { css } from 'styled-components/native';
 import { Dimensions, Animated, Easing, Image, Text, View, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
 import Svg, { Path, Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
+import BottomBar from '../components/BottomBar';
+
+const { width, height } = Dimensions.get('window');
+
+const TopLeftButtonContainer = styled.View`
+  position: absolute;
+  top: ${width > 768 ? 32 : 24}px;
+  left: ${width > 768 ? 24 : 12}px;
+  z-index: 30;
+  align-items: center;
+`;
+
+const CloseButton = styled.TouchableOpacity`
+  background-color: #606060;
+  border-radius: 9999px;
+  padding: ${width > 768 ? 6 : 4}px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ChatTerminateTextButton = styled.TouchableOpacity`
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ChatTerminateText = styled.Text`
+  color: #67e8f9;
+  font-size: ${width > 768 ? 12 : 10}px;
+  font-weight: 600;
+`;
 
 // Local imports within app folder
 import { useChatStore } from '../store/chatStore';
 import { useReportIdStore } from '../store/reportIdStore';
-
-const { width, height } = Dimensions.get('window');
 
 const PageContainer = styled.View`
   flex: 1;
@@ -17,20 +48,6 @@ const PageContainer = styled.View`
   justify-content: flex-start;
   padding: ${width > 768 ? 16 : 8}px;
   background-color: transparent;
-`;
-
-const BackButton = styled.TouchableOpacity`
-  background-color: rgba(255, 255, 255, 0.05);
-  border-width: 1px;
-  border-color: rgba(255, 255, 255, 0.1);
-  border-radius: 9999px;
-  padding: ${width > 768 ? 6 : 4}px;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  top: ${width > 768 ? 32 : 24}px;
-  left: ${width > 768 ? 24 : 12}px;
-  z-index: 30;
 `;
 
 const ContentWrapper = styled.View`
@@ -62,7 +79,7 @@ const ChatBox = styled.View`
 `;
 
 const ChatLog = styled(ScrollView)`
-  height: ${height * 0.4}px; /* 40vh */
+  height: ${height * 0.45}px; /* 45vh */
   padding: ${width > 768 ? 8 : 4}px;
 `;
 
@@ -71,12 +88,12 @@ const ChatBubble = styled.View<{ $sender: 'ai' | 'user' }>`
   padding: 10px 15px;
   border-radius: 15px;
   margin-bottom: 10px;
-  ${props => props.$sender === 'ai' && css`
+  ${({ $sender }: { $sender: 'ai' | 'user' }) => $sender === 'ai' && css`
     background-color: #2d3748;
     align-self: flex-start;
     border-bottom-left-radius: 2px;
   `}
-  ${props => props.$sender === 'user' && css`
+  ${({ $sender }: { $sender: 'ai' | 'user' }) => $sender === 'user' && css`
     background-color: #4f46e5;
     align-self: flex-end;
     border-bottom-right-radius: 2px;
@@ -85,33 +102,47 @@ const ChatBubble = styled.View<{ $sender: 'ai' | 'user' }>`
 
 const ChatBubbleText = styled.Text`
   color: white;
-  font-size: ${width > 768 ? 16 : 14}px;
+  font-size: ${width > 768 ? 14 : 12}px;
 `;
 
 const ChatInputContainer = styled.View`
   flex-direction: row;
   gap: ${width > 768 ? 8 : 5}px;
-  margin-top: ${width > 768 ? 8 : 5}px;
+  margin-top: ${width > 768 ? 16 : 10}px;
   padding: ${width > 768 ? 8 : 5}px;
   border-top-width: 1px;
   border-top-color: rgba(6, 182, 212, 0.2);
 `;
 
-const ChatInput = styled.TextInput`
+const ChatInputWrapper = styled.View`
   flex-grow: 1;
-  background-color: rgba(17, 24, 39, 0.6);
+  flex-direction: row;
+  align-items: center;
+  background-color: #1C1F33;
   border-radius: 8px;
   padding: ${width > 768 ? 8 : 6}px ${width > 768 ? 16 : 12}px;
+  margin-top: 7px;
+`;
+
+const ChatInputIcon = styled.View`
+  margin-right: 8px;
+`;
+
+const ChatInput = styled.TextInput`
+  flex-grow: 1;
   color: white;
   font-size: ${width > 768 ? 16 : 14}px;
 `;
 
 const SendButton = styled.TouchableOpacity`
   background-color: #06b6d4;
-  padding: ${width > 768 ? 8 : 6}px ${width > 768 ? 16 : 12}px;
+  padding: ${width > 768 ? 8 : 6}px;
   border-radius: 8px;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-top: 7px;
 `;
 
 const SendButtonText = styled.Text`
@@ -223,10 +254,6 @@ const TextChattingPage: React.FC = () => {
     }
   };
 
-  const handleBack = () => {
-    navigation.goBack();
-  };
-
   const handleTerminateChat = async () => {
     if (!chatId || !reportId || isEvaluating) return;
 
@@ -248,11 +275,19 @@ const TextChattingPage: React.FC = () => {
     <PageContainer>
       {/* <Background isSurveyActive={true} /> */}
       {/* <Header showLogoText={true} /> */}
-      <BackButton onPress={handleBack}>
-        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white">
-          <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </Svg>
-      </BackButton>
+      <TopLeftButtonContainer>
+        <CloseButton onPress={handleTerminateChat}>
+          <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#67e8f9" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: [{ translateY: -2 }] }}>
+                      <Path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                      <Path d="M12 2v10" />
+          </Svg>
+        </CloseButton>
+        <ChatTerminateTextButton>
+          <ChatTerminateText>
+            {isEvaluating ? "제출 중..." : "채팅 종료"}
+          </ChatTerminateText>
+        </ChatTerminateTextButton>
+      </TopLeftButtonContainer>
       <ContentWrapper>
         <AIChatacter>
           <Svg viewBox="0 0 100 100">
@@ -285,25 +320,26 @@ const TextChattingPage: React.FC = () => {
             )}
           </ChatLog>
           <ChatInputContainer>
-            <ChatInput
-              placeholder="메시지를 입력하세요..."
-              value={inputMessage}
-              onChangeText={setInputMessage}
-              onSubmitEditing={handleSendMessage}
-              editable={!isLoading && !isStreaming}
-            />
+            <ChatInputWrapper>
+              <ChatInput
+                placeholder="메세지를 입력하세요..."
+                value={inputMessage}
+                onChangeText={setInputMessage}
+                onSubmitEditing={handleSendMessage}
+                editable={!isLoading && !isStreaming}
+              />
+            </ChatInputWrapper>
             <SendButton onPress={handleSendMessage} disabled={isLoading || isStreaming}>
-              <SendButtonText>{isStreaming ? '응답 중...' : '전송'}</SendButtonText>
+              <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <Path d="M22 2L11 13" />
+                <Path d="M22 2L15 22L11 13L2 9L22 2Z" />
+              </Svg>
             </SendButton>
           </ChatInputContainer>
         </ChatBox>
         {error && <ErrorMessage>{error}</ErrorMessage>}
       </ContentWrapper>
-      <BottomButtonBar>
-        <ActionBtn onPress={handleTerminateChat} disabled={isEvaluating}>
-          <ActionBtnText>{isEvaluating ? "제출 중..." : "채팅 종료"}</ActionBtnText>
-        </ActionBtn>
-      </BottomButtonBar>
+      <BottomBar currentPage="TextChatting" />
     </PageContainer>
   );
 };

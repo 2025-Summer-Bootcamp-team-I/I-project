@@ -11,6 +11,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
 import { colors, spacing, fontSize, borderRadius } from '../AppStyle';
 import Svg, { Path } from 'react-native-svg';
+import AppHeader from '../components/AppHeader';
+import BottomBar from '../components/BottomBar';
 
 type ChattingSelectPageNavigationProp = StackNavigationProp<RootStackParamList, 'ChattingSelect'>;
 
@@ -25,34 +27,12 @@ export default function ChattingSelectPage() {
     }
   };
 
-  const handleBack = () => {
-    navigation.navigate('Main' as any);
-  };
-
   return (
     <View style={styles.container}>
       {/* 배경 */}
       <View style={styles.background} />
       
-      {/* 헤더 */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBack}
-        >
-          <Svg width="24" height="24" fill="none" stroke="#ffffff" viewBox="0 0 24 24">
-            <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 12H5M12 19l-7-7 7-7" />
-          </Svg>
-        </TouchableOpacity>
-        <View style={styles.logoContainer}>
-                          <Image
-          source={require('../assets/imgs/logo.png')}
-          style={styles.logoImage}
-        />
-          <Text style={styles.logoText}>Neurocare 치매진단 서비스</Text>
-        </View>
-        <View style={styles.placeholder} />
-      </View>
+      <AppHeader showLogoText={true} />
 
       {/* 메인 컨텐츠 */}
       <View style={styles.content}>
@@ -83,6 +63,7 @@ export default function ChattingSelectPage() {
           </TouchableOpacity>
         </View>
       </View>
+      <BottomBar currentPage="ChattingSelect" />
     </View>
   );
 }
@@ -102,59 +83,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  topHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  
-  backButton: {
-    backgroundColor: 'rgba(17, 24, 39, 0.82)',
-    borderRadius: 20,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  
-  logoImage: {
-    width: 34,
-    height: 34,
-    marginRight: spacing.sm,
-  },
-  
-  logoText: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
-    color: '#96e7d4',
-    letterSpacing: -1,
-  },
-  
-  placeholder: {
-    width: 40,
-  },
-  
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
+    paddingTop: 60, // Adjust for header
+    paddingBottom: 80, // Adjust for bottom bar
   },
   
   title: {
-    fontSize: fontSize.xxxl,
+    fontSize: fontSize.xxl,
     fontWeight: '700',
     color: '#67e8f9',
     textAlign: 'center',
@@ -165,12 +104,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: '#9ca3af',
     textAlign: 'center',
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xl,
   },
   
   buttonGroup: {
     width: '100%',
-    gap: spacing.lg,
+    gap: spacing.md,
   },
   
   chatOptionButton: {
@@ -178,9 +117,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(6, 182, 212, 0.3)',
     borderRadius: borderRadius.lg,
-    padding: spacing.xxl,
+    padding: spacing.xl,
     alignItems: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
+    width: 250,
+    alignSelf: 'center',
   },
   
   buttonText: {
