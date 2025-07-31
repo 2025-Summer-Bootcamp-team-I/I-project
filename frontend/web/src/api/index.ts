@@ -20,7 +20,7 @@ import type {
 
 // axios 인스턴스 생성
 const axiosInstance = axios.create({
-  baseURL: 'https://www.neurocare11.site',
+  baseURL: 'https://neurocare11.site',
 });
 
 // 요청 인터셉터: 모든 요청에 access_token을 헤더에 추가
@@ -195,12 +195,14 @@ export const finalizeReport = async (reportId: number) => {
   return response.data;
 };
 
-// STT API
-export const speechToText = async (file: File) => {
+// 음성 채팅 시작 API
+export const startVoiceChat = async (reportId: number, chatId: number, file: File) => {
   const formData = new FormData();
+  formData.append('report_id', reportId.toString());
+  formData.append('chat_id', chatId.toString());
   formData.append('file', file);
 
-  const response = await axiosInstance.post<{ text: string }>('/stt', formData, {
+  const response = await axiosInstance.post<{ task_id: string }>('/chat/voice', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -208,7 +210,13 @@ export const speechToText = async (file: File) => {
   return response.data;
 };
 
-// TTS API
+// 음성 채팅 결과 조회 API
+export const getVoiceChatResult = async (taskId: string) => {
+  const response = await axiosInstance.get(`/chat/task-status/${taskId}`);
+  return response.data;
+};
+
+// TTS API (음성 채팅 외 다른 곳에서 사용할 수 있으므로 유지)
 export const textToSpeech = async (text: string): Promise<Blob> => {
   const response = await axiosInstance.post('/tts', { text }, { responseType: 'blob' });
   return response.data;

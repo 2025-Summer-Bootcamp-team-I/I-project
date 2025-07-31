@@ -48,8 +48,8 @@ const LogoArea = styled.div`
 `;
 
 const LogoImage = styled.img`
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 2.5rem;
+  height: 2.5rem;
   display: block;
   object-fit: contain;
 `;
@@ -64,10 +64,11 @@ const LogoText = styled.span`
 const MyPageButton = styled.button`
   background: transparent;
   border: 1.7px solid #96E7D4;
-  color: #96E7D4;
+  color: #96e7d4;
   border-radius: 999px;
   cursor: pointer;
   font-size: 1.01rem;
+  font-weight: 700;
   padding: 0.5rem 1.2rem;
   transition: background 0.15s, color 0.15s;
   &:hover {

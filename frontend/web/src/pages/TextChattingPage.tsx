@@ -350,16 +350,12 @@ const TextChattingPage: React.FC = () => {
           </AIChatacter>
           <ChatBox>
             <ChatLog ref={chatLogRef} className="custom-scrollbar">
-              {messages.map((msg) => (
+              {messages.map((msg, index) => (
                 <ChatBubble key={msg.id} $sender={msg.role}>
                   {msg.message}
+                  {isStreaming && msg.role === 'ai' && index === messages.length - 1 && <BlinkingCursor />}
                 </ChatBubble>
               ))}
-              {isStreaming && messages[messages.length - 1]?.role === 'ai' && (
-                <ChatBubble $sender="ai">
-                  <BlinkingCursor />
-                </ChatBubble>
-              )}
             </ChatLog>
             <ChatInputContainer>
               <ChatInput

@@ -5,12 +5,11 @@ import Background from '../components/Background';
 import Header from '../components/Header';
 import { useVoiceChatStore } from '../store/voiceChatStore';
 import { useReportIdStore } from '../store/reportIdStore';
-import { speechToText, textToSpeech } from '../api';
-import type { ChatLogResponse } from '../types/api';
 import voiceChatRobot1 from '../assets/imgs/robot-character1.png';
 import voiceChatRobot2 from '../assets/imgs/robot-character2.png';
 import voiceChatRobot3 from '../assets/imgs/robot-character3.png';
 
+// Styled-components and keyframes definitions should be here
 const pulse = keyframes`
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.05); opacity: 0.8; }
@@ -34,11 +33,6 @@ const PageContainer = styled.div`
   color: white;
   box-sizing: border-box;
   overflow-y: auto;
-
-  @media (max-width: 768px) {
-    padding: 0.5rem;
-    min-height: calc(100vh - 3rem);
-  }
 `;
 
 const BackButton = styled.button`
@@ -63,16 +57,6 @@ const BackButton = styled.button`
     width: 1.5rem;
     height: 1.5rem;
   }
-
-  @media (max-width: 768px) {
-    top: 4rem;
-    left: 1rem;
-    padding: 0.4rem;
-    svg {
-      width: 1.2rem;
-      height: 1.2rem;
-    }
-  }
 `;
 
 const ContentWrapper = styled.div`
@@ -83,14 +67,8 @@ const ContentWrapper = styled.div`
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  gap: 0; /* 간격 제거 */
-  margin-top: 0; /* 간격 제거 */
-
-  @media (max-width: 768px) {
-    max-width: 95%;
-    gap: 0; /* 간격 제거 */
-    margin-top: 0; /* 간격 제거 */
-  }
+  gap: 0;
+  margin-top: 0;
 `;
 
 const QuestionText = styled.p`
@@ -101,17 +79,12 @@ const QuestionText = styled.p`
   line-height: 1.5;
   padding-bottom: 0;
   margin-top: 2rem; 
-  min-height: 9rem; /* 1.5rem * 1.5 * 4줄 = 9rem */
-
-  @media (max-width: 768px) {
-    font-size: 1rem;
-    min-height: 6rem; /* 1rem * 1.5 * 4줄 = 6rem */
-  }
+  min-height: 9rem;
 `;
 
 const VoiceAICharacter = styled.div<{ $isListening: boolean }>`
-  width: 30vh; /* 크기 줄임 */
-  height: 30vh; /* 크기 줄임 */
+  width: 30vh;
+  height: 30vh;
   margin-top: 5rem;
   margin-left: auto;
   margin-right: auto;
@@ -124,11 +97,6 @@ const VoiceAICharacter = styled.div<{ $isListening: boolean }>`
     width: 100%;
     height: 100%;
     object-fit: contain;
-  }
-
-  @media (max-width: 768px) {
-    width: 25vh; /* 크기 줄임 */
-    height: 25vh; /* 크기 줄임 */
   }
 `;
 
@@ -175,26 +143,11 @@ const MicButton = styled.button<{ $isListening: boolean }>`
       animation: ${micPulse} 1.5s infinite;
     }
   `}
-
-  @media (max-width: 768px) {
-    width: 6vh;
-    height: 6vh;
-    min-width: 3rem;
-    min-height: 3rem;
-    svg {
-      width: 99%;
-      height: 99%;
-    }
-  }
 `;
 
 const VoiceStatus = styled.p`
   color: #9ca3af;
   font-size: 1.125rem;
-
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
 `;
 
 const BottomButtonBar = styled.div`
@@ -216,248 +169,163 @@ const ActionBtn = styled.button<{ $pdf?: boolean }>`
   &:hover {
     background-color: #0891b2;
   }
-
-  @media (max-width: 768px) {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
-  }
 `;
 
 const VoiceChattingPage: React.FC = () => {
   const {
     chatId,
-    messages,
     isLoading,
+    isRecording,
+    isProcessing,
     createChat,
-    sendMessage,
-    clearMessages,
-    addMessage,
+    sendVoiceMessage,
+    loadLatestLogs,
     evaluateChat,
+    clearMessages,
+    setRecording,
   } = useVoiceChatStore();
   const { reportId, setChatCompleted } = useReportIdStore();
-  const [isListening, setIsListening] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [currentRobotImage, setCurrentRobotImage] = useState(voiceChatRobot1);
-  const [displayedAiMessage, setDisplayedAiMessage] = useState(''); // 새로 추가된 상태
+  const [displayedAiMessage, setDisplayedAiMessage] = useState('안녕하세요! 대화 검사를 시작하겠습니다. 오늘 기분은 어떠신가요?');
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
-  const animationFrameIdRef = useRef<number | null>(null);
-  const intervalIdRef = useRef<number | null>(null); // 새로 추가된 useRef
+  const animationIntervalRef = useRef<number | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (reportId) {
-      createChat(reportId);
+      createChat(reportId).then(() => {
+        const initialMessage = useVoiceChatStore.getState().messages[0]?.message;
+        if (initialMessage) {
+          setDisplayedAiMessage(initialMessage);
+        }
+      });
     }
     return () => {
+      if (animationIntervalRef.current) {
+        clearInterval(animationIntervalRef.current);
+      }
       clearMessages();
-      // 컴포넌트 언마운트 시 AudioContext 정리
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
-      if (animationFrameIdRef.current) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-      }
-      if (intervalIdRef.current) { // intervalIdRef.current 클리어 로직 추가
-        clearInterval(intervalIdRef.current);
-      }
     };
   }, [reportId, createChat, clearMessages]);
 
-  const startVolumeMonitoring = () => {
-    if (!audioPlayerRef.current) {
-      return;
+  const handleTextToSpeech = (text: string, audioBlob: Blob) => {
+    if (animationIntervalRef.current) {
+      clearInterval(animationIntervalRef.current);
     }
 
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext();
-    }
+    const audioUrl = URL.createObjectURL(audioBlob);
+    if (!audioPlayerRef.current) return;
 
-    if (!analyserRef.current) {
-      const source = audioContextRef.current.createMediaElementSource(audioPlayerRef.current);
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
-      source.connect(analyserRef.current);
-      analyserRef.current.connect(audioContextRef.current.destination);
-      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
-    }
+    const audio = audioPlayerRef.current;
+    audio.src = audioUrl;
 
-    const monitorVolume = () => {
-      if (!analyserRef.current || !dataArrayRef.current) {
-        return;
-      }
+    audio.onloadedmetadata = () => {
+      const duration = audio.duration;
+      const charDelay = text.length > 0 ? (duration * 1000) / text.length : 50;
 
-      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-      let sum = 0;
-      for (let i = 0; i < dataArrayRef.current.length; i++) {
-        sum += dataArrayRef.current[i];
-      }
-      let average = sum / dataArrayRef.current.length;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          setCurrentRobotImage(voiceChatRobot2);
+          
+          // --- New, More Robust Animation Logic ---
+          let animatedText = "";
+          let charIndex = 0;
+          setDisplayedAiMessage(''); // Clear the display once before starting.
 
-      // 볼륨 임계값에 따라 이미지 변경
-      if (average > 25) { // 이 임계값은 조정이 필요할 수 있습니다.
-        setCurrentRobotImage(voiceChatRobot3);
-      } else {
-        setCurrentRobotImage(voiceChatRobot2);
-      }
-
-      animationFrameIdRef.current = requestAnimationFrame(monitorVolume);
-    };
-
-    monitorVolume();
-  };
-
-  const stopVolumeMonitoring = () => {
-    if (animationFrameIdRef.current) {
-      cancelAnimationFrame(animationFrameIdRef.current);
-      animationFrameIdRef.current = null;
-    }
-    setCurrentRobotImage(voiceChatRobot1); // 재생 종료 시 robot1으로 복귀
-  };
-
-  const handleTextToSpeech = async (text: string) => {
-    try {
-      if (intervalIdRef.current) {
-        clearInterval(intervalIdRef.current);
-        intervalIdRef.current = null;
-      }
-      setCurrentRobotImage(voiceChatRobot2); // TTS 재생 시작 시 robot2으로 변경
-      setDisplayedAiMessage(''); // 새로운 TTS 시작 시 기존 메시지 초기화
-      const audioBlob = await textToSpeech(text);
-      const audioUrl = URL.createObjectURL(audioBlob);
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.src = audioUrl;
-        audioPlayerRef.current.play();
-
-        let charIndex = 0;
-        let intervalId: number | null = null;
-
-        audioPlayerRef.current.onloadedmetadata = () => {
-          const audioDuration = audioPlayerRef.current?.duration || 0;
-          const charDelay = text.length > 0 ? (audioDuration * 1000) / text.length : 0; // text.length가 0인 경우 처리
-
-          intervalId = setInterval(() => {
+          animationIntervalRef.current = setInterval(() => {
             if (charIndex < text.length) {
-              const charToAdd = text[charIndex];
-              setDisplayedAiMessage((prev) => prev + charToAdd);
+              animatedText += text.charAt(charIndex);
+              setDisplayedAiMessage(animatedText); // Set the entire built string
               charIndex++;
             } else {
-              if (intervalId) clearInterval(intervalId);
+              if (animationIntervalRef.current) {
+                clearInterval(animationIntervalRef.current);
+              }
             }
           }, charDelay);
-          intervalIdRef.current = intervalId; // intervalIdRef에 저장
-        };
 
-        audioPlayerRef.current.onplay = () => {
-          startVolumeMonitoring();
-        };
-
-        audioPlayerRef.current.onended = () => {
-          stopVolumeMonitoring();
-          if (intervalIdRef.current) clearInterval(intervalIdRef.current); // intervalIdRef.current 클리어
-          setDisplayedAiMessage(text); // 음성 재생이 끝나면 전체 텍스트 표시
-          // 음성 재생이 시작된 후에 AI 메시지를 화면에 추가
-          const aiMessage: ChatLogResponse = {
-            id: Math.floor(Math.random() * 1_000_000_000) + 1,
-            chat_id: chatId!,
-            role: 'ai',
-            message: text,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          addMessage(aiMessage);
-        };
-      } else {
-        console.warn("Audio player ref is null."); // 오디오 플레이어 ref가 null인 경우 경고
+        }).catch(error => {
+          console.error("Audio play failed:", error);
+          setDisplayedAiMessage(text);
+          if (chatId) loadLatestLogs(chatId);
+        });
       }
-    } catch (error) {
-      console.error("Error with TTS:", error);
-      stopVolumeMonitoring(); // 오류 발생 시에도 모니터링 중지
-      if (intervalIdRef.current) clearInterval(intervalIdRef.current); // 오류 발생 시에도 intervalIdRef.current 클리어
-      setDisplayedAiMessage(text); // 오류 발생 시에도 전체 텍스트 표시
-    }
+    };
+
+    audio.onended = () => {
+      setCurrentRobotImage(voiceChatRobot1);
+      setDisplayedAiMessage(text); // Ensure final text is set
+      if (animationIntervalRef.current) clearInterval(animationIntervalRef.current);
+      if (chatId) loadLatestLogs(chatId);
+    };
+
+    audio.onerror = (e) => {
+      console.error("Audio playback error:", e);
+      setDisplayedAiMessage(text);
+      if (animationIntervalRef.current) clearInterval(animationIntervalRef.current);
+      if (chatId) loadLatestLogs(chatId);
+    };
   };
 
   const handleToggleListening = () => {
-    if (isListening) {
+    if (isRecording) {
       stopRecording();
     } else {
       startRecording();
     }
-    setIsListening(!isListening);
   };
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
 
-      mediaRecorder.onstop = async () => {
+      mediaRecorderRef.current.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        if (audioBlob.size === 0) return;
+        if (audioBlob.size === 0 || !chatId || !reportId) return;
 
-        const file = new File([audioBlob], "recording.webm", { type: 'audio/webm' });
+        const audioFile = new File([audioBlob], "recording.webm", { type: 'audio/webm' });
+        const result = await sendVoiceMessage({ reportId, chatId, audioFile });
 
-        try {
-          const sttResponse = await speechToText(file);
-          if (sttResponse.text && chatId && reportId) {
-            const chatRequest = {
-              report_id: reportId,
-              chat_id: chatId,
-              message: sttResponse.text,
-            };
-            console.log("Sending message to AI:", chatRequest); // AI 메시지 전송 전 로그
-            const aiResponseText = await sendMessage(chatRequest);
-            if (aiResponseText) {
-              handleTextToSpeech(aiResponseText);
-            }
-          }
-        } catch (error) {
-          console.error("Error with STT or sending message:", error); // 에러 로그 수정
+        if (result) {
+          handleTextToSpeech(result.aiMessageText, result.audioBlob);
         }
-
-        audioChunksRef.current = [];
-        mediaRecorder.stream.getTracks().forEach(track => track.stop());
       };
 
-      mediaRecorder.start();
+      mediaRecorderRef.current.start();
+      setRecording(true);
+      setCurrentRobotImage(voiceChatRobot3);
     } catch (err) {
       console.error("Error starting recording:", err);
-      if (isListening) {
-        setIsListening(false);
-      }
+      setRecording(false);
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+    if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.stop();
+      setRecording(false);
+      setCurrentRobotImage(voiceChatRobot1);
     }
   };
 
   const handleBack = () => {
-    if (isListening) {
-      stopRecording();
-    }
+    if (isRecording) stopRecording();
     navigate(-1);
   };
 
   const handleTerminateChat = async () => {
     if (!chatId || !reportId || isEvaluating) return;
-
     setIsEvaluating(true);
     try {
       await evaluateChat(chatId, reportId);
@@ -472,6 +340,12 @@ const VoiceChattingPage: React.FC = () => {
     }
   };
 
+  const getStatusText = () => {
+    if (isRecording) return '듣고 있어요...';
+    if (isProcessing) return '응답을 생성 중입니다...';
+    return '버튼을 누르고 말씀해주세요';
+  };
+
   return (
     <Background isSurveyActive={true}>
       <Header showLogoText={true} />
@@ -482,24 +356,24 @@ const VoiceChattingPage: React.FC = () => {
           </svg>
         </BackButton>
         <ContentWrapper>
-          <VoiceAICharacter $isListening={isListening}>
+          <VoiceAICharacter $isListening={isRecording}>
             <img src={currentRobotImage} alt="Voice Chat Robot" />
           </VoiceAICharacter>
           <QuestionText>
-            {displayedAiMessage || (messages.length > 0 ? messages[messages.length - 1].message : "안녕하세요! 대화 검사를 시작하겠습니다. 오늘 기분은 어떠신가요?")}
+            {displayedAiMessage}
           </QuestionText>
-          <MicButton $isListening={isListening} onClick={handleToggleListening} disabled={isLoading}>
+          <MicButton $isListening={isRecording} onClick={handleToggleListening} disabled={isProcessing || isLoading}>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
             </svg>
           </MicButton>
           <VoiceStatus>
-            {isListening ? '듣고 있어요...' : (isLoading ? '응답을 생성 중입니다...' : '버튼을 누르고 말씀해주세요')}
+            {getStatusText()}
           </VoiceStatus>
         </ContentWrapper>
         <audio ref={audioPlayerRef} hidden />
         <BottomButtonBar>
-          <ActionBtn onClick={handleTerminateChat} disabled={isEvaluating}>
+          <ActionBtn onClick={handleTerminateChat} disabled={isEvaluating || isProcessing}>
             {isEvaluating ? "제출 중..." : "채팅 종료"}
           </ActionBtn>
         </BottomButtonBar>
