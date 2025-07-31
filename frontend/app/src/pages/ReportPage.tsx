@@ -588,7 +588,7 @@ export default function ReportPage() {
                       .filter(item => item.role === 'user' || item.role === 'ai')
                       .map(item => `
                         <div class="chat-message chat-${item.role}">
-                          <strong>${item.role === 'user' ? '사용자' : 'AI'}:</strong> ${item.message}
+                          <strong>${item.role === 'user' ? '사용자' : 'AI'}:</strong> ${item.text}
                         </div>
                       `).join('') 
                     : '대화 기록이 없습니다.'
@@ -812,7 +812,7 @@ export default function ReportPage() {
                </ExamCol>
               <ExamCol>
                 <ExamLabel>분석 및 제안</ExamLabel>
-                <ExamSuggestion>{report.ad8test_result}</ExamSuggestion>
+                <ExamSuggestion>{report.ad8test_result || ''}</ExamSuggestion>
               </ExamCol>
             </ExamContent>
           </ExamCard>
@@ -833,7 +833,7 @@ export default function ReportPage() {
                         .map((item, index) => (
                             <ChatMessage
                               key={index}
-                              message={item.message}
+                              message={item.text || ''}
                               isUser={item.role === 'user'}
                             />
                           ))
