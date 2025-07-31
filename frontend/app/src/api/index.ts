@@ -24,21 +24,21 @@ export const getBaseURL = () => {
   // React Native 환경인지 확인
   if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
     // React Native 환경에서는 Android 에뮬레이터용 IP 사용
-    return 'http://10.0.2.2:8000';
+    return 'http://10.0.2.2:8000'; // React Native 개발 환경
   }
-  
-  // 웹 환경에서는 현재 도메인 기반으로 설정
+
+  // 웹 환경에서는 배포 주소를 사용
   if (typeof window !== 'undefined') {
-    // 개발 환경
+    // 개발 환경 (localhost)에서는 여전히 localhost:8000을 사용하거나, 필요에 따라 변경
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:8000';
+      return 'http://localhost:8000'; // 웹 개발 환경
     }
-    // 배포 환경 - 현재 도메인과 같은 포트 사용
-    return `${window.location.protocol}//${window.location.hostname}:8000`;
+    // 배포 환경에서는 지정된 백엔드 주소 사용
+    return 'https://neurocare11.site'; // 웹 배포 환경
   }
-  
-  // 기본값
-  return 'http://localhost:8000';
+
+  // 기본값 (이 부분도 배포 주소로 변경)
+  return 'https://neurocare11.site'; // 기본값
 };
 
 // axios 인스턴스 생성

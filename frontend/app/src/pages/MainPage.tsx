@@ -112,6 +112,7 @@ export default function MainPage() {
   const cardMargin = spacing.md;
   const itemWidth = cardWidth + cardMargin * 2; // 각 아이템의 전체 너비 (카드 + 양쪽 마진)
   const emptyItemWidth = (screenWidth - itemWidth) / 2; // 중앙 정렬을 위한 빈 공간 너비
+  const adjustedEmptyWidth = 100; // 왼쪽으로 이동시키기 위한 고정값 (픽셀 단위)
 
   useEffect(() => {
     // 페이지 진입 애니메이션
@@ -130,15 +131,39 @@ export default function MainPage() {
   }, [fadeAnim, slideAnim]);
 
   // 검사 완료 상태를 실시간으로 감지
-  const { isAD8Completed, isChatCompleted, isDrawingCompleted } = useReportIdStore();
+  const { isAD8Completed, isChatCompleted, isDrawingCompleted, isLoading } = useReportIdStore();
   
   useEffect(() => {
-    setCompletionStates({
-      isAD8Completed,
-      isChatCompleted,
-      isDrawingCompleted,
-    });
-  }, [isAD8Completed, isChatCompleted, isDrawingCompleted]);
+    if (!isLoading) { // 로딩이 완료된 후에만 실행
+      setCompletionStates({
+        isAD8Completed,
+        isChatCompleted,
+        isDrawingCompleted,
+      });
+      
+      // 완료된 단계에 따라 적절한 카드로 이동
+      let targetIndex = 0;
+      if (isDrawingCompleted) {
+        targetIndex = 3; // 리포트 단계
+      } else if (isChatCompleted) {
+        targetIndex = 2; // 그림 검사 단계
+      } else if (isAD8Completed) {
+        targetIndex = 1; // 대화 검사 단계
+      } else {
+        targetIndex = 0; // 설문 검사 단계
+      }
+      
+      setCurrentIndex(targetIndex);
+      
+      // FlatList를 해당 인덱스로 스크롤 (약간의 지연을 두어 렌더링 완료 후 실행)
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({ 
+          animated: false, // 애니메이션 없이 즉시 이동
+          index: targetIndex 
+        });
+      }, 200);
+    }
+  }, [isAD8Completed, isChatCompleted, isDrawingCompleted, isLoading]);
 
   // 페이지 포커스 시 상태 업데이트 (Zustand가 자동으로 구독하므로 불필요)
   // useEffect(() => {
@@ -189,7 +214,7 @@ export default function MainPage() {
         }
         if (!reportId) {
           const reportResponse = await createEmptyReport({});
-          setReportId(reportResponse.report_id);
+          await setReportId(reportResponse.report_id);
           console.log('빈 리포트 생성 성공:', reportResponse);
         }
         navigation.navigate('AD8');
@@ -276,6 +301,20 @@ export default function MainPage() {
     );
   };
 
+  // 로딩 중일 때 로딩 화면 표시
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.background} />
+        <Header showLogoText={true} />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>상태를 복원하는 중...</Text>
+        </View>
+        <BottomBar currentPage="Main" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.background} />
@@ -289,12 +328,12 @@ export default function MainPage() {
           </Svg>
         </TouchableOpacity>
         
-        <View style={styles.centerContent}>
+                 <View style={[styles.centerContent, { marginLeft: 12 }]}>
           <View style={[styles.header, { paddingBottom: isSmallScreen ? spacing.md : spacing.lg }]}>
             <Text style={[styles.headerTitle, { fontSize: isTablet ? fontSize.xxxl : fontSize.xxl, marginBottom: isSmallScreen ? spacing.sm : spacing.md }]}>기억 건강 진단 프로그램</Text>
-            <Text style={[styles.headerSubtitle, { fontSize: isTablet ? fontSize.xs : fontSize.xs, lineHeight: isTablet ? 18 : 14, paddingHorizontal: isTablet ? spacing.xxxl : spacing.xxl }]} numberOfLines={2} ellipsizeMode="tail">
-              체계적인 4단계 검사를 통해 당신의 인지 건강을 정밀하게 분석합니다.
-            </Text>
+                         <Text style={[styles.headerSubtitle, { fontSize: isTablet ? fontSize.sm : fontSize.sm, lineHeight: isTablet ? 23 : 20, paddingHorizontal: isTablet ? spacing.xxxl : spacing.xxl }]} numberOfLines={2} ellipsizeMode="tail">
+               체계적인 4단계 검사를 통해 당신의 인지 건강을 정밀하게 분석합니다.
+             </Text>
           </View>
           
                      {/* FlatList with pagingEnabled */}
@@ -310,10 +349,11 @@ export default function MainPage() {
              snapToAlignment="center"
              decelerationRate="fast"
              bounces={false}
-             contentContainerStyle={{ 
-               alignItems: 'center',
-               paddingHorizontal: emptyItemWidth
-             }}
+             initialScrollIndex={currentIndex}
+                           contentContainerStyle={{ 
+                alignItems: 'center',
+                paddingHorizontal: 15
+              }}
              onViewableItemsChanged={onViewableItemsChanged}
              viewabilityConfig={viewabilityConfig}
              getItemLayout={(_, index) => (
@@ -446,5 +486,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontWeight: '600',
   },
 });

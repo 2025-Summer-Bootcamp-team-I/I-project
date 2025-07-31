@@ -159,7 +159,7 @@ const ChatCard: React.FC<ExamCardProps> = ({ exam, status, chatLogs }) => {
     .filter(item => item.role === 'user' || item.role === 'ai')
     .map(item => {
       const prefix = item.role === 'user' ? '사용자:' : 'AI:';
-      return `${prefix} ${item.message}`;
+      return `${prefix} ${item.text}`;
     });
 
   return (

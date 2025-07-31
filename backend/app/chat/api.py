@@ -106,11 +106,13 @@ async def stream_chat(
                             response_text += word
                             json_data = json.dumps({"token": word})
                             yield json_data
+                            await asyncio.sleep(0.1)
                     else:
                         logging.info(f"Streaming chunk #{chunk_count}: '{token.strip()}' (length: {len(token)})")
                         response_text += token
                         json_data = json.dumps({"token": token})
                         yield json_data
+                        await asyncio.sleep(0.1)
                 else:
                     logging.warning(f"Empty token in chunk #{chunk_count}: {chunk}")
             
