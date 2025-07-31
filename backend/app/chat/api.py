@@ -1,4 +1,5 @@
 #app/chat/api.py
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
@@ -86,7 +87,8 @@ async def stream_chat(
 
             logging.info(f"SSE stream started for chat_id: {request.chat_id}")
             chunk_count = 0
-            async for chunk in chain.astream(stream_input):
+            #async for chunk in chain.astream(stream_input):
+            async for chunk in chain.astream({"question": request.message, "chat_history": memory} if not is_farewell else {"question": request.message}):
                 chunk_count += 1
                 token = ""
                 # LangChain 체인의 종류에 따라 반환되는 chunk의 타입이 다릅니다.
