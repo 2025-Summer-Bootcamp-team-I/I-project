@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
     marginBottom: spacing.lg,
-    paddingHorizontal: 0, // 좌우 패딩 제거 (카드에서 직접 계산)
+    paddingHorizontal: spacing.sm, // 좌우 패딩 제거 (카드에서 직접 계산)
   },
   
   reportCard: {
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     minHeight: 200, // 최소 높이 설정
     minWidth: 140, // 최소 너비 조정
     flex: 1, // 남은 공간을 균등하게 분배
-    maxWidth: '48%', // 최대 너비 제한
+    maxWidth: '47%', // 최대 너비 제한
   },
   
   reportHeader: {
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
   
   testIconsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: spacing.sm,
     borderTopWidth: 1,
@@ -449,8 +449,7 @@ const styles = StyleSheet.create({
   testIconContainer: {
     alignItems: 'center',
     gap: spacing.xs,
-    flex: 1,
-    minWidth: 50,
+    minWidth: 40,
   },
   
   testIconLabel: {
