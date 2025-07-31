@@ -1,14 +1,15 @@
 # app/chat/service.py
 
+import ast
 import os
 import re
 import chromadb
 from sqlalchemy.orm import Session
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.chains import ConversationalRetrievalChain
+from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, PromptTemplate
 from langchain_community.vectorstores import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, PromptTemplate
+from langchain.chains import ConversationalRetrievalChain
 from app.chat.models import Chat
 from app.chat.memory_store import get_memory
 from app.chat.crud import save_chat_log
@@ -16,6 +17,10 @@ from app.chat.models import RoleEnum, ChatLog
 from app.chat.schemas import ChatLogResponse
 from app.database import get_db
 from app.report.models import Report, RiskLevel
+from datetime import datetime
+
+
+today_str = datetime.now().strftime("%Y년 %m월 %d일")
 
 def extract_score_and_result(ai_response):
     m = re.search(r"치매 위험도 점수[:：]?\s*(\d+)", ai_response)
@@ -43,15 +48,13 @@ vectordb = Chroma(
 )
 
 def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str:
-    # 1. 사용자 메시지 저장 및 턴 수 계산
     save_chat_log(db, chat_id=chat_id, role=RoleEnum.user, text=message)
     db.flush()
     turn_count = db.query(ChatLog).filter(ChatLog.chat_id == chat_id, ChatLog.role == RoleEnum.user).count()
 
     response = ""
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.1, google_api_key=google_api_key)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.5, google_api_key=google_api_key)
 
-    #  작별 인사
     if turn_count == 7:
         farewell_prompt_text = """
 당신은 따뜻한 작별인사 전문가입니다. 당신의 임무는 사용자와의 대화를 자연스럽게 마무리하는 것입니다.
@@ -70,7 +73,12 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
         ai_response = farewell_chain.invoke({"question": message})
         response = ai_response.content
 
-    # 일반 대화
+    elif turn_count == 1:
+        response = (
+            "안녕하세요. 지금부터 대화를 시작하겠습니다. 보다 정확한 이해를 위해, 단답형보다는 완전한 문장으로 답변해주시면 감사하겠습니다.\n\n"
+            "먼저, 오늘은 무슨 요일인지 말씀해주시겠어요?"
+        )
+
     elif turn_count <= 6:
         memory = get_memory(report_id)
         system_prompt_template = """
@@ -85,110 +93,123 @@ def chat_with_ai(report_id: int, chat_id: int, message: str, db: Session) -> str
 3. **공감과 질문에 집중**: 짧게 공감하고 이어서 질문하세요.
     - 같은 질문을 표현만 바꿔 반복하지 마세요. ("노인정에서 뭐 하세요?" → "거기서 시간 어떻게 보내세요?" → 금지 ❌)
 
-4. **간결함 유지**: 항상 한두 문장 이내로 짧고 자연스럽게 말하세요.
+4. **간결함 유지**: 가능한 한 간결하게 말하되, 사용자의 말에 자연스럽게 반응하세요.
 
 5. **자연스러운 대화 흐름**:
     - 다음과 같은 표현이 나오면 즉시 주제를 바꾸세요: "모르겠어", "기억 안 나", "딱히", "글쎄", "그냥 그랬어", "생각 안 나", "말하고 싶지 않아", "할 말 없어"
 
 6. **전문 용어 금지**: '검사', '진단', '문진', '점수', '소견' 같은 단어는 쓰지 마세요.
 
-7. **어조**: 따뜻하고 존중하는 어조를 사용하세요.
+7. **어조**: 단답형이나 무뚝뚝한 말투는 피하고, 따뜻한 어조를 사용하세요.
 
 8. **종료 조건**: '그만', '끝', '이제 됐어' 등의 표현이 나오면 대화를 마무리하세요.
 
-9. **직전 발화 반영**: 항상 직전 사용자 말에 반응하세요. 이전 질문을 무시하고 다음 질문을 하지 마세요.
+9. **직전 발화 반영**: 항상 직전 사용자 말에 반응하세요. 이전 질문을 무시하고 다음 질문을 하지 마세요. 사용자가 말한 내용을 절대로 되묻지 마세요. (예: "오늘은 목요일인 것 같아요." → "무슨 요일인지 궁금하시군요?" ❌)
 
-10. **초기 인사 멘트는 turn 1에서만 출력됩니다.**
+10. **추측 금지**: 사용자가 말하지 않은 활동이나 정보를 상상하거나 삽입하지 마세요.  
+
+11. **초기 인사 멘트는 turn 1에서만 출력됩니다.**
 
 # 기타 정보
 - 참고 논문(Context)을 참고해 자연스럽게 유도형 질문을 하세요.
 - 현재 {turn_count}번째 대화입니다. 총 7턴 후에는 대화를 종료해야 합니다.
+- 이 대화는 MMSE(간이 인지 대화)를 참고하여 자연스럽게 구성되어야 합니다.
+- 사용자에게 검사받는 느낌을 주지 않도록 주의하세요.
+- 오늘은 {today}입니다. 날짜에 대한 질문을 할 때 참고하세요.
+
+# MMSE 기반 유도 질문 예시
+아래는 참고 문항입니다. 그대로 출력하지 말고 자연스럽게 유도하세요.  
+텍스트 기반 대화만 가능하므로 음성/행동 지시는 금지입니다.
+
+- "오늘 하루는 어떻게 시작하셨어요?" → 요일/날짜 파악 유도  
+- "요즘 날씨 어때요? 달력 볼 일이 좀 있었나요?" → 날짜/계절 감각  
+- "요즘은 주로 어디서 지내세요?" → 장소 인지  
+- "제가 단어 몇 개 적어볼게요: 사과, 연필, 자동차. 기억하실 수 있겠어요?" → 기억 유도  
+- "100에서 7씩 빼면 뭐가 될까요? 심심풀이로 해보실래요?" → 계산력  
+- "짧은 문장 하나 써보실래요? 아무 말이나 괜찮아요." → 문장 구성 능력  
+- "제가 적은 문장 한번 읽어보세요: ‘눈을 감으세요’" → 읽기/이해
 """
-        system_prompt = system_prompt_template.format(turn_count=turn_count)
+# # 예시 대화 (총 7턴)
+
+# **🟢 Turn 1**  
+# 👤: 안녕하세요.  
+# 🤖: 반가워요! 오늘 하루는 어떻게 시작하셨어요?
+
+# **🟢 Turn 2**  
+# 👤: 그냥 밥 먹고 쉬었죠.  
+# 🤖: 여유롭게 보내신 것 같아요. 혹시 오늘이 무슨 요일인지 아시나요?
+
+# **🟢 Turn 3**  
+# 👤: 화요일이에요.  
+# 🤖: 잘 기억하시네요! 오늘 날짜도 떠오르세요?
+
+# **🟢 Turn 4**  
+# 👤: 음… 30일?  
+# 🤖: 그쯤 됐죠 아마! 요즘은 주로 어디서 시간을 보내세요?
+
+# **🟢 Turn 5**  
+# 👤: 거의 집에만 있어요.  
+# 🤖: 집이 제일 편하죠. 제가 단어 몇 개 써볼게요: 사과, 연필, 자동차. 기억하실 수 있겠어요?
+
+# **🟢 Turn 6**  
+# 👤: 네, 기억해볼게요.  
+# 🤖: 좋아요! 혹시 심심할 때 숫자 놀이 같은 것도 해보세요? 100에서 7 빼면 뭐가 될까요?
+
+# **🟢 Turn 7**  
+# 👤: 93이요.  
+# 🤖: 잘하셨어요! 그럼 지금은 어떤 생각이 떠오르세요? 아무 이야기나 좋아요.
+
+        system_prompt = system_prompt_template.format(turn_count=turn_count, today=today_str)
+
         prompt = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(system_prompt + "\n\n참고 논문(Context): {context}"),
-            HumanMessagePromptTemplate.from_template(
-                "이전 대화 요약(chat_history):\n{chat_history}\n\n사용자 발화: {question}"
-            )
+            HumanMessagePromptTemplate.from_template("이전 대화 요약(chat_history):\n{chat_history}\n\n사용자 발화: {question}\n\n위 규칙을 참고하여 다음 질문을 하세요.")
         ])
 
-        # 🔍 디버깅용: Chroma에서 context 직접 검색
         retriever = vectordb.as_retriever()
         docs = retriever.get_relevant_documents(message)
 
-        print("\n===== 검색된 논문 Context 일부 =====")
-        for i, doc in enumerate(docs[:3]):
-            print(f"[{i+1}] {doc.page_content[:300]}...\n")
-        print("====================================\n")
-
-        # 🔍 실제 프롬프트 주입 확인
-        formatted = prompt.format(
-            context="\n\n".join([d.page_content for d in docs]),
-            chat_history="(예시 대화)",
-            question=message
-        )
-        print("\n===== 실제 GPT에 전달될 프롬프트 (앞 1000자) =====")
-        print(formatted[:1000])
-        print("==================================================\n")
+        logs = get_chat_logs(db, chat_id)
+        chat_history = [
+            ("user" if log.role == RoleEnum.user else "ai", log.text) for log in logs
+        ]
 
         chain = ConversationalRetrievalChain.from_llm(
             llm=llm,
-            retriever=vectordb.as_retriever(),
-            memory=memory,
-            combine_docs_chain_kwargs={"prompt": prompt}
+            retriever=retriever,
+            combine_docs_chain_kwargs={"prompt": prompt},
         )
-        ai_response = chain.run(message)
 
-        if turn_count == 1:
-            intro = "안녕하세요. 지금부터 대화를 시작하겠습니다. 보다 정확한 이해를 위해, 단답형보다는 완전한 문장으로 답변해주시면 감사하겠습니다.\n\n"
-            response = intro + ai_response
-        else:
-            response = ai_response
+        result = chain.invoke({
+            "question": message,
+            "chat_history": chat_history
+        })
+
+        answer = result["answer"] if isinstance(result, dict) and "answer" in result else str(result)
+        response = answer
 
     else:
         response = "이미 대화가 종료되었습니다. 아래 종료 버튼을 눌러 평가를 완료해주세요."
 
-    # 2. AI 응답 저장
     save_chat_log(db, chat_id=chat_id, role=RoleEnum.ai, text=response)
     return response
-
-# app/chat/service.py
 
 def get_chat_logs_by_report_id(db: Session, report_id: int) -> list[ChatLogResponse]:
     chat = db.query(Chat).filter(Chat.report_id == report_id).first()
     if not chat:
-        return []  # 채팅이 존재하지 않으면 빈 리스트 반환
-
-    logs = (
-        db.query(ChatLog)
-        .filter(ChatLog.chat_id == chat.chat_id)
-        .order_by(ChatLog.updated_at.asc())
-        .all()
-    )
+        return []
+    logs = db.query(ChatLog).filter(ChatLog.chat_id == chat.chat_id).order_by(ChatLog.updated_at.asc()).all()
     return [ChatLogResponse.from_orm(log) for log in logs]
 
 def get_chat_logs(db: Session, chat_id: int) -> list[ChatLogResponse]:
-    logs = (
-        db.query(ChatLog)
-        .filter(ChatLog.chat_id == chat_id)
-        .order_by(ChatLog.updated_at.asc())  # updated_at 기준 오름차순
-        .all()
-    )
+    logs = db.query(ChatLog).filter(ChatLog.chat_id == chat_id).order_by(ChatLog.updated_at.asc()).all()
     return [ChatLogResponse.from_orm(log) for log in logs]
 
 def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
-    logs = (
-        db.query(ChatLog)
-        .filter(ChatLog.chat_id == chat_id)
-        .order_by(ChatLog.log_id.asc())
-        .all()
-    )
-    conversation = ""
-    for log in logs:
-        if log.role.value == "user":
-            conversation += f"사용자: {log.text}\n"
-        else:
-            conversation += f"AI: {log.text}\n"
+    logs = db.query(ChatLog).filter(ChatLog.chat_id == chat_id).order_by(ChatLog.log_id.asc()).all()
+    conversation = "".join([
+        f"사용자: {log.text}\n" if log.role.value == "user" else f"AI: {log.text}\n" for log in logs
+    ])
 
     eval_prompt = PromptTemplate(
         input_variables=["conversation"],
@@ -210,7 +231,7 @@ def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
         )
     )
 
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0, google_api_key=google_api_key)
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.7, google_api_key=google_api_key)
     eval_chain = eval_prompt | llm
     eval_response = eval_chain.invoke({"conversation": conversation})
     response_text = eval_response.content
@@ -221,14 +242,11 @@ def evaluate_and_save_chat_result(db, chat_id: int, report_id: int):
     m2 = re.search(r"위험도[:：]?\s*(양호|경계|위험)", response_text)
     chat_risk_str = m2.group(1).strip() if m2 else "양호"
 
-    if chat_risk_str == "양호":
-        risk_enum = RiskLevel.GOOD
-    elif chat_risk_str == "경계":
-        risk_enum = RiskLevel.CAUTION
-    elif chat_risk_str == "위험":
-        risk_enum = RiskLevel.DANGER
-    else:
-        risk_enum = RiskLevel.GOOD
+    risk_enum = {
+        "양호": RiskLevel.GOOD,
+        "경계": RiskLevel.CAUTION,
+        "위험": RiskLevel.DANGER
+    }.get(chat_risk_str, RiskLevel.GOOD)
 
     report = db.query(Report).filter(Report.report_id == report_id).first()
     if not report:
