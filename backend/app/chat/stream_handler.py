@@ -100,12 +100,14 @@ prompt = ChatPromptTemplate.from_messages([
     )
 ])
 
-# ✅ 스트리밍 체인 생성 함수
 def get_streaming_chain(report_id: int, question: str):
+    from langchain_core.runnables import Runnable
+    from typing import AsyncIterator
+    import asyncio
+
     memory = get_memory(report_id)
     today = datetime.now().strftime("%Y년 %m월 %d일")
-    
-    # 🔧 수정: memory.chat_memory.messages → chat_history 리스트 구성
+
     messages = memory.chat_memory.messages
     chat_history = []
     for m in messages:
@@ -116,6 +118,7 @@ def get_streaming_chain(report_id: int, question: str):
 
     turn_count = len([m for m in messages if m.type == "human"])
 
+    # ✅ 마지막 턴: 작별 응답
     if turn_count == 6:
         llm = ChatGoogleGenerativeAI(
             model="gemini-1.5-pro-latest",
@@ -127,6 +130,31 @@ def get_streaming_chain(report_id: int, question: str):
         chain = chain.bind(question=question)
         return chain, memory
 
+    # ✅ 첫 턴: 고정 인사 멘트 스트리밍용
+    if turn_count == 0:
+        from typing import AsyncIterator
+        from langchain_core.runnables import Runnable
+
+        class FirstTurnRunnable(Runnable[dict, str]):
+            def invoke(self, input: dict, config=None) -> str:
+                return (
+                    "안녕하세요. 지금부터 대화를 시작하겠습니다. 보다 정확한 이해를 위해, "
+                    "단답형보다는 완전한 문장으로 답변해주시면 감사하겠습니다.\n\n"
+                    "먼저, 오늘은 무슨 요일인지 말씀해주시겠어요?"
+                )
+
+            async def astream(self, input: dict, config=None) -> AsyncIterator[str]:
+                await asyncio.sleep(0.01)  # 안정성용 딜레이 (선택사항)
+                yield (
+                    "안녕하세요. 지금부터 대화를 시작하겠습니다. 보다 정확한 이해를 위해, "
+                    "단답형보다는 완전한 문장으로 답변해주시면 감사하겠습니다.\n\n"
+                    "먼저, 오늘은 무슨 요일인지 말씀해주시겠어요?"
+                )
+
+        return FirstTurnRunnable(), memory
+
+
+    # ✅ 일반 대화 흐름
     llm = ChatGoogleGenerativeAI(
         model="gemini-1.5-pro-latest",
         temperature=0,
