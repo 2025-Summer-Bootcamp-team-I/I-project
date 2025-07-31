@@ -312,14 +312,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.round,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
-    maxWidth: 140,
+    maxWidth: 120,
     borderWidth: 1,
     borderColor: '#125E60',
   },
 
   answerButtonText: {
     color: '#99F6E4',
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: '600',
     textAlign: 'center',
   },
