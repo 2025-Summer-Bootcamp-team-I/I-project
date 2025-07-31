@@ -111,7 +111,8 @@ export interface ChatLogResponse {
   id: number;
   chat_id: number;
   role: 'user' | 'ai';
-  text: string;
+  message: string;
+  text?: string; // text 속성 추가
   created_at: string;
   updated_at: string;
 }
