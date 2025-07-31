@@ -108,11 +108,10 @@ export default function MainPage() {
   });
 
   // 카드 너비 및 간격 계산
-  const cardWidth = isTablet ? screenWidth * 0.55 : screenWidth * 0.75;
+  const cardWidth = isTablet ? screenWidth * 0.55 : screenWidth * 0.7;
   const cardMargin = spacing.md;
   const itemWidth = cardWidth + cardMargin * 2; // 각 아이템의 전체 너비 (카드 + 양쪽 마진)
-  const emptyItemWidth = (screenWidth - itemWidth) / 2; // 중앙 정렬을 위한 빈 공간 너비
-  const adjustedEmptyWidth = 100; // 왼쪽으로 이동시키기 위한 고정값 (픽셀 단위)
+  const emptySpaceWidth = (screenWidth - itemWidth) / 2;
 
   useEffect(() => {
     // 페이지 진입 애니메이션
@@ -328,7 +327,7 @@ export default function MainPage() {
           </Svg>
         </TouchableOpacity>
         
-                 <View style={[styles.centerContent, { marginLeft: 12 }]}>
+                 <View style={styles.centerContent}>
           <View style={[styles.header, { paddingBottom: isSmallScreen ? spacing.md : spacing.lg }]}>
             <Text style={[styles.headerTitle, { fontSize: isTablet ? fontSize.xxxl : fontSize.xxl, marginBottom: isSmallScreen ? spacing.sm : spacing.md }]}>기억 건강 진단 프로그램</Text>
                          <Text style={[styles.headerSubtitle, { fontSize: isTablet ? fontSize.sm : fontSize.sm, lineHeight: isTablet ? 23 : 20, paddingHorizontal: isTablet ? spacing.xxxl : spacing.xxl }]} numberOfLines={2} ellipsizeMode="tail">
@@ -346,13 +345,13 @@ export default function MainPage() {
              showsHorizontalScrollIndicator={false}
              pagingEnabled={true}
              snapToInterval={itemWidth}
-             snapToAlignment="center"
+             snapToAlignment="start"
              decelerationRate="fast"
              bounces={false}
              initialScrollIndex={currentIndex}
                            contentContainerStyle={{ 
                 alignItems: 'center',
-                paddingHorizontal: 15
+                paddingHorizontal: emptySpaceWidth
               }}
              onViewableItemsChanged={onViewableItemsChanged}
              viewabilityConfig={viewabilityConfig}

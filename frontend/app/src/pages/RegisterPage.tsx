@@ -255,9 +255,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl * 5,
     zIndex: 1,
   },
   formContainer: {
