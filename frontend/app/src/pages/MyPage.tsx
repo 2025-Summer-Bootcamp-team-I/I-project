@@ -383,9 +383,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: spacing.md,
+    gap: spacing.sm,
     marginBottom: spacing.lg,
-    paddingHorizontal: spacing.sm, // 좌우 패딩 제거 (카드에서 직접 계산)
+    paddingHorizontal: spacing.md, // 좌우 패딩 제거 (카드에서 직접 계산)
   },
   
   reportCard: {
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     minHeight: 200, // 최소 높이 설정
     minWidth: 140, // 최소 너비 조정
     flex: 1, // 남은 공간을 균등하게 분배
-    maxWidth: '47%', // 최대 너비 제한
+    maxWidth: '45%', // 최대 너비 제한
   },
   
   reportHeader: {
