@@ -19,7 +19,7 @@ import { useReportIdStore } from '../store/reportIdStore';
 import { uploadDrawingTest } from '../api';
 import Svg, { Path } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
-import BottomBar from '../components/BottomBar';
+import BottomBar from '../components/BottomBar'
 import AppHeader from '../components/AppHeader';
 
 type DrawingPageNavigationProp = StackNavigationProp<RootStackParamList, 'Drawing'>;
@@ -292,96 +292,98 @@ export default function DrawingPage() {
         {/* 상단 헤더 */}
         <AppHeader />
         
-        {/* 그림 검사 제목과 지시문 */}
-        <TitleSection>
-          <Title>그림 검사</Title>
-          <Subtitle>
-            주어진 시계판 위에 <Highlight>11시 10분</Highlight>을 그려주세요
-          </Subtitle>
-        </TitleSection>
+        <MainContent>
+          {/* 그림 검사 제목과 지시문 */}
+          <TitleSection>
+            <Title>그림 검사</Title>
+            <Subtitle>
+              주어진 시계판 위에 <Highlight>11시 10분</Highlight>을 그려주세요
+            </Subtitle>
+          </TitleSection>
 
-        {/* 캔버스 섹션 */}
-        <CanvasSection>
-          <CanvasWrapper style={{ width: canvasSize, height: canvasSize }}>
-            {Platform.OS === 'web' ? (
-                <canvas
-                ref={canvasRef}
-                width={canvasSize}
-                height={canvasSize}
-                style={{
-                  width: canvasSize,
-                  height: canvasSize,
-                  backgroundColor: 'rgba(15, 23, 42, 0.8)',
-                  borderRadius: 20,
-                  border: '2px solid rgba(127, 206, 187, 0.3)',
-                  cursor: 'crosshair',
-                  display: 'block',
-                  touchAction: 'none',
-                  userSelect: 'none',
-                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)',
-                }}
-                onMouseDown={handleStart}
-                onMouseMove={handleMove}
-                onMouseUp={handleEnd}
-                onMouseLeave={handleEnd}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  const touch = e.touches[0];
-                  const mouseEvent = new MouseEvent('mousedown', {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY,
-                  });
-                  handleStart(mouseEvent as any);
-                }}
-                onTouchMove={(e) => {
-                  e.preventDefault();
-                  if (isDrawing) {
+          {/* 캔버스 섹션 */}
+          <CanvasSection>
+            <CanvasWrapper style={{ width: canvasSize, height: canvasSize }}>
+              {Platform.OS === 'web' ? (
+                  <canvas
+                  ref={canvasRef}
+                  width={canvasSize}
+                  height={canvasSize}
+                  style={{
+                    width: canvasSize,
+                    height: canvasSize,
+                    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                    borderRadius: 20,
+                    border: '2px solid rgba(127, 206, 187, 0.3)',
+                    cursor: 'crosshair',
+                    display: 'block',
+                    touchAction: 'none',
+                    userSelect: 'none',
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)',
+                  }}
+                  onMouseDown={handleStart}
+                  onMouseMove={handleMove}
+                  onMouseUp={handleEnd}
+                  onMouseLeave={handleEnd}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
                     const touch = e.touches[0];
-                    const mouseEvent = new MouseEvent('mousemove', {
+                    const mouseEvent = new MouseEvent('mousedown', {
                       clientX: touch.clientX,
                       clientY: touch.clientY,
                     });
-                    handleMove(mouseEvent as any);
-                  }
-                }}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  handleEnd(e as any);
-                }}
-              />
-            ) : (
-              <MobileNotSupported>
-                <Svg width={48} height={48} fill="none" stroke="#7fcebb" viewBox="0 0 24 24">
-                  <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </Svg>
-                <MobileNotSupportedText>
-                  모바일 환경에서는 아직 지원되지 않습니다
-                </MobileNotSupportedText>
-              </MobileNotSupported>
-            )}
-          </CanvasWrapper>
-        </CanvasSection>
+                    handleStart(mouseEvent as any);
+                  }}
+                  onTouchMove={(e) => {
+                    e.preventDefault();
+                    if (isDrawing) {
+                      const touch = e.touches[0];
+                      const mouseEvent = new MouseEvent('mousemove', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY,
+                      });
+                      handleMove(mouseEvent as any);
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    handleEnd(e as any);
+                  }}
+                />
+              ) : (
+                <MobileNotSupported>
+                  <Svg width={48} height={48} fill="none" stroke="#7fcebb" viewBox="0 0 24 24">
+                    <Path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </Svg>
+                  <MobileNotSupportedText>
+                    모바일 환경에서는 아직 지원되지 않습니다
+                  </MobileNotSupportedText>
+                </MobileNotSupported>
+              )}
+            </CanvasWrapper>
+          </CanvasSection>
 
-                 {/* 컨트롤 버튼들 */}
-         <Controls style={{ width: canvasSize }}>
-           <ClearButton
-             onPress={handleClear}
-             disabled={isSubmitting}
-             activeOpacity={0.8}
-           >
-             <ClearButtonText>모두 지우기</ClearButtonText>
-           </ClearButton>
-           
-           <SubmitButton
-             onPress={handleSubmit}
-             disabled={isSubmitting}
-             activeOpacity={0.8}
-           >
-             <SubmitButtonText>
-               {isSubmitting ? "제출 중..." : "제출하기"}
-             </SubmitButtonText>
-           </SubmitButton>
-         </Controls>
+                   {/* 컨트롤 버튼들 */}
+           <Controls style={{ width: canvasSize }}>
+             <ClearButton
+               onPress={handleClear}
+               disabled={isSubmitting}
+               activeOpacity={0.8}
+             >
+               <ClearButtonText>모두 지우기</ClearButtonText>
+             </ClearButton>
+             
+             <SubmitButton
+               onPress={handleSubmit}
+               disabled={isSubmitting}
+               activeOpacity={0.8}
+             >
+               <SubmitButtonText>
+                 {isSubmitting ? "제출 중..." : "제출하기"}
+               </SubmitButtonText>
+             </SubmitButton>
+           </Controls>
+        </MainContent>
       </Content>
 
       {/* 하단바 */}
@@ -407,17 +409,20 @@ const BackgroundGradient = styled.View`
 
 const Content = styled(Animated.View)`
   flex: 1;
+  justify-content: center;
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 24px;
   padding-bottom: 16px;
-  justify-content: space-between;
+`;
+
+const MainContent = styled.View`
 `;
 
 const TitleSection = styled.View`
   align-items: center;
-  margin-top: 100px;     
-  margin-bottom: 28px; 
+  margin-top: 24px;
+  margin-bottom: 16px;
 `;
 
 const Title = styled.Text`
@@ -441,10 +446,8 @@ const Highlight = styled.Text`
 `;
 
 const CanvasSection = styled.View`
-  flex: 0;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 39px;   
+  margin-bottom: 16px;
 `;
 
 const CanvasWrapper = styled.View`
@@ -460,7 +463,6 @@ const Controls = styled.View`
   justify-content: space-between;
   align-items: center;
   align-self: center;
-  margin-bottom: 180px;
   margin-top: 1px;
   width: 100%;
 `;
