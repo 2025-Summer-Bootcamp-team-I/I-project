@@ -79,7 +79,7 @@ const ChatBox = styled.View`
 `;
 
 const ChatLog = styled(ScrollView)`
-  height: ${height * 0.45}px; /* 45vh */
+  height: ${height * 0.6}px; /* 60vh */
   padding: ${width > 768 ? 8 : 4}px;
 `;
 
