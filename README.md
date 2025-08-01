@@ -123,7 +123,7 @@
 
 # 🛠 ️System Architecture <a name="-system-architecture"></a>
 <div align="center">
-  <img align="center" width="1000" src="https://github.com/user-attachments/assets/1057e43f-0e78-483f-8942-46b6e5d5aca8">
+  <img align="center" width="1000" src="https://github.com/user-attachments/assets/ed502a0f-06fd-465a-aa9b-0b7fb80532f4">
 </div>
 <br><br>
 
@@ -227,8 +227,7 @@
             <th colspan="2">FastAPI</th>
         </tr>
         <tr>
-            <td><img src="https://github.com/user-attachments/assets/dfe25a06-b23d-41b4-a95e-2a7f66769b16" alt="Django"></td>
-            <td><img src="https://github.com/user-attachments/assets/59e892d8-76d5-463f-90c2-a025d8faf23b" alt="Django2"></td>
+            <td><img src="https://github.com/user-attachments/assets/2393b29e-540d-488f-808b-8286388c674a" alt="FastAPI"></td>
         </tr>
         <tr>
             <th colspan="2">Celery</th>
@@ -241,8 +240,8 @@
             <th colspan="2">cAdvisor</th>
         </tr>
         <tr>
-            <td><img src="https://github.com/user-attachments/assets/5c995407-38a8-4949-8807-c6678e15adea" alt="cAdvisor"></td>
-            <td><img src="https://github.com/user-attachments/assets/8ec92d68-418e-4d97-a288-88bf7b0e4bac" alt="cAdvisor2"></td>
+          <td><img src="https://github.com/user-attachments/assets/e0fcf9f9-b6f6-4403-be32-26c57cefed8a" alt="cAdvisor"/><td>
+          <td><img src="https://github.com/user-attachments/assets/17e06663-30d6-41df-9057-24780bb23882" alt="cAdvisor2"/><td>
         </tr>
         <tr>
             <th colspan="2">Node_Exporter</th>
@@ -277,8 +276,7 @@
       <th colspan="2">Frontend</th>
   </tr>
   <tr>
-      <td><img src="https://github.com/user-attachments/assets/77b5c76c-1567-4e63-b5db-4335749167cb"></td>
-      <td><img src="https://github.com/user-attachments/assets/e9429a44-14d5-4711-9124-0a9a83c5abc9" alt="Node Exporter2"></td>
+      <td><img src="https://github.com/user-attachments/assets/521553e2-3cb1-496d-bddb-6d5bd623cd1b" alt="Sentry"/></td>
   </tr>
 </table>
 
