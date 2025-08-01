@@ -33,7 +33,7 @@
 > 📱 [Neurocare](https://app-neurocare.cloud/) - Mobile 버전
 
 ### Medium
-> 🔎 [Neurocare Medium](https://medium.com/p/5882eb5046d8/edit) &nbsp;
+> 🔎 [Neurocare Medium](https://medium.com/@kimseungmin0520/neurocare-early-dementia-diagnosis-service-5882eb5046d8) &nbsp;
 
 <br>
 
