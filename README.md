@@ -173,6 +173,7 @@
         <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white">
         <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white">
         <img src="https://img.shields.io/badge/AmazonRDS-527FFF?style=for-the-badge&logo=amazon-rds&logoColor=white">
+        <img src="https://img.shields.io/badge/ChromaDB‑VectorDB-0033CC?style=for-the-badge&logo=chroma&logoColor=white">
       </td>
     </tr>
     <tr>
@@ -286,196 +287,227 @@
 # 📂 Directory Structure
 
 <details>
-  <summary>Neurocare-Backend</summary>
+    <summary>Neurocare</summary>
 <pre>
 <code>
-🗂️AILIBI-Backend
-┣ 📂.github
-┃ ┣ 📂ISSUE_TEMPLATE
-┃ ┗ 📂workflows
-┣ 📂Backend
-┃ ┣ 📃__init__.py
-┃ ┣ 📃asgi.py
-┃ ┣ 📃celery.py
-┃ ┣ 📃settings.py
-┃ ┣ 📃urls.py
-┃ ┗ 📃wsgi.py
-┣ 📂alertmanager
-┃ ┗ 📃alertmanager.yml
-┣ 📂chat
-┃ ┣ 📂migrations
-┃ ┣ 📂templates
-┃ ┣ 📃Serializers.py
-┃ ┣ 📃__init__.py
-┃ ┣ 📃apps.py
-┃ ┣ 📃consumers.py
-┃ ┣ 📃models.py
-┃ ┣ 📃routing.py
-┃ ┣ 📃urls.py
-┃ ┗ 📃views.py
-┣ 📂evidence
-┃ ┣ 📂migrations
-┃ ┣ 📃__init__.py
-┃ ┣ 📃apps.py
-┃ ┣ 📃models.py
-┃ ┣ 📃serializers.py
-┃ ┣ 📃urls.py
-┃ ┗ 📃views.py
-┣ 📂grafana/data
-┃ ┣ 📂alerting/1
-┃ ┗ 📃grafana.db
-┣ 📂health
-┃ ┣ 📃urls.py
-┃ ┗ 📃views.py
-┣ 📂llm
-┃ ┣ 📂migrations
-┃ ┣ 📃__init__.py
-┃ ┣ 📃apps.py
-┃ ┣ 📃urls.py
-┃ ┗ 📃views.py
+🗂️Project
+┣ ��backend
+┃ ┣ ��app
+┃ ┃ ┣ 📂ad8
+┃ ┃ ┃ ┣ ��__init__.py
+┃ ┃ ┃ ┣ ��api.py
+┃ ┃ ┃ ┣ 📃crud.py
+┃ ┃ ┃ ┣ 📃models.py
+┃ ┃ ┃ ┣ 📃schemas.py
+┃ ┃ ┃ ┗ ��service.py
+┃ ┃ ┣ 📂auth
+┃ ┃ ┃ ┣ ��api.py
+┃ ┃ ┃ ┣ 📃crud.py
+┃ ┃ ┃ ┣ 📃models.py
+┃ ┃ ┃ ┣ 📃schemas.py
+┃ ┃ ┃ ┣ 📃service.py
+┃ ┃ ┃ ┗ 📃utils.py
+┃ ┃ ┣ 📂chat
+┃ ┃ ┃ ┣ ��api.py
+┃ ┃ ┃ ┣ 📃crud.py
+┃ ┃ ┃ ┣ ��memory_store.py
+┃ ┃ ┃ ┣ 📃models.py
+┃ ┃ ┃ ┣ 📃schemas.py
+┃ ┃ ┃ ┣ 📃service.py
+┃ ┃ ┃ ┗ ��stream_handler.py
+┃ ┃ ┣ 📂drawing
+┃ ┃ ┃ ┣ ��api.py
+┃ ┃ ┃ ┣ 📃crud.py
+┃ ┃ ┃ ┣ 📃models.py
+┃ ┃ ┃ ┣ 📃schemas.py
+┃ ┃ ┃ ┣ 📃service.py
+┃ ┃ ┃ ┗ 📃utils.py
+┃ ┃ ┣ 📂mypage
+┃ ┃ ┃ ┣ 📃api.py
+┃ ┃ ┃ ┗ ��schemas.py
+┃ ┃ ┣ 📂rag
+┃ ┃ ┃ ┣ ��__init__.py
+┃ ┃ ┃ ┣ 📃api.py
+┃ ┃ ┃ ┣ ��pipeline.py
+┃ ┃ ┃ ┗ ��service.py
+┃ ┃ ┣ ��report
+┃ ┃ ┃ ┣ ��__init__.py
+┃ ┃ ┃ ┣ ��api.py
+┃ ┃ ┃ ┣ 📃crud.py
+┃ ┃ ┃ ┣ 📃models.py
+┃ ┃ ┃ ┣ 📃schemas.py
+┃ ┃ ┃ ┗ ��service.py
+┃ ┃ ┣ ��report_view
+┃ ┃ ┃ ┗ 📃report_view.py
+┃ ┃ ┣ ��trans
+┃ ┃ ┃ ┣ ��stt.py
+┃ ┃ ┃ ┗ 📃tts.py
+┃ ┃ ┣ 📃__init__.py
+┃ ┃ ┣ 📃celery.py
+┃ ┃ ┣ 📃database.py
+┃ ┃ ┗ 📃worker.py
+┃ ┣ 📂scripts
+┃ ┃ ┣ 📃check_chroma_docs.py
+┃ ┃ ┣ 📃count_chunks_by_title.py
+┃ ┃ ┗ 📃delete_chroma_collection.py
+┃ ┣ 📂static
+┃ ┃ ┗ 📂uploads
+┃ ┃   ┗ ��drawings
+┃ ┣ ��temp
+┃ ┣ 📂venv
+┃ ┣ ��__init__.py
+┃ ┣ 📃Dockerfile
+┃ ┣ 📃main.py
+┃ ┗ 📃requirements.txt
+┣ ��frontend
+┃ ┣ ��app
+┃ ┃ ┣ ��src
+┃ ┃ ┃ ┣ 📂api
+┃ ┃ ┃ ┃ ┗ ��index.ts
+┃ ┃ ┃ ┣ ��assets
+┃ ┃ ┃ ┃ ┗ 📂imgs
+┃ ┃ ┃ ┣ 📂components
+┃ ┃ ┃ ┃ ┣ ��AppHeader.tsx
+┃ ┃ ┃ ┃ ┣ 📃AppinitBackground.tsx
+┃ ┃ ┃ ┃ ┣ 📃AppinitBackgrounds.tsx
+┃ ┃ ┃ ┃ ┣ 📃AppLoginBackground.tsx
+┃ ┃ ┃ ┃ ┗ ��BottomBar.tsx
+┃ ┃ ┃ ┣ 📂pages
+┃ ┃ ┃ ┃ ┣ ��AD8Page.tsx
+┃ ┃ ┃ ┣ 📃ChattingSelectPage.tsx
+┃ ┃ ┃ ┣ ��DrawingPage.tsx
+┃ ┃ ┃ ┣ 📃InitPage.tsx
+┃ ┃ ┃ ┣ ��LoadingPage.tsx
+┃ ┃ ┃ ┣ ��LoginPage.tsx
+┃ ┃ ┃ ┣ 📃MainPage.tsx
+┃ ┃ ┃ ┣ 📃MyPage.tsx
+┃ ┃ ┃ ┣ 📃RegisterPage.tsx
+┃ ┃ ┃ ┣ 📃ReportPage.tsx
+┃ ┃ ┃ ┣ ��TextChattingPage.tsx
+┃ ┃ ┃ ┗ 📃VoiceChattingPage.tsx
+┃ ┃ ┃ ┣ 📂store
+┃ ┃ ┃ ┃ ┣ 📃chatStore.ts
+┃ ┃ ┃ ┃ ┣ 📃reportHistoryStore.ts
+┃ ┃ ┃ ┃ ┣ 📃reportIdStore.ts
+┃ ┃ ┃ ┃ ┣ 📃reportStore.ts
+┃ ┃ ┃ ┃ ┣ 📃testStore.ts
+┃ ┃ ┃ ┃ ┗ ��voiceChatStore.ts
+┃ ┃ ┃ ┣ 📂types
+┃ ┃ ┃ ┃ ┣ ��api.ts
+┃ ┃ ┃ ┃ ┣ 📃image.d.ts
+┃ ┃ ┃ ┃ ┗ 📃react-native-html-to-pdf.d.ts
+┃ ┃ ┃ ┣ 📃App.css
+┃ ┃ ┃ ┣ 📃App.tsx
+┃ ┃ ┃ ┣ ��AppStyle.ts
+┃ ┃ ┃ ┣ 📃index.css
+┃ ┃ ┃ ┣ ��main.tsx
+┃ ┃ ┃ ┗ ��vite-env.d.ts
+┃ ┃ ┣ 📃app.json
+┃ ┃ ┣ ��babel.config.js
+┃ ┃ ┣ ��metro.config.js
+┃ ┃ ┣ ��package-lock.json
+┃ ┃ ┣ 📃package.json
+┃ ┃ ┗ 📃tsconfig.json
+┃ ┣ ��shared
+┃ ┃ ┣ ��api
+┃ ┃ ┃ ┗ 📃index.ts
+┃ ┃ ┣ ��assets
+┃ ┃ ┃ ┗ 📂imgs
+┃ ┃ ┣ 📂components
+┃ ┃ ┃ ┣ 📃Background.tsx
+┃ ┃ ┃ ┣ 📃Header.tsx
+┃ ┃ ┃ ┣ ��index.ts
+┃ ┃ ┃ ┣ ��InitBackground.tsx
+┃ ┃ ┃ ┣ ��LoginBackground.tsx
+┃ ┃ ┃ ┗ ��ProtectedRoute.tsx
+┃ ┃ ┣ 📂constants
+┃ ┃ ┃ ┗ 📃index.ts
+┃ ┃ ┣ 📂store
+┃ ┃ ┃ ┣ 📃chatStore.ts
+┃ ┃ ┃ ┣ ��index.ts
+┃ ┃ ┃ ┣ 📃reportHistoryStore.ts
+┃ ┃ ┃ ┣ 📃reportIdStore.ts
+┃ ┃ ┃ ┣ 📃reportStore.ts
+┃ ┃ ┃ ┣ 📃testStore.ts
+┃ ┃ ┃ ┗ ��voiceChatStore.ts
+┃ ┃ ┣ ��types
+┃ ┃ ┃ ┣ 📃api.ts
+┃ ┃ ┃ ┣ ��html2pdf.d.ts
+┃ ┃ ┃ ┗ 📃images.d.ts
+┃ ┃ ┣ 📂utils
+┃ ┃ ┃ ┗ 📃index.ts
+┃ ┃ ┣ ��index.ts
+┃ ┃ ┗ 📃tsconfig.json
+┃ ┗ ��web
+┃   ┣ 📂public
+┃   ┃ ┗ 📃vite.svg
+┃   ┣ ��src
+┃   ┃ ┣ 📂api
+┃   ┃ ┃ ┗ ��index.ts
+┃   ┃ ┣ ��assets
+┃   ┃ ┃ ┗ 📂imgs
+┃   ┃ ┣ 📂components
+┃   ┃ ┃ ┣ 📃Background.tsx
+┃   ┃ ┃ ┣ 📃Header.tsx
+┃   ┃ ┃ ┣ ��InitBackground.tsx
+┃   ┃ ┃ ┣ ��LoginBackground.tsx
+┃   ┃ ┃ ┗ ��ProtectedRoute.tsx
+┃   ┃ ┣ 📂pages
+┃   ┃ ┃ ┣ ��AD8Page.tsx
+┃   ┃ ┃ ┣ 📃ChattingSelectPage.tsx
+┃   ┃ ┃ ┣ ��DrawingPage.tsx
+┃   ┃ ┃ ┣ 📃InitPage.tsx
+┃   ┃ ┃ ┣ ��LoadingPage.tsx
+┃   ┃ ┃ ┣ ��LoginPage.tsx
+┃   ┃ ┃ ┣ 📃MainPage.tsx
+┃   ┃ ┃ ┣ 📃MyPage.tsx
+┃   ┃ ┃ ┣ 📃RegisterPage.tsx
+┃   ┃ ┃ ┣ 📃ReportPage.tsx
+┃   ┃ ┃ ┣ ��TextChattingPage.tsx
+┃   ┃ ┃ ┗ 📃VoiceChattingPage.tsx
+┃   ┃ ┣ 📂store
+┃   ┃ ┃ ┣ 📃chatStore.ts
+┃   ┃ ┃ ┣ 📃reportHistoryStore.ts
+┃   ┃ ┃ ┣ 📃reportIdStore.ts
+┃   ┃ ┃ ┣ 📃reportStore.ts
+┃   ┃ ┃ ┣ 📃testStore.ts
+┃   ┃ ┃ ┗ ��voiceChatStore.ts
+┃   ┃ ┣ 📂types
+┃   ┃ ┃ ┣ ��api.ts
+┃   ┃ ┃ ┗ ��html2pdf.d.ts
+┃   ┃ ┣ 📃App.css
+┃   ┃ ┣ 📃App.tsx
+┃   ┃ ┣ 📃index.css
+┃   ┃ ┣ ��main.tsx
+┃   ┃ ┗ ��vite-env.d.ts
+┃   ┣ ��Dockerfile
+┃   ┣ 📃eslint.config.js
+┃   ┣ ��index.html
+┃   ┣ 📃package.json
+┃   ┣ 📃README.md
+┃   ┣ ��tsconfig.app.json
+┃   ┣ ��tsconfig.json
+┃   ┣ ��tsconfig.node.json
+┃   ┗ ��vite.config.ts
+┣ 📂grafana
+┃ ┗ 📂provisioning
+┃   ┣ 📂dashboards
+┃   ┃ ┣ 📃cadvisor-exporter.json
+┃   ┃ ┣ ��dashboard.yml
+┃   ┃ ┣ 📃docker-monitoring.json
+┃   ┃ ┣ 📃fastapi-monitoring.json
+┃   ┃ ┣ 📃fastapi-observability.json
+┃   ┃ ┣ ��mysql-overview.json
+┃   ┃ ┣ 📃rabbitmq-overview.json
+┃   ┃ ┗ 📃redis-dashboard.json
+┃   ┣ ��datasources
+┃   ┃ ┗ 📃prometheus.yml
+┃   ┗ 📃grafana.ini
 ┣ 📂prometheus
-┃ ┣ 📃alert-rules.yml
-┃ ┗ 📃prometheus.yml
-┣ 📂promtail
-┃ ┗ 📃config.yaml
-┣ 📂scenario
-┃ ┣ 📂migrations
-┃ ┣ 📃__init__.py
-┃ ┣ 📃apps.py
-┃ ┣ 📃models.py
-┃ ┣ 📃scenario_urls.py
-┃ ┣ 📃serializers.py
-┃ ┣ 📃urls.py
-┃ ┗ 📃views.py
-┣ 📂staticfiles
-┃ ┣ 📂admin
-┃ ┣ 📂drf-yasg
-┃ ┗ 📂rest_framework
-┣ 📂stt
-┃ ┣ 📂migrations
-┃ ┣ 📃__init__.py
-┃ ┣ 📃apps.py
-┃ ┣ 📃urls.py
-┃ ┗ 📃views.py
-┣ 📂suspect
-┃ ┣ 📂migrations
-┃ ┣ 📃__init__.py
-┃ ┣ 📃apps.py
-┃ ┣ 📃models.py
-┃ ┣ 📃serializers.py
-┃ ┣ 📃suspect_urls.py
-┃ ┣ 📃urls.py
-┃ ┗ 📃views.py
-┣ 📂tts
-┃ ┣ 📂migrations
-┃ ┣ 📃__init__.py
-┃ ┣ 📃apps.py
-┃ ┣ 📃tasks.py
-┃ ┣ 📃urls.py
-┃ ┗ 📃views.py
-┣ 📂user
-┃ ┣ 📂migrations
-┃ ┣ 📃__init__.py
-┃ ┣ 📃admin.py
-┃ ┣ 📃apps.py
-┃ ┣ 📃models.py
-┃ ┣ 📃serializers.py
-┃ ┣ 📃tests.py
-┃ ┣ 📃urls.py
-┃ ┣ 📃users_urls.py
-┃ ┗ 📃views.py
-┣ 📃.gitattributes
-┣ 📃.gitignore
-┣ 📃Dockerfile
+┃ ┗ ��prometheus.yml
+┣ 📃LICENSE
 ┣ 📃README.md
-┣ 📃README.md
-┣ 📃docker-compose-blue.yml
-┣ 📃docker-compose-common.yml
-┣ 📃docker-compose-green.yml
-┣ 📃grafana.ini
-┣ 📃manage.py
-┣ 📃nginx.conf
-┣ 📃requirements.txt
-┗ 📃start_celery_flower.sh
-</code>
-</pre>
-</details>
-<details>
-    <summary>Neurocare-Frontend</summary>
-<pre>
-<code>
-🗂️AILIBI-Frontend
-┣ 📂.github
-┃ ┣ 📂ISSUE_TEMPLATE
-┃ ┗ 📂workflows
-┣ 📂public
-┃ ┣ 📂fonts
-┃ ┣ 📂images
-┃ ┣ 📂mp4
-┃ ┣ 📂sounds
-┃ ┣ 📃logo.png
-┃ ┗ 📃vite.svg
-┣ 📂src
-┃ ┣ 📂assets
-┃ ┃ ┗ 📃react.svg
-┃ ┣ 📂components
-┃ ┃ ┣ 📃EndingPage.css
-┃ ┃ ┣ 📃LogInPage.css
-┃ ┃ ┣ 📃SignupBox.css
-┃ ┃ ┗ 📃VideoPage.css
-┃ ┣ 📂hooks
-┃ ┃ ┣ 📃UserContext.tsx
-┃ ┃ ┗ 📃axiosInstance.ts
-┃ ┣ 📂mocks
-┃ ┃ ┗ 📃webSocketService.ts
-┃ ┣ 📂pages
-┃ ┃ ┣ 📃ChattingPage.tsx
-┃ ┃ ┣ 📃ChoosePage.tsx
-┃ ┃ ┣ 📃EndingPage.tsx
-┃ ┃ ┣ 📃EvidencePage.tsx
-┃ ┃ ┣ 📃GamePage1.tsx
-┃ ┃ ┣ 📃HistoryNote.tsx
-┃ ┃ ┣ 📃HistoryPopUp.tsx
-┃ ┃ ┣ 📃InitChatPage.tsx
-┃ ┃ ┣ 📃LeftPage.tsx
-┃ ┃ ┣ 📃LoadingScenarioPage.tsx
-┃ ┃ ┣ 📃LogInPage.tsx
-┃ ┃ ┣ 📃LoginBox.tsx
-┃ ┃ ┣ 📃MainAudioContext.tsx
-┃ ┃ ┣ 📃MainPage.tsx
-┃ ┃ ┣ 📃MakeScenarioPage.tsx
-┃ ┃ ┣ 📃NotePage.tsx
-┃ ┃ ┣ 📃PlayAudioContext.tsx
-┃ ┃ ┣ 📃PlayHistoryPage.tsx
-┃ ┃ ┣ 📃PlayPage.tsx
-┃ ┃ ┣ 📃ResultLoadingPage.tsx
-┃ ┃ ┣ 📃RightPage.tsx
-┃ ┃ ┣ 📃SignupBox.tsx
-┃ ┃ ┣ 📃SudokuGame.tsx
-┃ ┃ ┣ 📃SuspectPage.tsx
-┃ ┃ ┣ 📃TTSService.tsx
-┃ ┃ ┗ 📃vite-env.d.ts
-┃ ┣ 📂services
-┃ ┃ ┗ 📃vite-env.d.ts
-┃ ┣ 📃App.css
-┃ ┣ 📃App.tsx
-┃ ┣ 📃index.css
-┃ ┣ 📃main.tsx
-┃ ┗ 📃vite-env.d.ts
-┣ 📃.gitignore
-┣ 📃Dockerfile
-┣ 📃README.md
-┣ 📃docker-compose.yml
-┣ 📃eslint.config.js
-┣ 📃index.html
-┣ 📃package-lock.json
-┣ 📃package.json
-┣ 📃postcss.config.cjs
-┣ 📃tailwind.config.js
-┣ 📃tsconfig.app.json
-┣ 📃tsconfig.json
-┣ 📃tsconfig.node.json
-┗ 📃vite.config.ts
+┗ ��docker-compose.yml
 </code>
 </pre>
 </details>
@@ -485,46 +517,50 @@
 
 ### Backend 
 ```
-git clone --recursive https://github.com/2024-Winter-Bootcamp-team-K/AILIBI-Backend.git
+git clone https://github.com/2025-Summer-Bootcamp-team-I/I-project
 ```
 ### env setting in the Backend folder
+* Frontend/.env
+```
+VITE_SENTRY_DSN
+```
+
 * Backend/.env
 ```
-DB_ENGINE=
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
-DB_HOST=
-DB_PORT=
+MYSQL_USER=
+MYSQL_PASSWORD=
+MYSQL_DATABASE=
+
+CHROMA_API_IMPL=
+CHROMA_SERVER_HOST=
+CHROMA_SERVER_HTTP_PORT=
 
 OPENAI_API_KEY=
+GEMINI_API_KEY=
+GOOGLE_API_KEY=
 
-NAVER_CLIENT_ID=
-NAVER_CLIENT_SECRET=
+NEW_RELIC_LICENSE_KEY=
+NEW_RELIC_APP_NAME=
 
+SEMANTIC_SCHOLAR_API_KEY=
 ELEVENLABS_API_KEY=
-ELEVENLABS_MODEL_ID=
-TASK_1_VOICE_ID=
-TASK_2_VOICE_ID=
-TASK_3_VOICE_ID=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
+S3_BUCKET_NAME=
 ```
 ### Run Docker
 ```
-docker-compose -f docker-compose-common.yml -f docker-compose-blue.yml build
-docker-compose -f docker-compose-common.yml -f docker-compose-blue.yml up -d
-docker-compose -f docker-compose-common.yml -f docker-compose-blue.yml down
-
-docker-compose -f docker-compose-common.yml -f docker-compose-green.yml build
-docker-compose -f docker-compose-common.yml -f docker-compose-green.yml up -d
-docker-compose -f docker-compose-common.yml -f docker-compose-green.yml down
+docker-compose up -d
 ```
 ### Frontend
 ```
-git clone --recursive https://github.com/2024-Winter-Bootcamp-team-K/AILIBI-Frontend.git
+git clone https://github.com/2025-Summer-Bootcamp-team-I/I-project
 ```
 ### Install
 ```
-npm run dev
+npm run dev(web)
+npx expo start(app)
 ```
 <br>
 
@@ -614,27 +650,27 @@ Backend<br>
 </td>
 <td width="100" align="center">
 <a href="https://github.com/ksm0520">
-<img src="http://img.shields.io/badge/ksm0520?style=social&logo=github"/>
+<img src="http://img.shields.io/badge/ksm0520-green?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
 <a href="https://github.com/plar8271">
-<img src="http://img.shields.io/badge/plar8271?style=social&logo=github"/>
+<img src="http://img.shields.io/badge/plar8271-green?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
 <a href="https://github.com/doyun-cumulus">
-<img src="http://img.shields.io/badge/doyun-cumulus?style=social&logo=github"/>
+<img src="http://img.shields.io/badge/doyun-cumulus-green?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
 <a href="https://github.com/jiwon5">
-<img src="http://img.shields.io/badge/jiwon5?style=social&logo=github"/>
+<img src="http://img.shields.io/badge/jiwon5-green?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
 <a href="https://github.com/johe00123">
-<img src="http://img.shields.io/badge/johe00123?style=social&logo=github"/>
+<img src="http://img.shields.io/badge/johe00123-green?style=social&logo=github"/>
 </a>
 </td>
 </tr>
