@@ -543,37 +543,43 @@ npm run dev
 <td width="100" align="center">백지원</td>
 <td width="100" align="center">이주희</td>
 </tr>
+<img width="254" height="258" alt="2" src="https://github.com/user-attachments/assets/dbcf5c78-d64a-47dd-8507-f201c8ab1018" />
+![3](https://github.com/user-attachments/assets/dc98dee9-08c4-4afd-86d2-e34a29190530)
+![4](https://github.com/user-attachments/assets/e0fb55f8-9edb-4eb0-ae35-ce81e973a49c)
+![3](https://github.com/user-attachments/assets/ed53db66-aac6-4abb-b126-fb5c534b4046)
+
+
 
 <tr>
 <th>Profile</th>
 <td width="100" align="center">
-<a href="https://github.com/pgc0419">
-<img src="https://github.com/user-attachments/assets/fff119c4-3e90-4dd8-8118-4b177ef702b4" width="60" height="60">
-</a>
-</td>
-<td width="100" align="center">
-<a href="https://github.com/Grassyeochi">
-<img src="https://github.com/user-attachments/assets/9224d530-4af5-445f-9bd2-7c3e93f5a8e9" width="60" height="60">
-</a>
-</td>
-<td width="100" align="center">
-<a href="https://github.com/parksooyong03">
-<img src="https://github.com/user-attachments/assets/2a707357-62c8-4e35-8725-cdb4fb49fcde" width="60" height="60">
+<a href="https://github.com/Jimin15">
+<img src="https://github.com/user-attachments/assets/bd4af24f-9d34-498c-9f00-123b53759fd5" width="60" height="60">
 </a>
 </td>
 <td width="100" align="center">
 <a href="https://github.com/ksm0520">
-<img src="https://github.com/ksm0520.png" width="60" height="60">
+<img src="https://github.com/user-attachments/assets/dbcf5c78-d64a-47dd-8507-f201c8ab1018" width="60" height="60">
 </a>
 </td>
 <td width="100" align="center">
-<a href="https://github.com/URsuyeon">
-<img src="https://github.com/user-attachments/assets/daf7e881-fd52-4adc-8852-d8f2e20c530a" width="60" height="60">
+<a href="https://github.com/plar8271">
+<img src="https://github.com/user-attachments/assets/ed53db66-aac6-4abb-b126-fb5c534b4046" width="60" height="60">
 </a>
 </td>
 <td width="100" align="center">
-<a href="https://github.com/myungnam1">
-<img src="https://github.com/user-attachments/assets/b39d58f3-f09c-4b58-a307-c8e97b6b098c" width="60" height="60">
+<a href="https://github.com/doyun-cumulus">
+<img src="https://github.com/user-attachments/assets/e0fb55f8-9edb-4eb0-ae35-ce81e973a49c" width="60" height="60">
+</a>
+</td>
+<td width="100" align="center">
+<a href="https://github.com/jiwon5">
+<img src="https://github.com/user-attachments/assets/bef3fece-ba6f-4f7e-b3ab-2ac41caa257f" width="60" height="60">
+</a>
+</td>
+<td width="100" align="center">
+<a href="https://github.com/johe00123">
+<img src="https://github.com/user-attachments/assets/98f3ac3b-7e7c-4ca9-9dff-244bc9ee0ab1" width="60" height="60">
 </a>
 </td>
 </tr>
@@ -582,60 +588,57 @@ npm run dev
 <th>Role</th>
 <td width="190" align="center">
 Leader<br>
-Full Stack<br>
-DevOps<br>
-Design<br>
-</td>
-<td width="190" align="center">
-Backend<br>
-DevOps<br>
-</td>
-<td width="190" align="center">
 Backend<br>
 DevOps<br>
 </td>
 <td width="190" align="center">
 Frontend<br>
-Design<br>
+Backend<br>
+DevOps<br>
 </td>
 <td width="190" align="center">
 Frontend<br>
-Design<br>
+DevOps<br>
 </td>
 <td width="190" align="center">
 Frontend<br>
-Design<br>
+</td>
+<td width="190" align="center">
+Backend<br>
+</td>
+<td width="190" align="center">
+Backend<br>
 </td>
 
 <tr>
 <th>GitHub</th>
 <td width="100" align="center">
-<a href="https://github.com/pgc0419">
+<a href="https://github.com/Jimin15">
 <img src="http://img.shields.io/badge/pgc0419-green?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
-<a href="https://github.com/Grassyeochi">
+<a href="https://github.com/ksm0520">
 <img src="http://img.shields.io/badge/Grassyeochi-green?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
-<a href="https://github.com/parksooyong03">
+<a href="https://github.com/plar8271">
 <img src="http://img.shields.io/badge/parksooyong03-green?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
-<a href="https://github.com/ksm0520">
+<a href="https://github.com/doyun-cumulus">
 <img src="http://img.shields.io/badge/ksm0520-green?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
-<a href="https://github.com/URsuyeon">
+<a href="https://github.com/jiwon5">
 <img src="http://img.shields.io/badge/URsuyeon-green?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
-<a href="https://github.com/myungnam1">
+<a href="https://github.com/johe00123">
 <img src="http://img.shields.io/badge/myungnam1-green?style=social&logo=github"/>
 </a>
 </td>
