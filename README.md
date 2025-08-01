@@ -231,18 +231,11 @@
             <td><img src="https://github.com/user-attachments/assets/59e892d8-76d5-463f-90c2-a025d8faf23b" alt="FastAPI2"></td>
         </tr>
         <tr>
-            <th colspan="2">Celery</th>
-        </tr>
-        <tr>
-            <td><img src="https://github.com/user-attachments/assets/074048e6-4ece-43f9-9800-2f2d523f2930" alt="Celery"></td>
-            <td><img src="https://github.com/user-attachments/assets/8d67960d-b60e-4a37-9597-7eabeed8c6fb" alt="Celery2"></td>
-        </tr>
-        <tr>
             <th colspan="2">cAdvisor</th>
         </tr>
         <tr>
-            <td><img src="https://github.com/user-attachments/assets/5c995407-38a8-4949-8807-c6678e15adea" alt="cAdvisor"></td>
-            <td><img src="https://github.com/user-attachments/assets/8ec92d68-418e-4d97-a288-88bf7b0e4bac" alt="cAdvisor2"></td>
+            <td><img src="https://github.com/user-attachments/assets/816767a6-78fe-4bbf-a002-64df095e782d" alt="cAdvisor"></td>
+            <td><img src="https://github.com/user-attachments/assets/1c256927-12f4-4b10-b774-b172c6c8a1ee" alt="cAdvisor2">
         </tr>
         <tr>
             <th colspan="2">Node_Exporter</th>
@@ -250,13 +243,6 @@
         <tr>
             <td><img src="https://github.com/user-attachments/assets/cfa2887d-8354-4358-8cb2-bab5b434e252"></td>
             <td><img src="https://github.com/user-attachments/assets/238fe87e-34f8-47ec-b21a-3c7ea994a10c" alt="Node Exporter2"></td>
-        </tr>
-        <tr>
-            <th colspan="2">RabbitMQ</th>
-        </tr>
-        <tr>
-            <td><img src="https://github.com/user-attachments/assets/e41beaed-0e21-4f7d-82b0-e86a8a6b9f37"></td>
-            <td><img src="https://github.com/user-attachments/assets/1dd07d64-3548-476f-a68a-7b5e613b49cc" alt="Node Exporter2"></td>
         </tr>
         <tr>
           <th>Nginx_Exporter</th>
