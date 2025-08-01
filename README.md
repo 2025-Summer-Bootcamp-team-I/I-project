@@ -224,11 +224,11 @@
   <h3 align="left">Prometheus & Grafana & NewRelic</h3>
   <table>
         <tr>
-            <th colspan="2">Django</th>
+            <th colspan="2">FastAPI</th>
         </tr>
         <tr>
-            <td><img src="https://github.com/user-attachments/assets/dfe25a06-b23d-41b4-a95e-2a7f66769b16" alt="Django"></td>
-            <td><img src="https://github.com/user-attachments/assets/59e892d8-76d5-463f-90c2-a025d8faf23b" alt="Django2"></td>
+            <td><img src="https://github.com/user-attachments/assets/dfe25a06-b23d-41b4-a95e-2a7f66769b16" alt="FastAPI"></td>
+            <td><img src="https://github.com/user-attachments/assets/59e892d8-76d5-463f-90c2-a025d8faf23b" alt="FastAPI2"></td>
         </tr>
         <tr>
             <th colspan="2">Celery</th>
@@ -248,8 +248,8 @@
             <th colspan="2">Node_Exporter</th>
         </tr>
         <tr>
-            <td><img src="https://github.com/user-attachments/assets/ecd13865-d1f4-4f34-af30-2d91b081b7b8"></td>
-            <td><img src="https://github.com/user-attachments/assets/cff8c04a-700c-45ad-ad84-017d343d2e3d" alt="Node Exporter2"></td>
+            <td><img src="https://github.com/user-attachments/assets/cfa2887d-8354-4358-8cb2-bab5b434e252"></td>
+            <td><img src="https://github.com/user-attachments/assets/238fe87e-34f8-47ec-b21a-3c7ea994a10c" alt="Node Exporter2"></td>
         </tr>
         <tr>
             <th colspan="2">RabbitMQ</th>
@@ -263,13 +263,15 @@
           <th>Redis</th>
         </tr>
         <tr>
-          <td><img src="https://github.com/user-attachments/assets/ef00a11f-e77a-40a2-ad32-b19d67b65e2a"></td>
-          <td><img src="https://github.com/user-attachments/assets/67a6e2fb-fa01-4172-9a86-a0b17a847379"></td>
+          <td><img src="https://github.com/user-attachments/assets/478b8f01-1ee9-4e73-b802-02730e3e6aea"></td>
+          <td><img src="https://github.com/user-attachments/assets/ee8f97ef-5f51-4dfb-b80c-07b672eed554"></td>
         </tr>
     </table>
   <br>
 </div>
 <br>
+
+
   
   <h3 align="left">Sentry</h3>
 <table>
