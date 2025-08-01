@@ -224,11 +224,12 @@
   <h3 align="left">Prometheus & Grafana & NewRelic</h3>
   <table>
         <tr>
-            <th colspan="2">cAdvisor</th>
+            <th>cAdvisor</th>
+            <th>NewRelic</th>
         </tr>
         <tr>
             <td><img src="https://github.com/user-attachments/assets/816767a6-78fe-4bbf-a002-64df095e782d" alt="cAdvisor"></td>
-            <td><img src="https://github.com/user-attachments/assets/1c256927-12f4-4b10-b774-b172c6c8a1ee" alt="cAdvisor2">
+            <td><img src="https://github.com/user-attachments/assets/a8c38eff-1a08-4ac1-88c9-ed45e032d571">
         </tr>
         <tr>
             <th colspan="2">Node_Exporter</th>
