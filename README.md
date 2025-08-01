@@ -220,10 +220,10 @@
 
 # 📊 Monitoring
 <div align="center">
-  <h3 align="left">Prometheus & Grafana</h3>
+  <h3 align="left">Prometheus & Grafana & NewRelic</h3>
   <table>
         <tr>
-            <th colspan="2">Django</th>
+            <th colspan="2">FastAPI</th>
         </tr>
         <tr>
             <td><img src="https://github.com/user-attachments/assets/dfe25a06-b23d-41b4-a95e-2a7f66769b16" alt="Django"></td>
@@ -270,7 +270,7 @@
 </div>
 <br>
   
-  <h3 align="left">Cloud Flare</h3>
+  <h3 align="left">Sentry</h3>
 <table>
   <tr>
       <th colspan="2">Frontend</th>
@@ -283,26 +283,10 @@
 
 <br>
 
-
-# 🔧 Logging
-<div align="center">
-  <h3 align="left">Loki</h3>
-  <table>
-        <tr>
-            <th colspan="2">Nginx</th>
-        </tr>
-        <tr>
-            <td><img src="https://github.com/user-attachments/assets/fa352ece-f6f7-4862-ba17-22ed53a2378b" alt="Django"></td>
-            <td><img src="https://github.com/user-attachments/assets/e9749025-fd86-4203-aee0-30713e96ad5f" alt="Django2"></td>
-        </tr>
-    </table>
-</div>
-<br>
-
 # 📂 Directory Structure
 
 <details>
-  <summary>AILIBI-Backend</summary>
+  <summary>Neurocare-Backend</summary>
 <pre>
 <code>
 🗂️AILIBI-Backend
@@ -417,7 +401,7 @@
 </pre>
 </details>
 <details>
-    <summary>AILIBI-Frontend</summary>
+    <summary>Neurocare-Frontend</summary>
 <pre>
 <code>
 🗂️AILIBI-Frontend
@@ -552,12 +536,12 @@ npm run dev
 
 <tr>
 <th>Name</th>
-<td width="100" align="center">박근채</td>
-<td width="100" align="center">여상윤</td>
-<td width="100" align="center">박수용</td>
+<td width="100" align="center">김지민</td>
 <td width="100" align="center">김승민</td>
-<td width="100" align="center">이수연</td>
-<td width="100" align="center">박명남</td>
+<td width="100" align="center">배경준</td>
+<td width="100" align="center">김도윤</td>
+<td width="100" align="center">백지원</td>
+<td width="100" align="center">이주희</td>
 </tr>
 
 <tr>
