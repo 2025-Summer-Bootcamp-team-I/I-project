@@ -543,11 +543,6 @@ npm run dev
 <td width="100" align="center">백지원</td>
 <td width="100" align="center">이주희</td>
 </tr>
-<img width="254" height="258" alt="2" src="https://github.com/user-attachments/assets/dbcf5c78-d64a-47dd-8507-f201c8ab1018" />
-![3](https://github.com/user-attachments/assets/dc98dee9-08c4-4afd-86d2-e34a29190530)
-![4](https://github.com/user-attachments/assets/e0fb55f8-9edb-4eb0-ae35-ce81e973a49c)
-![3](https://github.com/user-attachments/assets/ed53db66-aac6-4abb-b126-fb5c534b4046)
-
 
 
 <tr>
@@ -614,32 +609,32 @@ Backend<br>
 <th>GitHub</th>
 <td width="100" align="center">
 <a href="https://github.com/Jimin15">
-<img src="http://img.shields.io/badge/pgc0419-green?style=social&logo=github"/>
+<img src="http://img.shields.io/badge/Jimin15-green?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
 <a href="https://github.com/ksm0520">
-<img src="http://img.shields.io/badge/Grassyeochi-green?style=social&logo=github"/>
+<img src="http://img.shields.io/badge/ksm0520?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
 <a href="https://github.com/plar8271">
-<img src="http://img.shields.io/badge/parksooyong03-green?style=social&logo=github"/>
+<img src="http://img.shields.io/badge/plar8271?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
 <a href="https://github.com/doyun-cumulus">
-<img src="http://img.shields.io/badge/ksm0520-green?style=social&logo=github"/>
+<img src="http://img.shields.io/badge/doyun-cumulus?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
 <a href="https://github.com/jiwon5">
-<img src="http://img.shields.io/badge/URsuyeon-green?style=social&logo=github"/>
+<img src="http://img.shields.io/badge/jiwon5?style=social&logo=github"/>
 </a>
 </td>
 <td width="100" align="center">
 <a href="https://github.com/johe00123">
-<img src="http://img.shields.io/badge/myungnam1-green?style=social&logo=github"/>
+<img src="http://img.shields.io/badge/johe00123?style=social&logo=github"/>
 </a>
 </td>
 </tr>
