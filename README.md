@@ -513,16 +513,15 @@
 
 # 🧐 How To Start
 
-### Backend 
+### Frontend & Backend 
 ```
 git clone https://github.com/2025-Summer-Bootcamp-team-I/I-project
 ```
-### env setting in the Backend folder
+### env setting 
 * Frontend/.env
 ```
 VITE_SENTRY_DSN
 ```
-
 * Backend/.env
 ```
 MYSQL_USER=
@@ -547,15 +546,11 @@ AWS_SECRET_ACCESS_KEY=
 AWS_REGION=
 S3_BUCKET_NAME=
 ```
-### Run Docker
+### Run Docker & Backend start
 ```
-docker-compose up -d
+docker compose up --build
 ```
-### Frontend
-```
-git clone https://github.com/2025-Summer-Bootcamp-team-I/I-project
-```
-### Install
+### Frontend Start
 ```
 npm run dev(web)
 npx expo start(app)
