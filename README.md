@@ -224,13 +224,6 @@
   <h3 align="left">Prometheus & Grafana & NewRelic</h3>
   <table>
         <tr>
-            <th colspan="2">FastAPI</th>
-        </tr>
-        <tr>
-            <td><img src="https://github.com/user-attachments/assets/dfe25a06-b23d-41b4-a95e-2a7f66769b16" alt="FastAPI"></td>
-            <td><img src="https://github.com/user-attachments/assets/59e892d8-76d5-463f-90c2-a025d8faf23b" alt="FastAPI2"></td>
-        </tr>
-        <tr>
             <th colspan="2">cAdvisor</th>
         </tr>
         <tr>
@@ -241,7 +234,7 @@
             <th colspan="2">Node_Exporter</th>
         </tr>
         <tr>
-            <td><img src="https://github.com/user-attachments/assets/cfa2887d-8354-4358-8cb2-bab5b434e252"></td>
+            <td><img src="https://github.com/user-attachments/assets/06fcbde5-0711-4763-93b4-5d369ae01712"></td>
             <td><img src="https://github.com/user-attachments/assets/238fe87e-34f8-47ec-b21a-3c7ea994a10c" alt="Node Exporter2"></td>
         </tr>
         <tr>
@@ -256,6 +249,7 @@
   <br>
 </div>
 <br>
+
 
 
   
