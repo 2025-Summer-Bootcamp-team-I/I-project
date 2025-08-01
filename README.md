@@ -54,13 +54,13 @@
 <br><br>
 
 ### Login/Register
-> E-mail 기반 로그인 및 회원가입으로 손쉽게 로그인 할 수 있습니다.
+> 간편 로그인으로 나만의 인지 건강 여정을 시작할 수 있습니다.
 <br>
 <img align="center" width="1000" alt="Login & Sign up" src="https://github.com/user-attachments/assets/1487ef46-1858-4be6-b8a2-51f7d2f5866e">
 <br><br>
 
 ### Main
-> 성공적인 로그인 이후 치매 진단을 위한 메인 페이지입니다.
+> 다양한 검사와 리포트, 자기 관리 기능에 한 번에 접근할 수 있는 Neurocare의 허브입니다.
 <br>
 <img align="center" width="1000" alt="Login & Sign up" src="https://github.com/user-attachments/assets/b44f2bc8-aada-49f1-a099-9112e6edb310">
 <br><br>
@@ -101,7 +101,7 @@
 <br><br>
 
 ### Mypage
-> 지난 리포트의 기록을 저장 및 확인 할 수 있는 페이지입니다.<br>
+> 과거 검사 이력과 자기 관리 기록을 확인하고, 꾸준한 건강 관리를 이어가는 공간입니다..<br>
 <br>
 <img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/200c9fb4-e6a9-4ba2-89d7-fe4bcc0b7a84">
 <br><br>
@@ -109,7 +109,7 @@
 ### App-Version
 > 기존 서비스의 앱 버전 입니다.
 <br>
-<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/b3b5ce61-0192-443b-b117-06fd9cf4103d">
+<img align="center" width="1000" alt="" src="">
 <br><br>
 
 
@@ -129,7 +129,7 @@
 
 # 🔑 ERD
 <div align="center">
-  <img width="1000" src="https://github.com/user-attachments/assets/b15b3f76-c856-40fb-961b-90f7473f1fef">
+  <img width="1000" src="">
 </div>
 <br><br>
 
