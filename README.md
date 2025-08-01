@@ -619,24 +619,29 @@ npx expo start(app)
 Leader<br>
 Backend<br>
 DevOps<br>
+Design<br>
 </td>
 <td width="190" align="center">
-Frontend<br>
-Backend<br>
+Full Stack<br>
 DevOps<br>
+Design<br>
 </td>
 <td width="190" align="center">
 Frontend<br>
 DevOps<br>
+Design<br>
 </td>
 <td width="190" align="center">
 Frontend<br>
+Design<br>
 </td>
 <td width="190" align="center">
 Backend<br>
+Design<br>
 </td>
 <td width="190" align="center">
 Backend<br>
+Design<br>
 </td>
 
 <tr>
