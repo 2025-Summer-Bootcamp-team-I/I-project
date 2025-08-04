@@ -1,4 +1,4 @@
-![KakaoTalk_20250803_234617129_05](https://github.com/user-attachments/assets/a89424fd-cd91-4b4a-84f8-94d3ddd9e612)<h1 align="center"> 2025 Techeer Summer BootCamp - Neurocare </h1>
+<h1> 2025 Techeer Summer BootCamp - Neurocare </h1>
 <div align="center"> 
 <h3><b> Early Dementia Diagnosis Service </b></h3><br>
 <img width="1503" src="https://github.com/user-attachments/assets/7a0b40fa-4168-40ed-933f-ddba3e6e1e45" alt="대표 이미지">
@@ -115,7 +115,7 @@
 ### Neurocare App-Version
 > Neurocare는 사용자의 편의성과 접근성을 위해서 앱 버전 또한 제공합니다 -.
 <br>
-<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/22c1954e-1951-4a2a-ab4d-fb45123cfdd6">
+<img align="center" alt="" src="https://github.com/user-attachments/assets/22c1954e-1951-4a2a-ab4d-fb45123cfdd6">
 <br><br>
 
 
