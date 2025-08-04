@@ -1,4 +1,4 @@
-<h1> 2025 Techeer Summer BootCamp - Neurocare </h1>
+<h1 align="center"> 2025 Techeer Summer BootCamp - Neurocare </h1>
 <div align="center"> 
 <h3><b> Early Dementia Diagnosis Service </b></h3><br>
 <img width="1503" src="https://github.com/user-attachments/assets/7a0b40fa-4168-40ed-933f-ddba3e6e1e45" alt="대표 이미지">
