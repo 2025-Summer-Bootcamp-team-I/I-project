@@ -1,10 +1,11 @@
-<h1 align="center"> 2025 Techeer Summer BootCamp - Neurocare </h1>
+![KakaoTalk_20250803_234617129_05](https://github.com/user-attachments/assets/a89424fd-cd91-4b4a-84f8-94d3ddd9e612)<h1 align="center"> 2025 Techeer Summer BootCamp - Neurocare </h1>
 <div align="center"> 
 <h3><b> Early Dementia Diagnosis Service </b></h3><br>
-<img width="1503" src="https://raw.githubusercontent.com/ksm0520/practice/main/images/Neurocare/main.png" alt="대표 이미지">
+<img width="1503" src="https://github.com/user-attachments/assets/7a0b40fa-4168-40ed-933f-ddba3e6e1e45" alt="대표 이미지">
 <h3><b>Neuro+CARE= Neurocare</b></h3>
 <br>
 </div>
+
 
 <div align="center">
 
@@ -52,66 +53,69 @@
 ### Innit Animation
 > Neurocare 접속하면 가장 먼저 보이는 화면입니다.
 <br>
-<img align="center" width="1000" alt="Onboarding" src="https://github.com/user-attachments/assets/dd639618-abbe-4ee2-8907-4adfa1d74c6c">
+<img align="center" width="1000" alt="Onboarding" src="https://github.com/user-attachments/assets/7a0b40fa-4168-40ed-933f-ddba3e6e1e45">
 <br><br>
 
 ### Login/Register
 > 간편 로그인으로 나만의 인지 건강 여정을 시작할 수 있습니다.
+
 <br>
-<img align="center" width="1000" alt="Login & Sign up" src="https://github.com/user-attachments/assets/1487ef46-1858-4be6-b8a2-51f7d2f5866e">
+<img align="center" width="1000" alt="Login & Sign up" src="https://github.com/user-attachments/assets/abc6b43e-d2ac-4678-bfd6-5dfb8f7d0022">
 <br><br>
 
 ### Main
 > 다양한 검사와 리포트, 자기 관리 기능에 한 번에 접근할 수 있는 Neurocare의 허브입니다.
+
 <br>
-<img align="center" width="1000" alt="Login & Sign up" src="https://github.com/user-attachments/assets/b44f2bc8-aada-49f1-a099-9112e6edb310">
+<img align="center" width="1000" alt="Login & Sign up" src="https://github.com/user-attachments/assets/96cca022-91cb-4615-8a24-5a6335d05073">
 <br><br>
 
 ### AD8
 > 사용자가 AD8검사를 할수있는 페이지입니다.<br>
 > 8개의 간단한 문항을 통해서 빠르고 간단하게 검사를 할 수 있습니다.
+
 <br>
-<img align="center" width="1000" alt="Login & Sign up" src="https://github.com/user-attachments/assets/33b7c33a-f3d0-49c6-a216-87081019573f">
+<img align="center" width="1000" alt="Login & Sign up" src="https://github.com/user-attachments/assets/3219b76b-458e-4777-8697-0c57c708f2b1">
 <br><br>
 
 ### AI 대화 검사
 > 사용자가 AI와의 대화를 할 수 있는페이지입니다.<br>
 > 사용자는 음성 기반 대화와 텍스트 기반 대화를 선택해서 할 수 있습니다.
 <br>
-<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/1fc8ab99-0bd8-42cd-90d6-ba3e287e6fec"><br><br>
-<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/f3c609bb-29cb-4714-9152-d39f017aece2">
+<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/1794540e-0b7e-4706-97e9-444032b88f80"><br><br>
+<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/a6ba4093-d36f-4595-8d5d-af300467716b">
 <br><br>
 
 ### 그림 검사 
 > 사용자가 조건에 맞게 시계 그림을 그릴 수 있는 페이지입니다.<br>
 > 널리 알려진 슐만 채점법을 통해서 사용자의 그림을 특정 점수로 AI가 판별합니다
 <br>
-<img align="center" width="1000" alt="Login & Sign up" src="https://github.com/user-attachments/assets/33b7c33a-f3d0-49c6-a216-87081019573f">
+<img align="center" width="1000" alt="Login & Sign up" src="https://github.com/user-attachments/assets/912cb271-6fc3-4f0f-b96a-8b0184e03b02">
 <br><br>
 
 ### Loading
 > 사용자 검사를 기반으로 AI 최종 리포트 생성을 기다리는 페이지입니다.<br>
 <br>
-<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/a9e54428-3c14-432e-82ba-d698e32e9146">
+<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/3915872f-951c-4aa0-99a0-782bae836c71">
 <br><br>
 
 ### Report
 > 세 가지 테스트를 거쳐 나온, 최종 분석 결과를 볼 수 있는 페이지입니다.
 > 각 항목별로 ‘양호 / 경계 / 위험’ 세 가지 등급으로 분류되며,시각화해서 한눈에 확인할 수 있습니다
 <br>
-<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/a1c11bd9-ee42-4f69-9b86-da4e547f7240">
+<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/db9770a2-1b2e-4329-8a48-f3158895ed4d">
 <br><br>
 
 ### Mypage
 > 과거 검사 이력과 자기 관리 기록을 확인하고, 꾸준한 건강 관리를 이어가는 공간입니다..<br>
 <br>
-<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/200c9fb4-e6a9-4ba2-89d7-fe4bcc0b7a84">
+<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/13c9d363-2149-409b-a68e-fa4e7d91e42e">
 <br><br>
 
-### App-Version
-> 기존 서비스의 앱 버전 입니다.
+### Neurocare App-Version
+> Neurocare는 사용자의 편의성과 접근성을 위해서 앱 버전 또한 제공합니다 -.
 <br>
-<img align="center" width="1000" alt="" src="">
+<img align="center" width="1000" alt="" src="https://github.com/user-attachments/assets/22c1954e-1951-4a2a-ab4d-fb45123cfdd6">
 <br><br>
 
 
