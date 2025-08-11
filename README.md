@@ -116,7 +116,9 @@
 ### Neurocare App-Version
 > Neurocare는 사용자의 편의성과 접근성을 위해서 앱 버전 또한 제공합니다 -.
 <br>
-<img align="center" alt="" src="https://github.com/user-attachments/assets/22c1954e-1951-4a2a-ab4d-fb45123cfdd6">
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/22c1954e-1951-4a2a-ab4d-fb45123cfdd6" alt="" />
+</p>
 <br><br>
 
 
@@ -136,9 +138,10 @@
 
 # 🔑 ERD
 <div align="center">
-  <img width="1000" src="">
+  <img width="1000" src="https://github.com/user-attachments/assets/10f61b44-0d0a-4faa-b6e0-a0414c2cf8d2">
 </div>
 <br><br>
+
 
 
 # 💻 Tech Stack
