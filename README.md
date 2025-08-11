@@ -125,7 +125,8 @@
 <br>
 
 # 📗 API
-<img width="1503" src="https://github.com/user-attachments/assets/bf878657-839e-4c39-9e44-7aa49bfe750e" alt="API 이미지">
+<img width="1503" src="https://github.com/user-attachments/assets/ec8741e1-9c45-40f7-afd7-e2d64becacb1" alt="API 이미지">
+
 
 
 <br><br>
